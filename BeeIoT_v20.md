@@ -443,14 +443,14 @@ Und nun konkret die Nutzung der ESP32 EdvKitC Pins für das BeeIoT Projekt:
 |  2|    EN|      |   SW2    |       |          | ePaper-Key2    |
 |  3|*  SVP|GPIO36|  Sens-VP | ADC1-0|        - | -              |
 |  4|*  SVN|GPIO39|  Sens-VN | ADC1-3|        - | -              |
-|  5|* IO34|GPIO34|          | ADC1-6|          | ePD-K3/LoRa RST|
+|  5|* IO34|GPIO34|          | ADC1-6|          | ePD-K3/LoRa DIO2|
 |  6|* IO35|GPIO35|          | ADC1-7|          | ePaper-Key4    |
 |  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| DS18B20(3x)    |
 |  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | LoRa DIO0      |
 |  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | HX711-DT       |
 | 10|  IO26|GPIO26|     DAC2 | ADC2-9|  Wire-Clk| HX711-SCK      |
 | 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| ADS1115/BMS    |
-| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| LoRa DIO2      |
+| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| LoRa RST       |
 | 13|  IO12|GPIO12| HSPI-MISO| ADC2-5| SPI1-MISO| LoRa CS\       |
 | 14|   GND|      |          |       |       GND| -              |
 | 15|  IO13|GPIO13| HSPI-MOSI| ADC2-4| SPI1-MOSI| LoRa DIO1      |
