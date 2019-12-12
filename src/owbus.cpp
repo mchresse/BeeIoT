@@ -112,6 +112,7 @@ int printDSType(byte DSType){
       BHLOG(LOGOW) Serial.print("No DS18x20 family device.");
       return(type_s);
   } 
+  return(type_s);
 }
 
 // function to print a device address

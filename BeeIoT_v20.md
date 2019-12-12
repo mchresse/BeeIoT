@@ -1,42 +1,54 @@
 # BeeIoT v2.0
-###Eine Bienenstockwaage im Eigenbau (mit IoT Technik)
+### Eine Bienenstockwaage im Eigenbau (mit IoT Technik)
 <img src="./images_v2/BeeLogFront.jpg" width=300>
-#####01.10.2019 by Randolph Esser
+##### 01.10.2019 by Randolph Esser
 
 ---
-## Inhaltsverzeichnis
+## Inhaltsverzeichnis:
+
 - [Einführung](#einführung)
 	* [Gewichtsschwankungen pro Tag](#gewichtsschwankungen-pro-tag)
-	* [Gewichtsschwankung pro Jahr](##gewichtsschwankungen-pro-jahr)
+	* [Gewichtsschwankung pro Jahr](#gewichtsschwankungen-pro-jahr)
 	* [Ereignisse](#ereignisse)
 - [Das Modul-Konzept](#das-modul-konzept)
 - [IoT für Bienen](#iot-für-bienen)
-- [Die Sensorik](#die-sensorik)
+- [Das finale BeeIoT Client Modul](#das-finale-beeiot-client-modul)
+- [Die MCU Arduino/ESP32 Platform](#die-mcu-arduino-ESP32-platform)
+	* [Das ESP32-DevKitC Board](#das-esp32-devkitc-board)
+	 	+ [ESP32 DevKitC Sockel Belegung](#esp32-devkitc-sockel-belegung)
+	 	+ [ESP32 GPIO Nutzung](#esp32-gpio-nutzung)
+- [Die BeeIoT Sensorik](#die-beeiot-sensorik)
 	* [Die Wägezellen Auswahl](#die-wägezellen-auswahl)
 	* [AD Wandler HX711](#ad-wandler-hx711)
 	* [Temperatursensoren](#temperatursensoren)
 	* [LED-Status Anzeige](#led-status-anzeige)
-- [Das Logger Modul](#das-logger-modul)
-- [Stromversorgungsoptionen](#stromversorgungsoptionen)
+	* [SPI Devices](#spi-devices)
+		+ [Micro-SDCard Modul](#micro-sdcard-modul)
+		+ [LoRa WAN Support](#lora-wan-support)
+		+ [NarrowBand-IoT](#narrowband-iot)
+		+ [RTC Uhrzeit-Modul](#rtc-uhrzeit-modul)
+- [Power Management](#power-management)
 	* [Externer USB Port](#externer-usb-port)
-	* [Batterie](#batterie)
-	* [POE per LAN Port](#poe-per-lan-port)
-	* [PV Modul](#pv-modul)
-	* [Batterie Laderegler](#batterie-laderegler)
+	* [Batterie/Akku](#batterie-akku)
+	* [Power Monitoring](#power-monitoring)
+	* [PV Solar-Modul](#pv-solar-modul)
+	* [Alternativer Batterie Laderegler](#alternativer-batterie-laderegler)
 - [Der Aufbau](#der-aufbau)
 	* [Stückliste](#stückliste)
-- [Das Aussengehäuse](#das-aussengehäuse)
-	* [Das Anschluss Panel](#das-anschluss-panel)
-	* [Die Bosche Wägezelle](#die-bosche-wägezelle)
-	* [One Wire Sensoren](#one-wire-sonsoren)
-		+ [Der DS18B20 OW-Temperatur-Sensor](#der-ds18b20-ow-temperatur-sensor)
-	* [Compute Node](#compute-node)
-	* [Anschlüsse](#anschlüsse)
-	* [Das E-Paper Display](#das-e-paper-display)
-- [Die Raspi Logger Software](#die-raspi-logger-software)
-	* [Raspberry Pi Vorbereitungen](#raspberry-pi-vorbereitungen)
-		+ [Raspi OS](#raspi-os)
-		+ [Basiskonfiguration](#basiskonfiguration)
+	* [Das Aussengehäuse](#das-aussengehäuse)
+		+ [Die Bosche Wägezelle](#die-bosche-wägezelle)
+		+ [Das Anschluss Panel](#das-anschluss-panel)
+			+ [One Wire Sensoren](#one-wire-sonsoren)
+			+ [Der DS18B20 OW-Temperatur-Sensor](#der-ds18b20-ow-temperatur-sensor)
+	* [Compute Node Box](#compute-node-box)
+	* [Steckverbinder](#steckverbinder)
+
+- [Die ESP32 BeeIoT Sketch Software](#die-esp32-beeiot-sketch-software)
+	* [ESP32 Vorbereitungen](#esp32-vorbereitungen)
+	* [ESP32 IDE](#esp32-ide)
+		+ [PlatformIO](#platformio)
+		+ [ESP32 Sensor Libraries](esp32-sensor-libraries)
+
 		+ [WLAN Konfiguration](#wlan-konfiguration)
 		+ [Remote Konsole](#remote-konsole)
 		+ [Samba Konfiguration](#samba-konfiguration)
@@ -102,7 +114,7 @@ Weitere optionale Sensor-Module:
 Um die anfallenden Sensordaten auswerten zu können muss ein gewisses *Referenz-Verhalten* an jedem Sensor angenommen werden um Abweichungen/Fehlmessungen zu erkennen (== Anomalie-Erkennung ==).
 So gibt es allgemeine Gewichtsverläufe über das ganze Jahr hinweg, aber auch innerhalb eines Tages, die man recht gut bestimmten Volks-Zuständen zuordnen kann:
 
-###Gewichtsschwankungen pro Tag
+### Gewichtsschwankungen pro Tag
 Hier nun ein idealisierter qualitativer Gewichtsverlauf eines sonnigen Sommertages (=Flugwetter):
 
 <img src="./images_v2/WeightDayChart.jpg">
@@ -111,7 +123,7 @@ Der Tag beginnt mit dem Ausflug der Bienen (ca. 1-2kg). Da eine Biene etwa 0.1 G
 Bis zum Sonnenuntergang ist die „Rückkehr“ der Sammlerinnen abgeschlossen und die Honigtrocknung durch die Stockbienen beginnt (begünstigt durch die kühleren Nachttemperaturen). 
 Das Delta stellt den Tageseintrag dar.
 
-###Gewichtsschwankung pro Jahr
+### Gewichtsschwankung pro Jahr
 Über das Jahr wirken die verschiedenen Maßnahmen an den Völkern auf die Gewichtskurve ein und lassen ggfs. Erfolg (z.B. Honigeintrag) oder Misserfolg (z.B. keine Futterannahme) kontrollieren.
 
 <img src="./images_v2/WeightYearChart.jpg">
@@ -122,7 +134,7 @@ Der tageweise Honigeintrag der Früh- und Sommertracht ist, wie aus dem oben dar
 
 Ebenso auffällig sind die Ruhephasen eines Volkes nach/während der AS Behandlung. Diese werden aber teilweise durch die allgemeine Volksumstellung auf Winterbrut überlagert.
 
-###Ereignisse
+### Ereignisse
 Sonderereignisse wie
 + Schwarmabgang
 + Schneefall
@@ -150,7 +162,7 @@ Neben der einfachen Messdatensammlung dienen diverse Algorithmen auf dem Edge Se
 
 <img src="./images_v2/BeeLogConcept.jpg">
 
-##IoT für Bienen
+## IoT für Bienen
 Der obige Fat-Client Ansatz dient als POC - ProofOfConcept für alle Sensor-Algorithmen und grundsätzliche (Ver-) Messbarkeit von Vorgängen in einer Bienenbeute.
 
 Deutlich eleganter und damit skalierbarer ist der Modulstack im IoT Aufbau:
@@ -178,16 +190,65 @@ Denn dafür reicht die Power eines Raspi Zero o.ä. bei Weitem.
 
 Dies als Ausblick für die noch im Bau befindliche v2.0 Verion. Die Sensorlogik und Dateninterpretation zur Völksführung ist aber weitgehend synonym zur v1.x Version.
 
-##ESP32 Platformen
-###Das ESP32-DevKitC Board
-Als kompakteste MCU Variante mit sehr niedrigem Stromverbrauch und weitverbreiteter Sensor-Unterstützung kommt hier der Arduino kompatible ESP32 in Form des ESP32-DevKitC zum Einsatz.
+
+## Das finale BeeIoT Client Modul
+Nachdem nun die funktionalen Anforderungen klarer umrissen sind, geht es an die Modulplanung:
+
+<img src="./images_v2/BeeIoT_Client_Moduleplan.jpg">
+
+Das vollständige Übersichtsbild der Stockwaagenmodule zeigt die Vielfalt der verwendeten Techniken, aber auch das Potential in Sachen Spannungsversorgung und Sensorik:
+
+Folgende Funktionen wollen wir unterbringen:
++ Spannungsversorgung
+	- Für das MCU Extension board:
+		* Interner Lithium Akku (Laufzeit 6 Monate) mit Ladekontrollmodul (BMS)
+	 	* über einen Spannungsanheber/Senker (BUKBooster) mit 5V zur internen USB Buchse der MCU
+	 	* Akku von Extern ladbar via 5V USB Buchse, über die aber auch FW udate betrieben werden kann
+	- PV Modulanschluss extern -> ebenfalls über den externen 5V USB Anschluss möglich zur Verlängerung der Akkulaufzeit
+	- Optional: POE via RJ45 LAN-Hat mit POE/LAN Splitter
++ Kommunikation
+	- Übertragung aller Sensordaten alle 10 Minuten um auch "Bienen-Events" mitzukriegen
+	- lokal via externen USB auf internen USB/Ser. Adapter Port der MCU
+	- WiFI support mit HTTP Web Service zur Startup Configuration
+	- LoRaWAN Kommunikation mit Gateway (bis zu 7km Radius)
+	- optional: Bluetooth (BLE)
+	- Optional: NB-IOT via SIM7000E GPRS Modul
++ Sensorik
+	- 100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)
+	- OneWire Temperatur Sensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)
+	- OneWire Temperatursensor 12bit extern
+	- OneWire Temperatursensor 12bit extern für Stocktemperatur Messung (über 1m Leitung)
++ Optionale Erweiterung
+	- USB GPS Maus (als Diebstahlschutz)
+	- IR Kameramodul extern (USB oder I2C Port Anschluss)
+	- IR Lichtschranke als Fluglochzähler (beecounter)
+
+Daraus ergeben sich spezielle technische Anforderungen an jedes modul bezüglich Stromverbrauch, benötigte Schnittstellen und lokale/remote Erreichbarkeit, die wir weiter unten noch zu diskutieren haben.
+
+## Die MCU Arduino/ESP32 Platform
+Um bis zu 6 Monat Laufzeit zu erreichen darf  man bei einem  10.000mAh Akku nur im Mittel 2.3mA verbrauchen (10.000/4320). Das schafft man bei so vielen Sensoren/Modulen aber nicht im Dauerlaufzustand, sondern nur indem man Sleep Phasen einschiebt.
+
+*Dazu folgende Rechnung:*
+Unter der Annahme man benötigt für die Ermittlung der Sensordaten inkl. Übertragung z.B 10 Sekunden,
+Wäre das Verhältnis aktiver Betriebszeit zu Sleep Phase: 10/(6*30*24*60*60)=1/1.555.200.
+Würde man in der SleepPhase aber unter 1mA kommen hätte man für die Betriebsphase über die gesamte Laufzeit noch zur Verfügung:
+- Anteil Aktivphase: 10 Sek./10Minuten: 1/60
+- auf 6 Monate entspricht das (6*30*24)h/60 = 72h = 3Tage Aktivphase
+- => 4320-3 Tage Passivphase = 4317 Tage
+- Stromverbrauch Passivphase: 4317 * 1mAh = 4317mAh von 10.000mAh.
+- Möglicher **Stromverbrauch Aktivphase**: (10.000mAh - 4317mAh)/72h = 5683mAh / 72h = **~80mA**
+
+Bezüglich Stromverbrauch kommt unterhalb des RaspberryPi Zero, der i.d.Regel >150mA liegt nur noch die Arduino Klasse in Frage, mit seinen bekannten Vertretern UNO 8266 und ESP32 von Espressif:
+
+### Das ESP32-DevKitC Board
+Als kompakteste MCU Variante mit sehr niedrigem Stromverbrauch, grosser Anzahl GPIO Ports  und weitverbreiteter Sensor-Unterstützung kommt hier der Arduino kompatible ESP32 in Form des ESP32-DevKitC zum Einsatz.
 
 Der ESP32 unterstützt folgende APIs:
 +  3x UART (RS232, RS485 und auch IrDA)
 +  4x SPI (SPI0/1 for RD/WR flash Cache only; HSPI and VSPI free in Master/Slave Mode)
 +  2x I2C (Std: 100 KBit/s und Fast-Mode (400 KBit/s))
 	+ 2x GPIO ports - SW konfigurierte IO pins via *i2c_param_config()*
-+  1x CAN 2.0
++  1x CAN Bus v2.0
 + 18x 12bit AD Converter
 +  2x 8bit DA Converter
 +  1x HW-PWM
@@ -198,16 +259,22 @@ Der ESP32 unterstützt folgende APIs:
 +  1x int. Temperatur Sensor (40-125 Grad F.)
 +  Secure Boot Mode -> erlaubt das *Root of Trust* Konzept durch den "eFuse Speicher".
 
-Allerdings kommt hier nicht die standardmäßig verbaute **Wroom32** Version des ESP32 zum Einsatz, sondern der **Wrover32**. Das ergibt die genaue Modul-Bezeichnung: **ESP32-DevKitC-VIB**.
+Zwar zeichnet sich ein Arduino 8266/UNO durch geringeren Stromverbrauch aus, der ESP32 hat aber mehr GPIO Leitungen, die wir dringend für alle verwendeten Module benötigen.
 
-Die **Wrover** Version hat neben dem 4MB Flash Memory auch noch einen zusätlichen 8-16MB PSRam Bereich, indem wir temporär anfallende residente Sensordaten ablegen/puffern können.
-Für den Flash-MM Anschluss werden GPIO6-11 verwendet und stehen für unser Projekt nicht zur Verfügung.
+Allerdings kommt hier nicht die standardmäßig verbaute **Wroom32** Version des ESP32 zum Einsatz, sondern der **Wrover32**:
 
-Dieses DevKitC-VIB bringt auch eine eingebaute Bluetooth (4.2 + BLE) und WiFI (IEE 802.11 b/g/n) Unterstützung mit, sowie eine onboard Antenne. Zur Reichweitenvergrößerung ist ein Anstennen-Stecker vorhanden, an den eine zusätzliche WiFI Antenne angeschlossen werden kann.
+<img src="./images_v2/ESP32_Wroom-32D.jpg"> ==> <img src="./images_v2/ESP32_Wrover-B_2.jpg">
 
-###ESP32 DevKitC PIN Belegung
-Pinning und functional overlays des DevKit C boards:
-(board = esp32dev)
+Das ergibt die genaue Modul-Bezeichnung: **ESP32-DevKitC-Wrover-B**.
+
+Der **Wrover-B** hat neben dem 4MB Flash Memory auch noch einen zusätlichen 8-16MB PSRam Bereich, indem wir temporär anfallende residente Sensordaten ablegen/puffern können.
+Ansonsten sind sie Pin- und Code-Kompatibel so dass grundsätzlich auch der Wroom verwendet werden kann. Die Nutzung des PSRam erörtern wir später.
+
+Die Variante DevKit-C bringt bereits einige wichtige Betriebsfunktionen mit sich und ist durch ihr Standardsockelformat leichter auf ein 2,4" Lochrasterboard zu löten.
+OnBoard findet sich auch bereits eine Bluetooth (4.2 + BLE) und WiFI (IEE 802.11 b/g/n) Unterstützung mit onboard Antenne. Zur Reichweitenvergrößerung ist bei manchen Ausführungen ein weiterer Antennen-Stecker vorhanden, an den eine zusätzliche externe WiFI Antenne angeschlossen werden kann.
+
+#### ESP32 DevKitC Sockel Belegung
+Zunächst das Standard-Pinning und die Default-Functional Overlays des DevKit C boards, wie sie durch den Microcode bei Power-ON voreingestellt sind:
 
 |         |         |      |    |PIN|*|PIN|     |      |         |       |
 |---------|---------|------|----|---|-|---|-----|------|---------|-------|
@@ -230,94 +297,462 @@ Pinning und functional overlays des DevKit C boards:
 |  U1-TXD |FLASH-D3 |GPIO10| SD3| 17|*| 22|  SD1|GPIO08|FLASH D1 | U2-CTS|
 |  U1-RTS |FLASH-CMD|GPIO11| CMD| 18|*| 21|  SD0|GPIO07|FLASH D0 | U2-RTS|
 |         |         |  Vin | +5V| 19|*| 20|  CLK|GPIO06|FLASH CLK| U1-CTS|
+**Pinning durch IDE board pre-selection = "esp32dev" für ESP32 DevKit-C boards **
 
-Geflasht wird der ESP32 über die onboard USB-A Buchse die auch gleichzeitig zur 5V Stromversorgung des DevKitC verwendet wird (standard). Onboard wird dann die 3.3V für den ESP32 über einen DC/DC Wandler erzeugt.
+Welche default Einstellung pro Board bei der IDE gilt kann man bei Platformio z.B. hier finden:
+C:\Users\'benutzername'\.platformio\packages\framework-arduinoespressif32\variants\'boardtype'\pins_arduino.h
+
+Als nächstes macht man sich auf die Suche nach geeigneten GPIO Control Leitungen, die mit ihren Eigenschaften der angeschlossenen Funktion für den Modulanschluss entsprechen müssen. Manche GPIO Leitungen sind, anders als bei einem reinen ESP32 Modul bereits durch onboard Funktionen des DevKitC Boards belegt. Dies muss aber kein Nachteil sein, weil die Funktionen ja auch benötigt werden:
+
+Geflasht wird der ESP32 über die onboard USB-A Buchse die auch gleichzeitig zur 5V Stromversorgung des DevKitC Boards verwendet wird (standard). Onboard wird dann die 3.3V Leitung für die ESP32 MCU über einen internen DC/DC Wandler AMS1117-3.3 von Microship erzeugt, der max. 1A durchsetzen kann.
+Zur USB/Ser.Kommunikation sind daher die Leitungen GPIO 1+3 (RX+TX)belegt.
+
+Ein besonderes Augenmerk ist bei den Logikanschlüssen auf die richtige Logiklevel Nutzung bei unterschiedlich verwendeten Stromversorgungen der Sensormodule aufzubringen, wie sich später noch zeigen wird...(s. Micro SD-Card Modul)
+
 **Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten aber ausschliesslich mit 3.3V.**
 
-Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der "Onboard USB to serial Converter" im device Manager als:
+Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für unser Projekt daher nicht zur Verfügung. Auch die Leitungen EN(Boot-Button) und GPIO36(SP) + 39(SN) sind bereits belegt.
+GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.
+
+Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der "Onboard USB to serial Converter" CP2102N im Windows Device Manager als:
 <img src="./images_v2/ESP32_COMPort.JPG">
 
-Über dieses COM device ist er auch für IDEs wie die *Arduino-IDF* (https://github.com/espressif/esp-idf) oder *Platform-IO* erreichbar.
+Über dieses COM device ist er auch für IDEs wie die *Arduino-IDF* (https://github.com/espressif/esp-idf) oder *VC-Platform-IO* erreichbar. Eine COM Port Erkennung findet zumindest bei PlatformIO automatisch statt.
+
 Auf einem Linux System nennt sich das USB Converter Device: */dev/ttyUSB0*.
+
 Als Standard Baudrate sollte man es erstmal mit 115200 versuchen.
 Der USB/UART Converter CP2102 schafft aber max. 921600 Baud rate.
 
-Zur weiteren Beschreibung der Arduino-IDF Vorbereitung sei folgender Link empfohlen:
-**[Windows instructions – ESP32 Board in Arduino IDE](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions)**
+#### ESP32 GPIO Nutzung
+Und nun konkret die gewählte GPIO-Belegung der ESP32 DevKitC Sockel-Pins für das BeeIoT Projekt:
+(gilt für WROOM32D alsauch Wrover-B Module)
+
+|Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
+|---|------|------|----------|-------|----------|----------------|
+|  1| +3.3V|      |          |       |    +3.3V | 3.3V           |
+|  2|    EN|      |   SW2    |       |          | ePaper-Key2    |
+|  3|*  SVP|GPIO36|  Sens-VP | ADC1-0|        - | x              |
+|  4|*  SVN|GPIO39|  Sens-VN | ADC1-3|        - | x              |
+|  5|* IO34|GPIO34|          | ADC1-6|          | ePD-K3/LoRa DIO2|
+|  6|* IO35|GPIO35|          | ADC1-7|          | ePaper-Key4    |
+|  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| DS18B20(3x)    |
+|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | LoRa DIO0      |
+|  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | HX711-DT       |
+| 10|  IO26|GPIO26|     DAC2 | ADC2-9|  Wire-Clk| HX711-SCK      |
+| 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| ADS1115/BMS    |
+| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| LoRa RST       |
+| 13|  IO12|GPIO12| HSPI-MISO| ADC2-5| SPI1-MISO| LoRa CS\       |
+| 14|   GND|      |          |       |       GND| GND            |
+| 15|  IO13|GPIO13| HSPI-MOSI| ADC2-4| SPI1-MOSI| LoRa DIO1      |
+| 16|   SD2|GPIO09|FLASH-D2  | U1-RXD|        - | x              |
+| 17|   SD3|GPIO10|FLASH-D3  | U1-TXD|        - | x              |
+| 18|   CMD|GPIO11|FLASH-CMD | U1-RTS|        - | x              |
+| 19|   +5V|      |          |       |  +5V_Ext | n.a            |
+| 20|   CLK|GPIO06|FLASH-CLK | U1-CTS|        - | x              |
+| 21|   SD0|GPIO07|FLASH-D0  | U2-RTS|        - | x              |
+| 22|   SD1|GPIO08|FLASH-D1  | U2-CTS|        - | x              |
+| 23|  IO15|GPIO15| HSPI-SS  | ADC2-3|MonLED-red| Red LED        |
+| 24|  IO02|GPIO02| HSPI-4WP | ADC2-2|  SPI-CS  | SDcard CS\     |
+| 25|  IO00|GPIO00|   SW1    | ADC2-1|          | ePaper-Key1    |
+| 26|  IO04|GPIO04| HSPI-4HD | ADC2-0|      CLK | ePaper BUSY    |
+| 27|  IO16|GPIO16|UART2-RXD |       |      DT  | ePaper RST     |
+| 28|  IO17|GPIO17|UART2-TXD |       |          | ePaper D/C     |
+| 29|  IO05|GPIO05| VSPI-SS  |       | SPI0-CS0 | ePD CS\        |
+| 30|  IO18|GPIO18| VSPI-CLK |       | SPI0-Clk | ePD/SD/LoRa Clk|
+| 31|  IO19|GPIO19| VSPI-MISO| U0-CTS| SPI0-MISO| SD/LoRa MISO   |
+| 32|   GND|      |          |       |      GND | GND            |
+| 33|  IO21|GPIO21| VSPI-4HD |       |  I2C-SDA | ADS1115/BMS    |
+| 34|  RXD0|GPIO03|UART0-RX  | U0-RXD| -> USB   | USB intern     |
+| 35|  TXD0|GPIO01|UART0-TX  | U0-TXD| -> USB   | USB intern     |
+| 36|  IO22|GPIO22| VSPI-4WP | U0-RTS|  I2C-SCL | ADS1115/BMS    |
+| 37|  IO23|GPIO23| VSPI-MOSI|       | SPI0-MOSI|ePD/SD/LoRa MOSI|
+| 38|   GND|      |          |       |       GND| GND            |
+(x unter components => darf nicht verwendet werden.)
+
+Das MCU board erhält die 5V versorgung über den internen USB connector und erzeugt die 3.3V selbst.
+Der 5V_Ext Anschluss wird nicht verwendet. Die 5V Leitung des MCU Extension Boards wird direkt von der Batterieversorgung gespeist.
+
+Damit sind alle möglichen GPIO Leitungen funktionell belegt. Eine Erweiterung wäre nur noch über aufwendige IO port Multiplexer möglich. Die Auswahlkriterien werden weiter unten nochmal pro Sensor diskutiert.
+
+## Die BeeIoT Sensorik
+Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:
++ 1x Wägezelle	-> über einen 24bit A/D Wandler HX711 an die GPIO Ports des ESP32 angeschlossen.
++ 3x Temperatursensoren zur Messung der (DS18B20 OneWire)
+	- Intern: Stocktemperatur (innerhalb der Beute)
+	- Externe Temperatur
+	- Wägezellen Temperatur (ggfs. zur Kompensation einer Temperaturdrift)
+	- => Alle Temp. Sensoren sind über das OneWire Protokoll direkt an einen GPIO Port des ESP32 angeschlossen.
++ 1x ADS1115 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung
++ 1x RTC Modul (I2C)(DS3231) incl. Eprom
++ 1x Micro SD Card Modul (SPI)
++ 1x ePaper 2.7" (SPI) + 4 F-Keys.
++ 1x LoRa MAC Modul (Dragino LoRa Bee 868MHz)
++ **Optional**
+	- 1x xternes IR-Kameramodul -> für Bienensitz im Winter
+	- NB-IoT Modul zur Funk-Fernübertragung via GPRS (SM7000E)
+	- USB GPS Maus (mapped über ser. Port RX/TX)
+
+### Die Wägezellen Auswahl
+Eine Standardwägezelle mit geringer Temperaturdrift und hoher Gewichtsstabilität sowie Messwiederholgenauigkeit weist heutzutage typischerweise vorkalibrierte Dehnmesstreifen in einer Wheatstonebrücke verschaltet auf. Diese ist eine gegenläufige Verschaltung von 4 Dehnmessstreifen (DMS) im Rautenmodell (siehe Schaltbild weiter unten) incl. Temperaturdriftkompensation.
+
+Meine Auswahl fiel (wie bei so manchen anderen Waagen-Projekte im Netz auch) auf den Hersteller Bosche. Die Wägezelle muss folgenden Anforderungen entsprechen:
++ Messbereich 100Kg (Waagendeckel + Beute (2 Brut- und 2 Honig-Zargen) + Deckel und Abdeckgewicht.
++ Stabile Verschraubung mit dem Waagendeckel zur Kraftübertragung möglich (für Zander: 40 x 50cm) Unterboden
++ Dadurch geringe Eckgewichtslast-Fehler
++ Spannungsversorgung ab 5V (aus Raspi Versorgungsspannung)
++ Großer Temperaturmessbereich -30 … +50 Grad
++ bei vorgegebener Genauigkeit: Class C3: 2mV/V
+	- Bei  5V Messzellenspannung ergibt das eine Messabweichung von
+(100kg/5V)*2mV => +/- 40Gramm
++ Wasserfestigkeit IP65 (spritzwassergeschützt)
+
+Daher fiel die Wahl auf die: **Bosche H40A Wägezelle** :
+<img src="./images_v2/WeightCell.jpg">
+mit den Eigenschaften
++ Nennlast 100 kg
++ Kompensierte Eckenlastfehler
++ Für Dauereinsatz geeignet
++ Bezug direkt über den Bosche Shop: http://www.bosche.eu
++ Material: Aluminium
++ Genauigkeitsklasse bis C4 (C3 Standard, C4 auf Anfrage), Y=15.000, Nennwert-Toleranz: 2,0 mV/V
++ Eichfähig nach OIML R60 bis 4000D, Prüfscheinnummer: DK0199-R60-12.19
++ Aufbau: Das Messelement ist vergossen, Schutzklasse: IP65
++ Max. Plattformgröße: 500 x 500 mm
++ Stromversorgung: 5 – 12V
++ Temperarturbereich: - 30 ... + 70 °C
++ Anschluskabel: 1,8m
++ Preis: 58€
+
+Anfangs habe ich mit dieser wesentlich günstigeren Wägezelle gestartet: --YZC161E-- (ca. 4,50€/Zelle)
+Durch den Aufbau bedingt verkraftet diese Zelle aber nur 50Kg pro Zelle und ist baulich als Auflagesensor gedacht. Daher werden 4 Stück an jeder Ecke benötigt, die als Wheatstone-Brücke verschaltet werden müssen.
+
+Wie aus dem unteren Bild (linke Hälfte) aber ersichtlich weisen die Auflagepunkte eine Reibung auf (je mehr Gewicht desto höher), die bei einer horizontalen Temperatur-Ausgleichsbewegung der Stabilisierungsträger Verspannungen hervorruft, und somit die Messzelle und damit die DMS vorspannt und zu starken Messfehlern führt.
+Besonders unangenehm ist das „Springen“ der Auflage über den Messzellenauflagepunkt ab Überschreitung einer max. Dehnungs-Spannung, was wiederum zu Messwertsprüngen führt. Diese lassen sich auch über eine Messzellen-Temperaturmessung oder algorithmisch nicht mehr verlässlich kompensieren.
+Diese Wägezelle eignet sich vorrangig für Körperwaagen, wo i.d.R. nur spontane Einzel-Messungen mit Rücksprung auf das Null-Gewichtslevel erfolgen. Für konstante Dauermessungen auf höherem Gewichtsniveau eignen sie sich nach meinen Erfahrungen nicht.
+
+<img src="./images_v2/WeightCellDesign.jpg">
+
+Daher habe ich diese zwar günstige aber aufwändig installierbare und nicht kalibrierbare Variante wieder verworfen.
+
+Die Anbindung der **Bosche Wägezelle H40A** an den ESP32 erfolgt über das 24bit A/D-Wandler Modul ‘HX711‘. Dieses wurde speziell für Wägezellen mit Wheatstone-Brücke konzipiert und weisst eine einstellbare Verstärkung und integrierte Referenz-Spannungsversorgung auf.
+Beim Kauf ist darauf zu achten, dass die Module an den Anschlüssen E- bzw. BLK mit GND verbunden sind, was sich sonst in einer geringeren Temperaturstabilität und Meßstreuung auswirkt. Im Zweifel muss die Draht-Brücke selbst durch einen externen Draht nachgearbeitet werden.
+Module mit grüner Schutzfarbe sind aber i.d.R. richtig beschaltet.
+Desweitern werden die Wägezellen durch ihre Anzahl an Dehnmessstreifen (DMS) mit einer Wheatstonebrücke versehen. Ein DMS wandelt eine Gewichtsbelastung an einer Körperoberfläche in Widerstandsänderungen der Größenordnung Faktor 0,0001 – 0,001 eines Referenzwertes (hier ca. 400 Ohm) um. Diese sehr geringe Änderung ist durch eine Messbrücke nach Wheatstone zu vermessen, welche durch ihre gegenläufigen Widerstandspaare temperaturstabilisierend und messverstärkend wirkt.
+
+In der Bosche H40A sind die DMS derart verschaltet, dass das Ausgangssignal direkt auf den A/D Wandler HX711 geführt werden kann, was den Aufbau stark vereinfacht.
+
+### AD Wandler HX711
+Der AD Wandler HX711 ist für die Messung von Wheastonebrücken optimiert und bietet dazu 4 Anschlüsse E+/- + A+/-. An den Pins B+/B- liegt die Messspannung für die Waagzellenbrücke an.
+In unserem Fall ist es die 3.3V Linie von der ESP32 MCU kommend. Die 5V Versorgung, welche aufgrund des weiteren Spannungsfensters einen geringeren Messfehler liefern würde, kann leider nicht genommen werden, da die zugehörigen Logikleitungen nur 3.3V aufweisen dürfen.
+
+Hier könnte man ggfs. mit einem weiteren 5V <-> 3.3V Logikconverter optimieren.
+
+Auf der rechten Seite befinden sich 4 Anschlüsse zur digitalen Anbindung an die GPIO Ports des ESP32:
+<img src="./images_v2/HX711.jpg">
 
 
-###ESP32 Sensoren und APIs
-Am ESP32 werden die benötigten Module angebunden:
+Die Eigenschaften des HX711:
++ 2 wählbare Eingänge zur Differenzmessung
++ Eine On-chip active rauscharme Steuereinheit mit wählbarer Verstärkung (32, 64 und 128)
++ On-chip Stromversorgungskontrolle für die Waagzelle
++ On-chip Rest nach Einschaltung
++ Einfache digitale Anbindung
++ Wählbare Samplegeschwindigkeit (10SPS oder 80SPS)
++ Stromsparregler: normaler Betrieb < 1.5mA, Off Mode < 1uA
++ Spannungsversorgungsbereich: 2.6 - 5.5V mit enstellbarer Verstärkung
++ Temperaturbereich: -40 - +85?
 
-**HX711 via Wire-API**
-=> Anschluss der Bosche H40A Wägezelle
+Für Kanal A kann eine Verstärkung von 128 oder 64 gewählt werden, Kanal B bietet eine fixe Verstärkung von Faktor 32. Daher habe ich für diese Version nur den Port A mit GAIN 128 verwendet und Port B stillgelegt.
+Zum Anschluss der HX711 Logik-Ports an den ESP32 werden nur 2 der generischen duplex-fähigen GPIO Ports benötigt 
+(Data + SCK):
+```
+#define HX711_DT    25    // serial dataline
+#define HX711_SCK   26    // Serial clock line
+```
+Zur Stabilisierung und Entstörung der Stromversorgungsleitungen (3.3V & 5V) werden je 1x 100nF Siebkondensatoren sowie je ein 4,7uF Puffer-Elko verwendet.
+Zur Abwägung dieses Stabilisierungsaufwandes dient folgende Genauigkeitsbetrachtung:
 
-Verwendetes V-SPI via follwoing GPIO pins:
-+ GPIO-25	DT
-+ GPIO-26	SCK
++ Gegeben: Speisespannung der Wheatstonebrücke von 3.3 Volt und einer Nennwert-Toleranz von 2mV/V (Class C3)
++ Bei 5V Messzellenspannung ergibt das eine **Messabweichung** von (100kg/3.3V) x 2mV/V => **+/- 60 Gramm**
++ Das ergibt eine **Empfindlichkeit** von 3.3V x 2mV/100kg = **66µV/kg = 66nV/Gr**
++ Als default verstärkung (GAIN) wird 128 angenommen.
 
-Benötigter Header Code:
+Der verwendete A/D Wandler hat aber eine maximale Spannungsauflösung/bit von 128 x 3.3V/2hoch24 =**~1,5 nV** bei einer Vertärkung von 128 an Port A. Dies ergibt den Wert von 66nV/Gr / 1,5nV = **44**/Gramm.
+Als 1Kg-Scale-Divider müsste man im Programm also später den Wert **44000/kg** ansetzen. Der Scale Offset Wert muss durch die Vermessung des äußeren Aufbaus (Deckel) erst ermittelt werden.
 
-	#include <HX711_ADC.h>
+Der HX711 ist mit 24bit Genauigkeit auch an nur 3.3V also mehr als hinreichend ausgelegt. Diese Genauigkeit Bedarf aber einer gut stabilisierten Betriebsspannung.
+Die Streuung um die 3.3V Stromversorgung bestimmt also direkt die Qualität/Streuung der Messwerte.
+Der daraus resultierende Messfehler durch die Streuung kann aber über Mittlung von mehreren (~10-20) Messwerten deutlich verringert werden und damit den Vertrauensbereich deutlich erhöhen.
 
-	//HX711 constructor (dout pin, sck pin)
-	HX711_ADC LoadCell(25, 26);
+Im Arduino Sketch ist der HX711 Anschluss wie folgt definiert:
+```
+// Library fo HX711 Access
+#include <HX711.h>
 
-**ADS1115 via I2C und 3.3V/5V DC Levelwandler**
-=> Logging der Stromzufuhr Spannungslevel (Batterie, Quelle)
+// HX711 ADC GPIO Port to Espressif 32 board
+#define HX711_DT    25    // serial dataline
+#define HX711_SCK   26    // Serial clock line
+#define scale_DIVIDER 44000   // Kilo unit value (2mV/V, GAIN=128 Vdd=3.3V)
+#define scale_OFFSET 243000   // 243000 = 44000 * 5.523kg (of the cover weight)
+```
 
-Die GPIO Ports können frei gewählt werden und mit der Funktion i2c_param_config()
-konfiguriert werden.
-Als Beispiel:
+### Temperatursensoren
+Für den Anschluss von mehreren Messeinheiten über einen (3-pol.) Eingangsport bietet sich das serielle OneWire Protokoll an. Dafür steht eine große Palette an günstigen (Temperatur-)Sensoren zur Auswahl.
 
-	i2c_config_t conf;
-	conf.mode = I2C_MODE_MASTER;
-	conf.sda_io_num = 21;	// GPIO21 = SDA
-	conf.scl_io_num = 22;	// GPIO22 = SCL
-	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-	conf.master.clk_speed = 100000;
-	i2c_param_config(I2C_NUM_0, &conf);
+Für die benötigte Genauigkeit der Temperaturmessung (9-12bit) wird der Sensor DS18B20 von Dallas verwendet, den es in der Bauform als 1,8m langes Versorgungskabel (3-pol.) und IP67 Abdichtung mit einer robusten Aluminium-Messspitze als Messsonde gibt.
 
-Der Treiber wird dann mit dem Funktionsaufruf
-	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-aktiviert.
+Wie aus dem Bild ersichtlich, werden einfach alle OneWire Sensoren mit ihren 3 pol. Leitung parallel angeschlossen (es sind bis zu 10 Sensoren möglich). Zur Pullup-Versorgung der Datenleitung ist ein Widerstand von 4.7k Ohm gegen 3.3V einmalig für alle angeschlossenen Sensoren nötig, da alle Sensoren alsauch der ESP32 GPIO port mit OpenCollector Treibern arbeiten. der Pullup schafft damit einen definierten Logikpegel.
 
-**SDCard Modul**
-=> zur Ablage der Sensordaten vor dem Versand.
+<img src="./images_v2/BeeIoT_Schematics.jpg">
 
-Verwendetes V-SPI via following GPIO pins (3.3V level): 
-+ GPIO-18	V-SCLK	shared with EPD
-+ GPIO-19	V-MISO	shared with EPD
-+ GPIO-23	V-MOSI	shared with EPD
-+ GPIO-2 	SD_CS\
-+ 5V		VCC -> wird intern auf 3.3V heruntergeregelt
-+ GND 		GND
+Im Arduino Sketch finden sich dazu folgende Einstellungen:
+```
+#include "OneWire.h"
+	#include "DallasTemperature.h"
+	// Data wire is connected to ESP32 GPIO 32
+	#define ONE_WIRE_BUS 32
+```
 
-Benötigte Einstellung im Code:
-	#ifdef USE_SPI_MODE
-	// Pin mapping when using SPI mode.
-	// With this mapping, SD card can be used both in SPI and 1-line SD mode.
-	// Note that a pull-up on CS line is required in SD mode.
-	#define PIN_NUM_MISO 19
-	#define PIN_NUM_MOSI 23
-	#define PIN_NUM_CLK  18
-	#define PIN_NUM_CS   2
-	#endif 	// USE_SPI_MODE
 
-Ein Wechsel zwischen SPI und SD Mode benötigt einen Powercycle der SD-Karte !
+### LED-Status Anzeige
+Zur Anzeige des Betriebszustandes dient eine rote LED am rückseitigen externen Anschlusspanel.
 
-**LORA WAN Sender**
-=> Versand der Sensordatensätze alternativ zu WiFi
+Diese wird über einen GPIO Port getrennt angesteuert und zeigt durch Blinkcodes verschiedene Programm- Zustände (Setup / Loop / Wait)an.
 
-**RTC Modul**
-=> Genaue Uhrzeit ohne WiFi Access vial local RTC Module:
-<img src="./images_v2/RTC_DS3231.jpg">
+```
+#define LED_RED     15    // GPIO number of red LED
+// reused by BEE_RST: Green LED not used anymore
+//#define LED_GREEN   14    // GPIO number of green LED
+```
+Die aufgeführte grüne LED hatte ursprünglich die Funktion als weitere Statusanzeige musste aber mangels freier GPIO ports und Stromsparzwecken eingespart werden.
 
-Enthält auch ein EPROM zur residenten Ablage von Betriebsdaten im Sleep Mode.
+### SPI Devices
+Grundsätzlich bietet der ESP32 2 unabhängige SPI ports (VSPI & HSPI) für den Anwender extern an, die per default unter folgenden GPIO Ports (definiert über Arduino.h) erreichbar sind:
+```
+// ESP32 default SPI ports:
+#define VSPI_MISO   MISO  // PIN_NUM_MISO    = 19
+#define VSPI_MOSI   MOSI  // PIN_NUM_MOSI    = 23
+#define VSPI_SCK    SCK   // PIN_NUM_CLK     = 18
+#define VSPI_CS     SS    // PIN_NUM_CS      = 5
 
-**NarrowBand-IoT Sender mit SIM700E und GPS Maus**
-Beispiel: Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
+#define HSPI_MISO   12    // PIN_NUM_MISO
+#define HSPI_MOSI   13    // PIN_NUM_MOSI
+#define HSPI_SCK    14    // PIN_NUM_CLK
+#define HSPI_CS     15    // PIN_NUM_CS
+```
+Die Kurzbezeichnungen MISO, MOSI, SCK und SS stammen von der Arduino IDE via Arduino.h und definieren damit den default SPI port, wenn man keine weiteren GPIO Angaben in der Initialisierungsfunktion eines jeden SPI devices macht. (Die tatsächlichen GPIO Werte finden sich im Kommentar)
+
+Zur Einsparung von GPIO Ports habe ich alle 3 verwendeten SPI devices (ePaper, SDCardModul und LoRa Bee) über VSPI angeschlossen.
+Während die Leitungen MOSI, MISO und SCk zwischen allen Devices geshared werden (Parallel-Anschluss),
+benötigt jedes device mindestens seine eigene CS\ Leitung zum Start der individuellen Protokollfensters.
+Um Störung in der Startupphase des setup zu vermeiden werden zu Anfangs in der Setup routine alle CS\ Leitungen der 3 Devices auf inaktiv (High) vordefiniert. Das beugt Störungen bei der weiteren sequentiellen Inbetriebnahme der damit inaktiven SPI Modul Schnittstellen vor.
+
+#### Micro-SDCard Modul
+Die Verwendung einer SD Karte ermöglicht einerseits die dauerhafte Ablage großer Mengen an Sensordaten vor dem Versand oder auch als Backup space, wenn keine Konnektivität besteht. 
+Anderseits kann im Notfall der komplette Datensatz auch manuell am Laptop ausgelesen werden.
+
+<img src="./images_v2/MicroSDCard_Front.jpg"> <img src="./images_v2/MicroSDCard_Back.jpg">
+
+Dieses weitläufig verfügbare Modul enthält einen 3.3V <-> 5V level changer onboard und ermöglicht dadurch eine Vdd Spannung von 3.3V - 5V mit Logikleitungen auf 3.3V.
+Beim Anschluss weiterer SPI Devices stellte sich aber heraus, dass der 3.3V Logiklevel nicht immer sauber eingehalten wird (speziell nach einem Reset). Vdd = 3.3V löste das Problem wieder. 
+Dadurch wird allerdings der 5V -> 3.3V Spannungswandler auf dem DevKitC Modul stärker belastet. (Die möglichen 1 A werden wir aber natürlich nicht erreichen.)
+
+Die GPIO Port Definitionen:
+```
+#include <SPI.h>	// default for all SPI devices
+// Libraries for SD card at ESP32:
+#include "SD.h"
+// ...has support for FAT32 support with long filenames
+#include "FS.h"
+
+#define SD_MISO     MISO  // SPI MISO -> VSPI = 19 shared with ePD & LoRa Bee
+#define SD_MOSI     MOSI  // SPI MOSI -> VSPI = 23 shared with ePD & LoRa Bee
+#define SD_SCK      SCK   // SPI SCLK -> VSPI = 18 shared with ePD & LoRa Bee
+#define SD_CS       2     // SD card CS\ line - arbitrary selection !
+#define SPISPEED 2000000  //20MHz clock speed
+```
+Über Nutzung von FS.h ist auch der Betrieb mit long filenames bei größeren Karten möglich.
+Dieses Modul unterstützt 2GB - 16GB Micro SD Cards, vorformatiert(!) mit FAT32 Format.
+
+Dieses Modul wäre aber auch ein Kandidat zur EInsparung wenn wir wieter den Strombedarf reduzieren wollen.
+
+#### E-Paper Display
+Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.
+Dadurch sieht man wesentliche Werte und aktuelle massnahmen gleich vorort und nicht nur über eine Webseite remote.
+
+Als Kriterien sollen gelten:
++ Stromsparend auch in der Wait-Loop Phase zwischen den Messungen
++ Gute Ablesbarkeit durch hohen Kontrast auch bei direkter Sonneneinstrahlung
++ Einfacher Anschluss an bestehende ESP32 Interface-Pegel: 3.3V
++ Einfache Ansteuerung und Kontrolle der Darstellung.
+
+Zumindest die ersten 3 Punkte konnte ich durch das ePaper von WaveShare erfüllen:
++ Waveshare 2.7 Inch E-Paper Display HAT Module Kit 264x176 Resolution
++ 3.3v E-ink Electronic Paper Screen with Embedded Controller
++ for ESP32 SPI Interface
+
+Ein Stromverbrauch entsteht nur in der Initialisierungs- und Ladephase der Darstellungsdaten. 
+Größter Vorteil ist aber das passive Darstellungsmedium: ePaper, welches auch bei direkter Sonne wie ein gedrucktes Papier erscheint. Das erhöht die Lesbarkeit im Outdoor-Einsatz enorm.
+Ein LCD Display müsste hier nachgesteuert werden und muss dazu dauerhaft mit Strom versorgt werden.
+Hat allerdings den Vorteil der möglichen Beleuchtung bei Dämmerung/Dunkelheit. 
+Allerdings mal ehrlich: wer imkert dann noch ???
+
+Daher hat ein EPaper i.d.R. auch keine Hintergrundbeleuchtung. Dieses Modul weißt neben dem eigentlichen Display dafür noch 4 universelle Schalter zur späteren funktionellen Erweiterung von z.B. verschiedenen Darstellungsebenen auf. Dazu später mehr...
+
+<img src="./images_v2/WaveShareFront.jpg">
+
+Ursprünglich stellt dieses Modul einen RaspberryPi Hat dar und hat daher auch eine 40-pol. Buchsenleiste kompatibel zum RPi. Für unsere Zwecke verwenden wir den parallelen Kabelanschluss.
+mit einem separaten SPI Interface über einen 8poligen Stecker incl Kabel:
+
+<img src="./images_v2/WaveShareBack.jpg">
+
+Die Anschlussbelegung des SPI Kabelanschlusses:
+
+|Pin |Farbe  |Function|
+|----|-------|--------|
+|VCC |rot	 |3.3V/5V |
+|GND |schwarz|Ground  |
+|DIN |blau	 |SPI MOSI pin|
+|CLK |gelb	 |SPI SCK pin|
+|CS  |orange |SPI Chip Selection, low active|
+|DC  |grün   |Data(=1) / Command(=0) selector|
+|RST |weiss  |Reset, low active|
+|BUSY|lila   |Busy status output, low active|
+
+Den passenden und umfangreichen DemoCode von WaveShare für RaspberryPi in C++ findet man **[hier](https://www.waveshare.com/wiki/File:2.7inch-e-paper-hat-code.7z)**.
+
+Die GPIO Belegung ist atürlich in den leitungen MISO, MOSI und SCK identisch zu SDCard und LoRa Bee.
+neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY "Draht".
+Über BUSY kann man den Upload prozess neuer Display Daten pollen. Deklariert man diese GPIO Leitung im Interrupt mode kann eine asynchrone Bedienung über eine ISR (Int. Service routine) implementiert werden. da wir aber eh '10Min.-10Sekunden' lang nichts besseres zu tun haben, reicht das sequentielle Polling.
+
+```
+// WavePaper ePaper port
+// mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
+// Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5), 
+// 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
+#define EPD_MISO VSPI_MISO 	// SPI MISO -> VSPI
+#define EPD_MOSI VSPI_MOSI 	// SPI MOSI -> VSPI
+#define EPD_SCK  VSPI_SCK  	// SPI SCLK -> VSPI
+#define EPD_CS       5     	// SPI SS   -> VSPI
+#define EPD_DC      17     	// arbitrary selection of DC   > def: 17
+#define EPD_RST     16     	// arbitrary selection of RST  > def: 16
+#define EPD_BUSY     4     	// arbitrary selection of BUSY > def:  4  -> if 35 -> RD only GPIO !
+#define EPD_KEY1     0     	// via 40-pin RPi slot at ePaper Pin29 (P5)
+#define EPD_KEY2    EN     	// via 40-pin RPi slot at ePaper Pin31 (P6)
+#define EPD_KEY3    34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
+#define EPD_KEY4    35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
+```
+
+Wie oben erwähnt fällt die Bedienung aber etwas aufwändiger aus, denn neben dem SPI API sind dann diverse Font Libs, und ggfs. BitMaps zu laden.
+Aktuell verwende ich die Library: https://github.com/ZinggJM/GxEPD
+mit dem für mein ePaper device spezifische Extension: GxGDEW027C44.h 
+```
+// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
+#include <GxEPD.h>
+#include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
+#include <GxIO/GxIO_SPI/GxIO_SPI.cpp>
+#include <GxIO/GxIO.cpp>
+
+// FreeFonts from Adafruit_GFX
+#include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
+#include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeMonoBold24pt7b.h>
+#include <Fonts/FreeSansBold24pt7b.h>
+#include "BitmapWaveShare.h"
+
+#define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
+```
+
+Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot. Wie sich bei der Anwendung aber herausstellte, verlängert das die eh schon mit >10 Sek. recht lange Display-Update Zeiten nochmal zusätzlich. **Hier ist eine Optimierung zur Stromeinsparung noch zu implementieren**.
+<img src="./images_v2/WaveShareFront.jpg">
+
+Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns "weiter arbeiten/schlafen", liegt der Stromverbrauch aber nahezu bei 0mA.
+
+#### LoRa WAN Support
+Für die remote Connection ohne "stromfressenden" WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen topologie Reichweiten bis zu 8km ermöglichen.
+
+Das LoRa Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.
+
+Das verbaute Funkmodul bietet erstmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das **[LoRaWAN Protokoll](https://lora-alliance.org/about-lorawan)** leisten die dazugehörigen Bibliotheken.
+Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombinirt mit SSH enthalten.
+Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbidnung hat um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.
+
+Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!).
+Ein interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:
+https://wiki.opennet-initiative.de/wiki/LoRaSensor
+
+
+Hauptanbieter des LoRa-MAC Layer Moduls ist die Firma Semtech, die auch die **[LoRaWAN Spezifikation v1.0.3](https://lora-alliance.org/resource-hub/lorawanr-specification-v103)** als Member der "LoRA Alliance" mitherausgegeben hat. 
+Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats & Shields entworfen. 
+Der kleinste Vertreter davon (ohne GPS Modul) ist das "Dragino Lora-Bee Modul" **[(Wiki)](http://wiki.dragino.com/index.php?title=Lora_BEE)**, welches via SPI angeschlossen wird.
+Darauf befindet sich ein RFII95-98W mit SPI Interface.
+Zusätzlich gibt es noch eine Reset leitung (RST) und 6 universelle IO Leitungen für weitere Funktionen DIO0..DIO5. DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei Events wie z.B. eingetroffene Pakete usw. Für den STd. LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber nicht benötigt.
+Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen gemapped, und DIO2 auf eine Reda Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.
+
+<img src="./images_v2/Dragino_Lora_Bee.jpg"> <img src="./images_v2/Dragino_Lora_Bee_Cabling.jpg">
+
+Auf dem 2. Bild ist das grün gefärbte Semtech LoRa Modul gut zu erkennen.
+
+Die Spezifikation weisst folgende Eigenschaften aus:
+- 168 dB maximum link budget.
+- +20 dBm - 100 mW constant RF output vs.
+- +14 dBm high efficiency PA.
+- Programmable bit rate up to 300 kbps.
+- High sensitivity: down to -148 dBm.
+- Bullet-proof front end: IIP3 = -12.5 dBm.
+- Excellent blocking immunity.
+- Low RX current of 10.3 mA, 200 nA register retention.
+- Fully integrated synthesizer with a resolution of 61 Hz.
+- FSK, GFSK, MSK, GMSK, LoRaTM and OOK modulation.
+- Built-in bit synchronizer for clock recovery.
+- Preamble detection.
+- 127 dB Dynamic Range RSSI.
+- Automatic RF Sense and CAD with ultra-fast AFC.
+- Packet engine up to 256 bytes with CRC.
+- Built-in temperature sensor and low battery indicator.
+
+Das Dragino Manual dazu findet sich **[hier](http://wiki.dragino.com/index.php?title=Lora_BEE)**.
+
+<img src="./images_v2/Duck_Antenna.jpg">
+Da aber nahezu alle Leitungen des SemTech Moduls 1.1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.
+
+Die aktuell verwendeten GPIO Port Definitionen:
+```
+#include <SPI.h>	// default for all SPI devices
+// Libraries for LoRa
+#include "LoRa.h"
+
+// LoRa-Bee Board at VSPI port
+#define BEE_MISO VSPI_MISO	// SPI MISO -> VSPI
+#define BEE_MOSI VSPI_MOSI	// SPI MOSI -> VSPI
+#define BEE_SCK  VSPI_SCK	// SPI SCLK -> VSPI
+#define BEE_CS   	12		// NSS == CS
+#define BEE_RST		14  	// Reset\
+#define BEE_DIO0	33		// Main Lora_Interrupt line
+#define BEE_DIO1	13		// for Bee-Events
+#define BEE_DIO2	34		// unused by BEE_Lora;  connected to EPD K3 -> but is a RD only GPIO !
+```
+Die Rolle des Client Node MAC layers ist in dieser **[Backend Specification](https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10)** festgehalten
+Aktuell gehen meine Tests in Richtung des LMIC LoRaWAN SW Stack Implementierung von IBM.
+GitHub -> "lmic_pi".
+
+Für MAC Layer Testzwecke habe ich im Sketch aktuell nur die Lora-Library von Sandeep (GitHub) in Verwendung. Bevor keine stabile MAC Layer Kommunikation betseht braucht man über eine WAN Kommunikation 'noch' nicht zu kümmern.
+
+Da ich ein eigens LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses nodes: Activation-by-Personalization (ABP) und als eindeutige LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-"DevAddr" zur Node-Protokoll ID gebildet werden.
+Eine Anbindung an das allseits beliebte offene TT-Netzwerk schränkt die Nutzung durch limitierte Anzahl Daten und Paket/Zeitraum zu sehr ein.
+Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.)
+
+### NarrowBand-IoT
+NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten ANteil und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer TG soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.
+
+Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.
+
+Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.
+
+Das von mir bestellte Modul: 
+Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
 + mit Breakout UART control pins (Baudrate: 300bps~3686400bps)
 + Control via AT commands (3GPP TS 27.007, 27.005, and SIMCOM enhanced AT Commands)
 + Supports SIM application toolkit: SAT Class 3, GSM 11.14 Release 98, USAT
@@ -330,38 +765,555 @@ Verwendet folgende ESP32 Anschluss pins:
 + TXD0: Optional
 + RXD0: Optional
 
+=> bis jetzt nicht implementiert !
+
+### RTC Uhrzeit-Modul
+Für eine gutes Monitoring und auch für die LoRaWAn Kommunikation ist stets die genaue Uhrzeit zur Synchronisation der Datenpakete nötig.
+
+Für eine genaue Uhrzeit kommen 2 Quellen in Frage:
+- Befragung eines NTP Servers via WiFI Anbindung, oder
+- via localem RTC Module
+
+Beide sind im Sketch implementiert und redundant zueinander verschaltet:
+Betshet keine WiFi Verbindung wird das RTC Modul direkt befragt. betshet eine WiFi Verbindung wird Kontakt zu einem NTP Server aufgenommen und das klokale RTC Modul neu mit der NTP Zeit synchronisiert.
+darüber halten wir stets eine hinreichend genaue Uhrzeit vor.
+
+<img src="./images_v2/RTC_DS3231.jpg">
+
+Dieses RTC Modul mit DS3231 chip enthält neben einem sehr genauen uhrzeitmodul auch ein internes EEPROM zur residenten Ablage von Betriebsdaten im Sleep Mode. Dies ist eine zusätzliche Alternative zur ESP NVRAM area oder gar der SDCard. Weitere test müssen noch heruasarbeiten welcher Weg den geringeren Stromverbrauch bei hinreichender Speichergröße für die Sleep Mode Housekeeping Daten darstellt. Auch ist die Häufigkeit der Widerbeschreibbarkeit ein Thema, da der Sleep Mode alle 10-Minuten gestartet wird.
+
+Dieses EEPROM 2432 ist mit einer eigenen Stromversorgung über ein 3V onboard Lithium-Akku (LIR-2032/3.6V)gepuffert.
+Alternativ kann der Li-Akku auch durch eine normale 3V Li Zelle (CR2032 oder CR2016) ersetzt werden, dann aber mit endlicher Laufzeit. Eine "LostPower()" Funktion erlaubt einen Batterie-Stromausfall zu erkennnen und nachträglich abzufragen um dann ggfs. die Uhrzeit neu zu stellen.
+
+In rot umrandet eingezeichnet sind die, von mir vorgenommenen und **[allseits empfohlenen Änderungen](https://thecavepearlproject.org/2014/05/21/using-a-cheap-3-ds3231-rtc-at24c32-eeprom-from-ebay/)** um den Stromverbrauch weiter zu reduzieren:
+- Als Massnahme zur Stromreduktion:
+	* Abschalten der Power LED durch Abheben des Widerstandes links neben der POWER LED (oben im Bild).
+- Alternativer Batteriebetrieb (onboard)
+	* Ein Jumper unterbricht den Ladekreislauf für den onboard Li-Akku, wenn stattdessen eine standard Li-Batterie verwendet wird. -> Ablöten des SMD-Wiederstandes 220Ohm und Ersatz durch Jumper und STd. 220Ohm Widerstand in Reihe (Im Bild u. rechts; Widerstand ist auf der Rückseite verbaut).
+- Die I2C Adressierung kann im Bild unten links geändert werden: A0..A2.
+- Für meine Zwecke habe ich A2 kurzgeschlossen, was folgende Adressierung des RTC Moduls ergibt:
+	* RTC_Clock: 0x68
+	* RTC_Eprom: 0x53
+
+Das ergibt folgendes Mapping im I2C Adressraum des ESP32 Treibers:
+<img src="./images_v2/I2C_AddressScan.JPG">
+Hinter der ADresse 0x48 verbirgt sich das ADS1115 Modul.
+
+Das I2C API wird am ESP32 über 2 frei definierte GPIO Leitungen realisiert:
+```
+// RTC DS3231 Libraries
+#include "RTClib.h"	
+// based on Wire.h library
+// ->referenced to pins_arduino.h:
+// static const uint8_t SDA = 21;
+// static const uint8_t SCL = 22;
+
+RTC_DS3231 rtc;     // Create RTC Instance
+```
+Die RTClib unterstützt die RTC Typen:	RTC_DS1307, RTC_DS3231, RTC_PCF8523
+
+Die rtc.begin() Funktion stützt sich auf die default I2C GPIO Einstellungen der Wire Lib ab, wie über die IDE im Rahmen der Standard Wire-Library (Wire.h) definiert, verwendet.
+
+Über das RTC Modul kann man sehr elegant auch zu Testzwecken weitere I2C Module anschliessen (unten im Bild), da die I2C Leitungen durchgeschleift wurden. Die benötigten Pullup Widerstände für SDA udn SCL Leitung befinden sich zur Entlastung der ESP32 Ausgangstreiber ebenfalls onboard, sichtbar durch 2 SMD chips mit dem Aufdruck 472.
+
+Als weiteres Feature führt dieses RTC Modul einen internen Chip-Temperatursensor, den man elegant auslesen kann. In diesem Fall verwende ich ihn zum Monitoring der Extension BOX internen Temperatur, um einem ev. Hitzetod der Elektronik an heissen Sommertagen vorzubeugen.
+
+Zuletzt gibt es noch einen SQW Pin, an dem man sehr genaue Frequenzen programmieren kann um ext. Prozesse zu steuern. Aktuell wird er in diesem Projekt aber nicht verwendet -> DS3231_OFF ... aber gut zu Wissen.
+```
+/** DS3231 SQW pin mode settings */
+enum Ds3231SqwPinMode {
+  DS3231_OFF            = 0x01, // Off
+  DS3231_SquareWave1Hz  = 0x00, // 1Hz  square wave
+  DS3231_SquareWave1kHz = 0x08, // 1kHz square wave
+  DS3231_SquareWave4kHz = 0x10, // 4kHz square wave
+  DS3231_SquareWave8kHz = 0x18  // 8kHz square wave
+}
+```
 
 
-**Temperatur-Sensoren**
-3x DS18B20 Sensoren mit Kabel angeschlossen über den OneWire Control port:
+## Power Management
+Als größter und wichtigster Stromverbraucher gilt das ESP32-DevKitC board im Wifi + BT Modus mit bis zu 100mA an 3.3V. Diese Stromversorgung erhält der ESP32 selbst aber über das DevKitC Board und einem onboard Spannungswandler (AMS1117-3.3) von einer 5V USB Buchse.
+Über den externen USB Port kann ebenfalls eine Ladespannung von 5V angelegt werden. Diese kann von einem PC, USB Netzteil oder einem 5V Photovoltaik Ladepanel stammen.
 
-	#include "OneWire.h"
-	#include "DallasTemperature.h"
+So existieren auf dem Extension Board 2 Hauptversorgungsleitungen:
+- +5V: von der Batterieversorgung (die widerum auch die Ladespannung beziehen kann)
+	+ Verbraucher sind: 
+		* 3x OneWire Bus -> Temperatur Sensoren
+		* ADS1115 -> Power monitoring
+		* RTC Modul -> Uhrzeitversorgung
+		* 4-port LevelChanger -> für ADS1115
+- 3.3V: erzeugt auf dem ESP32 DevKitC Board. (Der Wandler unterstützt max. 1A Last)
+	+ Verbraucher sind:
+		* ESP32 Wroom/Wrover-B + DevKitC Board Elemente
+		* HX711 + Bosche Weight Cell
+		* Micro SDCard Modul
+		* LoRa Bee Client
+		* ePaper Display
+		* Monitor-LED
 
-	// Data wire is connected to ESP32 GPIO 32
-	#define ONE_WIRE_BUS 32
+Manche Module benötigen aber auch 5V, wodurch als Gesamt-Extension BOX Versorgungsspannung 5V gewählt wurde.
+Diese 5V können über verschiedene Wege bereitgestellt werden:
 
-**Control LED**
-+ GPIO 15 - Red LED		-> Monitor LED for Programmstart/Runtime Check
-	+ mit 220Ohm  auf 3.3V
-+ GPIO 14 - Grüne LED	-> Status LED
+<img src="./images_v2/BeeIoT_Client_Powerplan.jpg">
+
+Ohne weitere Optimierungen und ohne Sleepmode verbraucht der akt. Aufbau ca. 200mA im aktiven Zustand.
+
+### Externer USB Port
+Der direkteste und einfachste Weg ( wie auch zu testzwecken bei Arduinos üblich) ist natürlich direkt über einen externen USB Port als Ladeanschluss (max 1A möglich).
+
+**Vorteil:** Einfach und günstig über ein USB Ladegerät bereitzustellen.
+**Nachteil:** Die Reichweite ist zur Vermeidung von Stör-/Strahlungseinflüssen auf wenige Meter beschränkt.
+–> Es erfordert einen wetterfesten Netzanschluss „in der Nähe“ (ev. ideal für die Heimgartenlösung).
+
+In diesem Projekt wird ein exter USB Port als Lade- und Maintenance Port verwendet:
+- Die 5V Leitung geht als Charge input an das Batteriemodul.
+- Die Datenleitungen gehen aber direkt an den internen USB port des ESP32 devKitC Boards, welches wiederum seine stablisierten 5V vom Ausgang der Batterieversorgung erhält.
+
+Hierfür habe ich steck-/lötbare Micro USB Buchsen verwendet und die zuleitungen wie oben beschrieben gesplittet.
+<img src="./images_v2/MicroUSB.jpg">
+
+Hierüber ist damit weiterhin ein problemloser offline Betrieb mit Datenzugriff zum FW upload auf den ESP32 möglich.
+
+### Batterie/Akku
+Als ladbare Batterie kämen in Frage ein
+
++ Gel/Blei Akku
+	- Positiv: 	günstig im Einkauf
+	- Negativ:	hohes Gewicht und Volumen
++ Lithium-Fe Akku
+	- Positiv: 	Hohe Energiedichte -> geringes Volumen und Gewicht
+	- Positiv:	lange Haltbarkeit der Ladung
+	- Negativ:	sensibel bei niedrigen Temperaturen
+	- Negativ:	hoher Preis
+
+Natürlich wäre eine extern geladene Lithium Batterie wie z.B.
+	Lithium Akku 12-7.5 12,8V 7,5Ah 96Wh LiFePO4 Lithium-Eisenphosphat für 100€
+über einen StepDown Wandler auf 5V der einfachste Weg eine konstante Spannungsversorgug sicherzustellen. Ist von 12V kommen aber mit größeren Wandlungs-Verlusten behaftet, und aufgrund von Gewicht und Abmaßen recht unhandlich.
+
+Eleganter geht es mit einem Akkupack, welches in die Waage eingebaut werden kann und gleich ein Lade/Entlade Management Modu mit sich bringt. Viele dieser Varianten unterstützen aber nur Be- oder Entladung, gekoppelt mit einem weiteren Steckzyklus bei der Umschaltung.
+
+Es gibt aber auch sogenannte **"Passthru"**-Regler die gleichzeitg Laden und Entladen beherrschen.
+Ein günstiger Vertreter ist: **[POWERADD Pilot Pro4 Powerbank](https://www.amazon.de/dp/B07FZ27Z77/ref=pe_3044161_185740101_TE_item)** mit den Eigenschaften:
+- mit 30.000mAh Kapazität
+- 3 USB Output(5V/2,1A)
+- 2x USB 2A-Charge Input (parallel)
+- mit Lade-/Entladeintelligenz kompatibel zu  iPhone XR/XS/X / 8 / 8Plus / 7 Samsung Galaxy usw.
+- Preis: 25,99€
+
+Dummerweise ist die interne Lade/Entladeintelligenz auch hinderlich, wenn sie der Meinung ist, ein ESP32 im Sleep Mode wäre "nicht vorhanden". Denn dann wird der Ausgang einfach abgeschaltet. Genauere Messungen ergaben aber, dass der Ausgang nicht vollständig abgeschaltet wurde, sondern nur der StepUp Regler umgangen wurde. Es lagen dann am Ausgang die direkte Batteriespannung zw. 3.2 - 4.2V an.
+Daher habe ich mich entschlossen die Charge Funktion zu erhalten, die Ausgangskontrolle aber einfach zu umgehen und die internen Anschlüsse direkt anzuzapfen:
+<img src="./images_v2/BeeIoT_PowerBank.jpg">
+
+- rot -> USB output (mit temp. Abschaltung)
+- grün -> Charge Input (+3-5V)
+- weiss -> Akku + Anschluss direkt (3.2 - 4.2V)
+- schwarz -> Masse / Akku - Anschluss
+
+Dadurch haben wir innerhalb der Extension Box alle Optionen diese Powerbank zu integrieren:
+- Die ext. USB +5V Leitung an den Charge input
+- Der USB-Out Ausgang wird über einen nun externen StepUp Boost Regler von Sodial (4,35€) geführt
+<img src="./images_v2/LinearBooster_LM2577.jpg">
+
+Der Linearregler: LM2577  liefert einstellbar saubere 5V und regelt definiert auf 0V runter, wenn die IN-Spannug auch gen 0V geht (Ein-/Ausschaltverhalten). Überschreitet der EIngang allerdings den eingestellten AUsgangswert von 5V, steigt auch der Ausgang mit an ! In unserem Fall aber ken problem, weil der LiFe Akku kaum mehr als 4.2V liefern könnte.
+Weitere Eigenschaften des LM2577:
+- Eingangsspannung: DC 3-34V, Eingangsstrom: 3A (max.)
+- Ausgangsspannung: DC 4-35V (stufenlos einstellbar), Ausgangsstrom: 2,5 A (max.)
+
+Ein ähnliches Exemplar nur ohne LED ANzeige:
+**ANGEEK DC-DC Boost Buck Adjustable Step Up Step Down Automatic Converter XL6009 Module** 6,99€
+aber mit einem BuckBoost Converter XL6009, regelte am Ausgang plötzlich auf ca. 15V hoch, wenn die Eingangsspannung unterhalb 3.2V ging. Erst weit unter 2V ging die Ausgangsspannug auch gegen 0V.
+Diese Episode hätte den ESP32 in die ewigen Jagdgründe geschossen.
+So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anzeige und Linearregler.
+
+Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.
+Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:
+```
+#define BATTERY_MAX_LEVEL        4150 // mV
+#define BATTERY_MIN_LEVEL        3200 // mV
+#define BATTERY_SHUTDOWN_LEVEL   3100 // mV
+```
+
+An dieser Stelle hilft es die Energie-Rechnung aus Kapitel:  **[Die MCU Arduino/ESP32 Platform](#die-mcu-arduino-ESP32-platform)** nochmal nachzurechnen:
+
+- Anteil Aktivphase: 10 Sek./10Minuten: 1/60
+- auf 6 Monate entspricht das (6x30x24)h/60 = 72h = 3Tage Aktivphase
+- => 4320-3 Tage Passivphase = 4317 Tage
+- Stromverbrauch Passivphase: 4317 x 1mAh = 4317mAh von nun **30.000mAh** 
+- Möglicher **Stromverbrauch Aktivphase**: (30.000mAh - 4317mAh)/72h = 5683mAh / 72h = **~365mA**
+
+Pro Tag kämen wir auf einen Gesamtverbrauchsmix:
+- Aktivphase : 24 x 6 x 10Sekunden = 24 Minuten -> 80mAh
+- Passivphase: 24 x 60 - 24Minuten = 1416 Minuten -> 59mAh
+in Summe also 139mAh/Tag ergibt bei 30.000mAh Akku Kapazität = **215 Tage Laufzeit**.
+
+Und das ohne jede Ladung. Ergänzen wir das ganze noch mit einem 5V PV Modul am ext. USB port ...
+
+### Power Monitoring
+Um die oben genannten Lade-/Entladezyklen verfolgen zu können, habe ich einen 4-port AD Wandler ADS1115 spendiert der über einen 3.3V <-> 5V levelchanger ebenfalls am I2C Port des ESP32 hängt.
+<img src="./images_v2/ADS1115.jpg">
+
+Falls eingestellte Schwellwerte erreicht werden, wird die Alertleitung als Interrupt genutzt.
+Dies ist z.B. der fall wenn der BATTERY_MIN_LEVEL an der Akku+ Line erreicht wird,
+dann muss die Stockwaage abgeschaltet werden (bzw. Dauersleepmode) um den Lithium-Akku zu schützen.
+
+Für die eigene Versorgungsspannung Vcc= 5V des Converters habe ich 5V gewählt um ein größeres messbares Spannungsfenster an den AnalogPorts verfügbar zu haben: 0V – 4,096V -> 1mV / Step .
+Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenleitung auf 5V Pegel umgesetzt.
+Über 2x 3.3kOhm Widerstände werden am ADS1115 AnalogPort 3 ein Spannungsteiler zur Messung der (eigenen) 5V Spannungsversorgung ermöglicht. Ähnlich müsste man bei größeren Spannungsquellen verfahren die >4V liegen.
+
+Durch die Verschaltung des ADDR = 0 Anschlusses erhalten wir die I2C Adresse 0x48. Somit kein Konflikt mit dem RTC Modul zu befürchten.
+Hier die Definitionen des ADS im Sketch:
+```
+#include <Adafruit_ADS1015.h>	// support for ADS1015/1115
+
+// ADS1115 + RTC DS3231 - I2C Port
+#define ADS_ALERT   27    // arbitrary selection of ALERT line
+#define ADS_SDA     SDA    // def: SDA=21
+#define ADS_SCL     SCl    // def. SCL=22
+// ADS1115 I2C Port Address
+#define ADS_ADDR            0x48   // I2C_ADDRESS	0x48 -> ADDR line => Gnd
+// ADS device instance
+Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
+```
+
+Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsfähigen I2C Interfaces des ADC1115 sehr einfach geworden:
+```
+	adcdata = ads.readADC_SingleEnded(channel);	//channel = 0..3
+	// ADC internal Reference: +/- 6.144V 
+	// ADS1015: 11bit ADC -> 6144/2048  = 3 mV / bit
+	// ADS1115: 15bit ADC -> 6144/32768 = 0.1875 mV / bit
+	data = (int16_t)((float)adcdata * 0.1875);	// multiply by 1bit-sample in mV
+```
+
+### PV Solar-Modul
+Die oben errechneten 215 tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.
+Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:
+
+	
+<img src="./images_v2/SolarPanel_RAVPower.jpg">
+**Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)**
+
+Die Besonderheit liegt in der hohen Dynamik der Energieversorgung durch wechselnde Sonneneinstrahlung, weswegen ein nachgeschalteter interner Laderegler via Batterie die Energie puffert und in die gewünschte Zielspannung von 5V umsetzt.
+Auch hier ist das Angebots-Spektrum sehr groß, von einem 180W Panel 1,8m x 0,8m Größe bis hin zu einem 40W Faltpanel, teilweise gleich mit Micro USB Kabel Anschlüssen.
+
+Auch hier müssen wir eine Lösung finden, die im Schnitt 5V liefert und dies mit ausreichender Leistung. Solche Module sind häufig im Campingbereich zu finden, als Kompromiss zw. Mobilität und Leistung.
+
+In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.
+Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.
+
+Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet. 
+Den Rest erledigt die Akku-interne Ladekontrolle, solange das Panel 5V liefern kann. Und das ist dank eines PV-nternen step Reglers recht lange der Fall.
+Bei einem trüben aber freundlichen Märztag war eine PV Modul interne interne PV-Modul-Spannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…
+
+Langzeittest besonders bzgl. Wetterfestigkeit stehen aber noch aus.
+
+### Alternativer Batterie Laderegler
+Neben dem günstigen obe beschriebenen PV Modul mit integriertem 5V Ausgangsregler via USB Stecker, sind aber noch leistungsfähigere Module denkbar, die aber auch leistungsfähigere Laderegler für z.B 12V Akkus benötigen.
+
+Die effiziente Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.
+
+Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen **PV Solar Panel MPPT Laderegler von Sunix** gestartet: 
+
+<img src="./images_v2/SolarCharger.jpg">
+
+**Modell: SU-SU702  (CMTD 2420) / 10A mit den Maßen: 14,4 x 8,3 x 4,1 cm für 13,99€**
+
+Er hat die interessante Zusatzfunktion neben jeder Eingangsspannung bis 70V und der Batterieausgangsspannung zw. 12-14.3V auch 2 Standard USB Ports anzubieten mit geregelten 5V.
+Diese würden direkt für den Betrieb der ESP32 Stockwaage herhalten können.
+
+Die Kennwerte dieses Moduls sind:
+> Nennspannung : 12V / 24V (Auto-Switch)
+> Max. Lade / Entlade-Strom : 10A
+> Max. Solar-Panel Eingangs-Spannung : =50V
+> Stop-Ladespannung : 14.7V / 29.4V
+> Nieder-Voltage-Wiederherstellung : 12,2 V / 24.4V
+> Nieder- Spannungsschutz : 10.5V / 21.0V
+> USB-Ausgangs-Spannung / Strom : 5V 2A
+> Kein- Lade-Verlust : =10mA
+> Temperatur Kompensation : -3mV / Cell / ° C
+> Betriebs-Temperatur : -20 ° C ~ 60 ° C
+
+Mit folgenden Schutzmassnahmen:
+1. Überlastschutz
+2. Kurzschlussschutz
+3. Blitzschutz
+4. Unterspannungsschutz
+5. Überladeschutz
+6. Verpolschutz
+
+Mit diesem Laderegler ist es möglich die Batterie-Beladung durch unterschiedliche Stromquellen über Dioden zusammengeführt zu konfigurieren, während ein Verbraucher parallel versorgt wird (können viel Batteriepacks nicht: nur Laden oder nur Liefern)=> PassThru Mode.
+
+Über 2x BY500 Dioden lassen sich weitere Stromlieferanten am Eingang einpflegen.
+
+Bei dem angedachten Verbrauchspegel des ESP32 Moduls ist dieser Ansatz aber ein Overkill, da alleine der Eigenverbrauch höher liegt, als der, des zu versorgenden Verbrauchers.
+
+
+## Der Aufbau
+Die Anforderungsliste liest sich gut:
++ Das Aussengehäuse besteht aus wasserfesten 10mm MBF Platten sowie einer Kantholz Auflage-Konstruktion
++ Die MCU Extension Box (Compute Node Modul) ist in ein wasserdichtes Gehäuse der Schutzklasse IP67 eingebaut
++ Lade-Kabelanbindung mit Nagetierschutz (Spiralmantelung)
++ Messbereich: 0..100kg mit +/- 60 Gramm Genauigkeit und extrem geringer Temperaturdrift
++ Start der Messung und Übertragung automatisch bei jedem Re-/Start
++ Alle Kabel werden an das Gerät durch wasserdichte Kabelverschraubungen angeschlossen.
++ Alle am backpanel angeschlossenen Sensoren sind auch wasserdicht, Schutzklasse IP-66 oder IP-67.
++ Der Gehäuseaufbau erlaubt das einfache Anpassen der Auflagefläche durch massgerechte Unterlegplatten für jede Beutengröße verwendet werden (default: Zander-Maß).
+
+
+### Stückliste
+
+| Index | Stück | Bezeichnung | Hersteller | Bezugsquelle | Preis | Kommentar |
+|-------|-------|-------------|------------|--------------|-------|-----------|
+|1|1|Plattformwägezelle H40A-C3-0100|Bosche|http://www.bosche.eu|58€|H30A v H40A 100kg|
+|2a|1|ESP32-DevKitC v4|OSS|Amazon|20€|(WROOMER32 oder WOVER32)|
+|2b|1x|SD HC Karte 2GB|||Amazon|5€|
+|3|1x|HX711 24 Bit A/D Wandler||Amazon|10€|mit grüner Lackschicht!|
+|4|2x|Montageplatte für Wägezelle ALU 200 x 200 x 10mm|Schlosserei||200€|Keine Beschichtung|
+|5|2x|4-kant Unterlageholz|Baumarkt||10€|20x40x500mm|
+|6|1x|IP67 Kunststoff-Montagebox|Maße 70x80x160mm||Amazon||
+|7|3x|Temperatursensor DS18S20|Dallas|Amazon|7,5€|Mit 1,1m Kabel|
+|8|1x|MSP Siebholzplatten 520x410x10mm |Baumarkt|Baumarkt|20€||
+|9|1x|MSP Siebholzplatten 490x380x10mm |Baumarkt|Baumarkt|20€||
+|11|2x| 520x70x10mm|Baumarkt|Baumarkt||5€|
+|12|2x| 390x70x10mm|Baumarkt|Baumarkt||5€|
+|13|16x|M12 30mm Senkkopfschrauben|Baumarkt|Baumarkt|16€||
+|14|18x|4x50mm Senkkopfschrauben|Baumarkt|Baumarkt|10€|Verbindung der MSP Platten+Leim|
+|15|1x|POE Einspeiser & Wandler 1Gb/s & POE 48V->5V||Amazon|15€|1Gb/s & Mini-USB|
+|16|div.|Litze D:1mm ca. 3m||Amazon/Conrads|10€|Sensorverdrahtung|
+|17|1x|Alu/Kunststoff-Platte 120x60x1,5mm||Amazon|8€|Anschlusspanel|
+|18|1|5-pol wetterfeste Durchführungs Rundstecker & Buchse||Amazon|5€|Für ext. OneWire Sensoren|
+|19|1|Epoxid Rundlochplatine Euro-Format(einseitig)||Conrads/Amazon|5€|ESP32 + GPIO Sensorverstärker (HX711 und OneWire Bus)|
+|20|1|Sub-D 25-pol. Stecker & Buchse||Conrads/Amazon|5€|Zum Durchführen der HX711 und OneWire Bus-signale am K.Stoff-Gehäuse|
+|21|1x|4-channel Level Converter für 3V <-> 5V Pegel,  bidirektional||Amazon|4€||
+|22|1x|A/D Converter ADS1115S||Voelkner|5€|4-fach 16Bit A/D Wandler mit I2C API zur Versorgungs-Spannungsmessung|
+|23|1x|Micro USB Buchse||Amazon|8,50€|Zur USB-A Port Durchführung am Aussenpanel|
+|24|2x|10-polige Steckerleiste|Printmontage|Amazon|1,50€|Stecker für die ADS1115S + HX711 Ports|
+|25|2x|8-polige Steckerleiste Printmontage||Amazon|1,50€|Stecker für das ePaper 2in7 API + OW/LED Leitungen|
+|26|2x|3.3kOhm Metallfilm Widerstand 1/4W||Voelkner|0,10€|Als Spannungsteiler am Analogport 3 des ADS1115S|
+||Optional:||||||
+|27|1x|ePaper Display 2in7 von WaveShare 264x176 pixel 3.3V||Amazon|25€|Extrem stromarmes S/W Display 2,7 Zoll mit SPI Interface|
+|28|1|RJ45 1Gb/s wetterfeste Durchführungsbuchse||Amazon|10€|Für LAN & POE Anschluss|
+|29|1|LAN Kabel Cat6 Outdoor 10-30m||Amazon|20-40€|Länge nach Erreichbarkeit des Switch|
+
+
+### Das Aussengehäuse
+
+Das Aussengehäuse bestehend aus MBF Platten besteht aus einer Coverhülle und einer Bodenplatte.
+Auf die Bodenplatte ist die Waagrzellenkonstruktion verschraubt. Die Coverhülle, welche von oben mit dem Wäägemodul verschraubt ist, schwebt quasi frei darüber und ermöglicht so die Gewichtskraft auf die Wäägezelle zu übertragen.
+<img src="./images_v2/BoxOutsideView.jpg">
+
+Hier sieht man schematisch im Querschnitt die Auflagekonstruktion der Wägezelle.
+
+<img src="./images_v2/BoxSideView.jpg">
+
+
+Der damit verbundene Deckel + Compute Node + Power Module schwebt über dem Bodenelement und liegt samt komplettem Beutengewicht ausschliesslich auf den etwa 16cm2 Fläche der verschraubten Wägezelle auf. Dies erreicht man über 6-8mm starke Zwischenbleche jeweils an der oberen und unteren Verschraubung der Wägezelle, die je mit 4x M10 Senkkopf-Schrauben fixiert ist.
+
+Steht die i.d.R. 50-70kg schwere Beute auf der Waage schwankt sie recht steif über der Bodenplatte. Dies ist ein Zeichen dafür, dass das Waagzellen Element aktiv die Kraft aufnimmt und nirgends aufliegt.
+
+In der Rückwand ist das Anschlusspanel + ePaper Display Panel eingearbeitet und sowie die notwendigen Aussenanschlüsse.
+
+#### Die Bosche Wägezelle
+(Einbau als Single-point Wägezelle)
+Die Wägezellen von Bosche für Plattformwaagen gibt es in 4- oder 6-pin Ausführung.
+Beide sind funktionell gleichwertig:
+
+<img src="./images_v2/BoscheCell4.jpg"> <img src="./images_v2/BoscheCell6.jpg">
+
+Hier kommt die übliche Wheatstone-Brücke zum Einsatz, die die beste Temperatur-Kompensation bei hoher Messgenauigkeit bietet. Die Temperaturkalibrierung an den Dehnmesstreifen wurde werksseitig schon vorgenommen. Ggfs. bei Temperaturen kleiner -5Grad kann noch eine rechnerische Kompensation softwareseitig überlagert werden und sinnvoll sein.
+
+Der Einbau gestaltet sich sehr einfach. Einzig die Fixierung der jeweils 4 Schrauben pro Auflagefläche muss sehr stabil und genau erfolgen. Hier setzt der Hebel des gesamten Beutengewichts samt Waagedeckel an.
+
+Dazu die Auszugsbilder aus der mechanischen Applikations-Beschreibung:
+
+<img src="./images_v2/BoscheApplication.jpg">
+
+sowie die einfache Konstruktion, wie sie hier zum Einsatz kommt:
+
+<img src="./images_v2/WeightCell.jpg">
+
+Die obere und untere Platte zur Kraftübertragung auf die Wägezelle sollte mind. 6-8mm betragen und idealerweise aus Edelstahl. Aus Kostengründen geht aber auch Aluminium. Dann aber besser mit 10mm Stärke. Die Plattenmaße betragen bei mir 18 x 18cm (darf aber auch größer sein).
+
+Die Distanzscheiben habe ich mit je 4mm gewählt und bestehen aus separaten kleinen Aluscheiben mit dem Maßen 6x6cm inkl. den benötigten 4 Bohrungen für die M12 Schrauben. Ohne die Abstandsscheiben kann die Wägezelle durch das Gewicht nicht verformt werden !
+Die Bohrungen in der Platte sollten 1mm größer ausfallen als die Schraubenstärke und nach „aussen“ konisch durch einen Phasenschneider erweitert werden. Dadurch kann man die als Senkschrauben ausgelegten 2x4 M6-M8 Schrauben bündig abschliessen. Dies ist nötig um die Gehäuse-Deckel/Boden bündig auf die Platten zur bessern Kraftübertragung anzubringen.
+
+Die Überlastsicherung besteht aus einer M6 - M8 Gewindebohrung an der untern (oder oberen Platte) und einer Schraube, über die der Arbeitsbereich der Wägezelle eingestellt werden kann. Bei einer 100kg Wäge-Zelle erzeugt man ein Testgewicht von 110kg und man dreht die Schraube solange ein bis sie leicht an der Wägezelle aufstehen. Dadurch wird einer zerstörenden Verformung des Zellenkörpers vorgebeugt (z.B. wenn man sich auf der Beute abstützt bei aufliegendem vollen Honigraum).
+An einer Seite schaut das 4/6 adrige Kabel heraus, welches zum A/D Wandler HX711 der Compute-Einheit führt.
+
+Zuletzt wird die Platte durch weitere Gewindebohrungen mit kurzen M12 Schrauben mit dem Gehäusedeckel-/Boden verschraubt.
+
+Hier nochmal das Lagebild der Wägezelleneinheit mittig zum Gehäusedeckel:
+
+<img src="./images_v2/Box_WeightCell.jpg">
+
+#### Das Anschluss Panel
+Das Gehäuse Panel ist der einzige Anschlussbereich nach Aussen. Daher werden dort wasserfeste Stecker-Kombinationen eingesetzt:
+
++ Micro-USB Buchsen-Anschluss zur Akku ladung + ESP32 FW-Upload
++ 5 pol. externer OneWire Sensor Connector für den Bienenstock Temp.Sensor
++ LEDs für Monitor & Status
++ Optional: LAN Anschluss (1GB/s mit POE 48V)
++ Power Switch: EIn finaler Power Switch , wollte man die Stockwaage einige Zeit ungenutzt einlagern. Ansonsten bleibt die Akku-Regelung dauerhaft in Betrieb und leert die Battery.
++ ...Platz für weitere Optionen...
+
+Als Träger dient eine korrosionsbeständige eloxierte ALU Platte (1mm). An dieser lassen sich die Buchsenlöcher gezielt herausarbeiten; sie trägt aber nicht so stark auf wie eine Holzplatte und kann daher in einen Rahmen mit ausgefrästem Grat eingesetzt werden.
+
+Es sind 2 LEDs eingebaut, die Betriebszustände der Stromversorgung und die Betriebsaktivität anzigen können. mangels freier GPIO leitungen ist aktuell nur die rote LED angeschlossen.
+
+Die Aussenansicht des Backpanels + ePaper Panel:
+<img src="./images_v2/BackConnectors.jpg">
+
+Die Innenansichten der Anschlussstecker und der MCU Extension-Box:
+<img src="./images_v2/BoxInsideOvw.jpg">
+
+##### One Wire Sensoren
+One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse-GND, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.
+
+Durch das OneWire Bus-Protokoll können somit leicht mehrere Sensoren unterschiedlichster Art/Funktion hintereinander, an demselben Anschluss verbunden werden. Bei den ESP32 GPIO Ports sind allerdings nur max. 8 Sensoren in Verbindung mit 3.3V Vcc in Kombination mit abgeschirmtem Telefonleitungen zu empfehlen.
+Jeder Sensor hat dabei zur Erkennung eine einzigartige 64 Bit unique ID. Verwendbar sind die Sensoren an Spannungen mit 3-5V. Wir verwenden hier 5V.
+
+Der ESP32 erlaubt mit seinem GPIO Matrix Konzept jeden beliebigen IO-Port zum OneWire Bus-Port zu erklären. Der OneWire Driver wendet das OW-Protokoll, wie vom Hersteller „Dallas“ spezifiziert, dann auf diesen Port an.
+Die Störanfälligkeit der Messwerte ist gering, dank digitaler Übertragung. Die Datenleitung benötigt dazu allerdings einen Pullup von 4.7k Ohm einmalig (!) von der Daten- auf die 3.3V Leitung (unabhängig von der gewählten Versorgungs-Spannung!).
+
+Neben den 2 internen Temperatursensoren habe ich über einen 7-poligen Stecker die OW-Busleitungen nach Außen zugänglich gemacht, um weitere externe Sensoren zu ermöglichen.
+
+##### Der DS18B20 OW-Temperatur-Sensor
+Der DS18B20 OneWire Sensor ist besonders praktisch für das Messen von Temperaturen in Wasser oder feuchten Umgebungen dank wasserdichtem 1,10m langem Kabel und der vergossenen 3 cm langen Metall-Messsonde.
+Der Temperaturbereich reicht von -55 bis 100 Grad.
+
+Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit von -10°C bis +85°C) dank einem internem vorkalibriertem 12Bit A/D Wandler und ist somit für unsere Messungen mehr als hinreichend.
+Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.
+
+**Verfügbare Ausführungen:**
++ DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang 
++ Kabellänge von etwa 90-110cm lang mit Durchmesser 4mm, unkonfektioniert
+
+	**Sensor-Anschluss mit 4-adrigem Kabel:**
+1. Rot:	 	3-5 V Anschluss, 
+2. Schwarz:	Masse 
+3. Weiß.		1-Wire serielles Datenprotokoll 
+4. Die äußere Kupferader wird an die Drahtabschirmung mit dem Stecker/Gehäuse verlötet.
+
+	**Sensor-Anschluss mit 3-adrigem Kabel: **
+1. Rot:		3-5 V Spannung 
+2. Blau / Schwarz: wird mit Masse verbunden 
+3. Gelb / Weiß:	1-Wire Datenleitung
+
+Weitere Links:
+* [Dallas Temperature Control Library](http://www.milesburton.com/?title=Dallas_Temperature_Control_Library "Dallas TempControl Lib")
+* [OneWire Library](http://www.pjrc.com/teensy/td_libs_OneWire.html "OneWire Lib")
+
+Obwohl die Versorgungsspannung für 1-Wire-Devices normalerweise 5 V beträgt, ist beim ESP32 die verringerte Spannung von 3,3 V nötig, weil dessen GPIO-Ports nur 3,3 V vertragen und durch höhere Spannungen zerstört werden.
+Nachfolgende Bilder zeigen die verschiedenen Anschlussmöglichkeiten. Dabei sind die dargestellten Chipformen in unserem Fall in einer Metallhülse vergossen.
+
+<img src="./images_v2/DS1820pins.jpg"> <img src="./images_v2/DS1820pins2.jpg">
+
+(Wie erwähnt: der Pullup Widerstand wird nur einmal intern angeschlossen.)
+
+### Compute Node Box
+Das Herzstück des Computnodes ist im BeeIoT-Client Modell der **ESP32-DevKitC**.
+
+Dieser sowie alle weiteren empfindlichen elektronischen Module wurden in eine IP67 dichte Box eingebaut. Das beugt Kondenswasserschäden vor. Widererwartens habe ich auch bei höchsten Aussentemperaturen kein Temperaturproblem am ESP32 gehabt. Dies kommt wohl durch die Isolationswirkung der massiven aufstehenden Beute von Oben:
+
+<img src="./images_v2/ESP32_Controlbox.jpg">
+
+Die MCU sowie alle Sensormodule sind auf einer Lochrasterplatine untergebracht:
+Der HX711 A/D Wandler für das Wägezellenmodul, dem Level Converter & ADS1115S, sowie diverser Widerstände und Kondensatoren zur Leitungspufferung. (Details siehe Schaltplan).
+Hier der vollständige Ausbau inkl. aller Module (auch dem LoRa Bee in rot):
+
+<img src="./images_v2/BeeIoT_BoardLayout2.jpg">
+
+Über den 25 pol. Sub_D Stecker (links) wird u.a. auch die Akku-Out Zuleitung in die Box geführt, wo sie von dem StepUp Regler (Mit LED Anzeige) auf 5V gewandelt wird.
+Von rechts oben führt ein Mini-USB Stecker die externe USB Verbindung in die Box mit dem datenanteil direkt an den ESP32. Von der Lochraster-Platine wiederum führen mehrere Steckervarianten die Sensorleitungen zu dem extern 25-pol. Sub-D Stecker. Hierfür gibt es sicher noch elegantere Steckverbinder Lösungen ev. incl. Abschirmung. Dieser Aufbau erwies sich aber als erstaunlich wenig störanfällig, trotz Ausseneinsatz und einer langen (3m) USB Zuleitung für Testzwecke.
+
+### Steckverbinder
+Hier nun eine Übersicht aller verwendeten Steckervarianten:
+
++ Links:	Der runde 6-polige One-Wire Extension Stecker mit dem typ. 3 OW Bus Leitungen.
++ Mittig:	Der ePaper Stecker direkt an der Panel Rückseite
++ Rechts:	Der 25-pol. Sub-D Stecker als Ausgang von der IP67 Computenode-Box
+
+<img src="./images_v2/BeeIoT_ExternalConnectors.jpg">
+
+Hier nun die Steckerbelegungen aller internen Steckverbinder auf der Lochrasterplatine
+<img src="./images_v2/BeeIoT_InternalConnectors.jpg">
+
+Die Adapterplatine mit Komponentenbeschriftung:
+
+<img src="./images_v2/MCU_ExtBoard.JPG">
+
+
+## Die ESP32 BeeIoT Sketch Software
+Anders als bei meiner letzten **[BeeLog Projekt](https://github.com/mchresse/BeeLog)** Beschreibung mit Raspberry Pi gibt es bei ESP32 nicht viel vorzubereiten, da wir keine OS Instanz zu konfigurieren haben.
+Eine schrittweise Einführung und Konfiguration der ESP32 Einheit ab der SD Karten Vorbereitung bis zum prinzipiellen Ablauf der Logger SW ist aber ev. doch sinnvoll.
+
+### ESP32 Vorbereitungen
+Wer sich noch nicht so sehr mit dem ESP32 auskennt, dem sei diese Einsteiger Buch **[Kolbans Bok on ESP32 v2018](https://www.robolinkmarket.com/datasheet/kolban-ESP32.pdf)** empfohlen.
+
+Die Vorzüge des ESP32 DevKit C habe ich eingangs dieser Beschreibung schon diskutiert.
+Hier nun der vollständige Schaltplan der Konstruktion inkl. GPIO Ports am DevkitC board Connector J8 :
+
+<img src="./images_v2/BeeIoT_Schematics.jpg">
+
+Der Testaufbau erfolgte mit einer Lochrasterplatine + Fädeldraht-Technik.
+<img src="./images_v2/MCU_Board_Back.jpg">
+
+Die interne WiFi Antenne des devKitC Boards hatte innerhalb meines Hauses keine Reichweitenprobleme.
+Auch für das loRaan Modul wird eine Duck Antenne direkt an die Extension Box geschraubt und bleibt damit noch innerhalb der Waagenbox. Sollten sich hier reichweitenproblme anmelden, ist es leicht möglich eine Antenne mit längerem Kabel auserhalb zu platzieren.
+
+Da der ESP32 keine USB Port Erweiterungen ermöglicht bleibt der ext. USB Stecker rein für die Ladespannung oder FW Update reserviert.
+
+Hier die vollständige DevKitC Sockel-Belegung J8, wie sie für alle Modelle ab v4 gültig ist:
+
+<img src="./images_v2/ESP32_DevKit_Pinout.jpg">
+
+Jeder GPIO Port darf allerdings nur mit **max. 50mA an 3.3V** belastet werden.
+
+Nach dem vollständigen Aufbau und Fertigstellung der Verdrahtung des Extension Boards samt externer Sensor Zuleitungen bleibt nur noch eine 2-16GB große Micro SD Karte mit FAT32 zu formatieren (Quick Format reicht) und in das MircoSD Kartenmodul zu stecken. Mein Sketch akzeptiert aber auch eine fehlende SD Karte, und setzt die Messung fort.
+
+**Nun kommen wir endlich zur Software Seite:**
 
 ### ESP32 IDE
-#####PlatformIO
-Ich verwende statt der Espressif IDE direkt, die darauf aufbauende PlatformIO als Plugin der Microsoft VSCode Umgebung.
+Bei Ardunio MCU kompatiblen IDEs fällt einem als erstes das Arduine-IDF ein. Sie bietet das nötigste um einen Sketch auf das Modul zu bringen, aber verwöhnt durch VS oder NetBeans sucht man zur Unterstützung eines effizienten Test/Debugging/Release Cycles aber schnell nach Alternativen.
 
-Die Definition für das ESP32 DevKitC in PlatformIO.ini lauten:
+Für meine ESP32 Projekte verwende ich aber **PlatformIO**, wo das Library lifecycle management einfacher zu handhaben ist und vom look-and-feel näher an Netbeans ist, welches ich wiederum für die typischen Cross-compilation/debugging sessions mit einem RaspberryPi verwende.
+Die Standard Online Doku findet sich hier: **https://docs.platformio.org/en/latest/what-is-platformio.html**
 
-	[env:esp32dev]
-	platform = espressif32
-	framework = espidf
-	board = esp32dev
-	build_flags = -DCONFIG_WIFI_SSID=\"ESP_AP\" -DCONFIG_WIFI_PASSWORD=\"MYPASS\"
-	monitor_speed = 115200
+Zur weiteren Beschreibung der Arduino-IDF sei aber noch folgender Link empfohlen:
+**[Windows instructions – ESP32 Board in Arduino IDE](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions)**
 
+oder den **[ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html)**
+
+Vielleicht findt sich ja in nächster Zeit noch eine brauchbare Netbeans Implementierug....
+
+#### PlatformIO
+Ich verwende statt der Espressif IDF direkt, die darauf aufbauende PlatformIO als Plugin der Microsoft VSCode Umgebung.
 Netbeans wäre noch eleganter, konnte aber bisher keine verlässliche Plugin Anweisung finden, die auch die UART basierte cross compilation unterstützt.
 
-### ESP32 Sensor Libraries
+Eine Beschreibung der Erstinstallation von VSCode und der Konfiguration des PlatformIO Plugins findet sich hier: **[PlatformIO IDE for VSCode
+](https://docs.platformio.org/en/latest/ide/vscode.html#ide-vscode)**
+Jede Menge weiterer Tutorials finden sich mit den Suchbegriffen "platformio tutorial".
+Daher gehe ich im weiteren davon aus, dass die Nutzung von PlatformIO gegeben ist, wobei der Sketch natürlich universell verwendet werden kann, wenn man die IDE library links entsprechend anpasst.
+
+PlatformIO.ini ist die zentrale Build Steuerdatei von PlatformIO, wo alle compile und link settings per Projekt geführt werden.
+Die Definition für das ESP32 DevKitC (esp32dev) in PlatformIO.ini lauten somit:
+```
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+; build_flags = 
+build_flags = -DCONFIG_WIFI_SSID=\"MYAP\" -DCONFIG_WIFI_PASSWORD=\"MYPASS\"
+
+; Serial Monitor Options
+monitor_speed = 115200
+monitor_flags =
+    --encoding
+    hexlify
+```
+
+
+#### ESP32 Sensor Libraries
 Library Download Links:
 **OneWire** -> [The OneWire library by Paul Stoffregen](https://github.com/PaulStoffregen/OneWire)
 **DS18B20** -> [The Dallas Temperature library](https://github.com/milesburton/Arduino-Temperature-Control-Library)
@@ -433,567 +1385,6 @@ Benötigte libs im Code:
 	
 	#include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
 
-### ES32 PIN Nutzung
-Und nun konkret die Nutzung der ESP32 EdvKitC Pins für das BeeIoT Projekt:
-(mit WROOM32 Module bestückt)
-
-|Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
-|---|------|------|----------|-------|----------|----------------|
-|  1| +3.3V|      |          |       |    +3.3V | -              |
-|  2|    EN|      |   SW2    |       |          | ePaper-Key2    |
-|  3|*  SVP|GPIO36|  Sens-VP | ADC1-0|        - | -              |
-|  4|*  SVN|GPIO39|  Sens-VN | ADC1-3|        - | -              |
-|  5|* IO34|GPIO34|          | ADC1-6|          | ePD-K3/LoRa DIO2|
-|  6|* IO35|GPIO35|          | ADC1-7|          | ePaper-Key4    |
-|  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| DS18B20(3x)    |
-|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | LoRa DIO0      |
-|  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | HX711-DT       |
-| 10|  IO26|GPIO26|     DAC2 | ADC2-9|  Wire-Clk| HX711-SCK      |
-| 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| ADS1115/BMS    |
-| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| LoRa RST       |
-| 13|  IO12|GPIO12| HSPI-MISO| ADC2-5| SPI1-MISO| LoRa CS\       |
-| 14|   GND|      |          |       |       GND| -              |
-| 15|  IO13|GPIO13| HSPI-MOSI| ADC2-4| SPI1-MOSI| LoRa DIO1      |
-| 16|   SD2|GPIO09|FLASH-D2  | U1-RXD|        - | -              |
-| 17|   SD3|GPIO10|FLASH-D3  | U1-TXD|        - | -              |
-| 18|   CMD|GPIO11|FLASH-CMD | U1-RTS|        - | -              |
-| 19|   +5V|      |          |       |      +5V | -              |
-| 20|   CLK|GPIO06|FLASH-CLK | U1-CTS|        - | -              |
-| 21|   SD0|GPIO07|FLASH-D0  | U2-RTS|        - | -              |
-| 22|   SD1|GPIO08|FLASH-D1  | U2-CTS|        - | -              |
-| 23|  IO15|GPIO15| HSPI-SS  | ADC2-3|MonLED-red| Red LED        |
-| 24|  IO02|GPIO02| HSPI-4WP | ADC2-2|  SPI-CS  | SDcard CS\     |
-| 25|  IO00|GPIO00|   SW1    | ADC2-1|          | ePaper-Key1    |
-| 26|  IO04|GPIO04| HSPI-4HD | ADC2-0|      CLK | ePaper BUSY    |
-| 27|  IO16|GPIO16|UART2-RXD |       |      DT  | ePaper RST     |
-| 28|  IO17|GPIO17|UART2-TXD |       |          | ePaper D/C     |
-| 29|  IO05|GPIO05| VSPI-SS  |       | SPI0-CS0 | ePD CS\        |
-| 30|  IO18|GPIO18| VSPI-CLK |       | SPI0-Clk | ePD/SD/LoRa Clk|
-| 31|  IO19|GPIO19| VSPI-MISO| U0-CTS| SPI0-MISO| SD/LoRa MISO   |
-| 32|   GND|      |          |       |      GND | -              |
-| 33|  IO21|GPIO21| VSPI-4HD |       |  I2C-SDA | ADS1115/BMS    |
-| 34|  RXD0|GPIO03|UART0-RX  | U0-RXD| -> USB   | -              |
-| 35|  TXD0|GPIO01|UART0-TX  | U0-TXD| -> USB   | -              |
-| 36|  IO22|GPIO22| VSPI-4WP | U0-RTS|  I2C-SCL | ADS1115/BMS    |
-| 37|  IO23|GPIO23| VSPI-MOSI|       | SPI0-MOSI|ePD/SD/LoRa MOSI|
-| 38|   GND|      |          |       |       GND| -              |
-
-
-
-## Die BeeIoT Sensorik
-Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:
-+ 1x Wägezelle	-> über einen I2C-A/D Wandler HX711 an die GPIO Ports des Raspberry angeschlossen.
-+ 3x Temperatursensoren zur Messung der
-	- Stocktemperatur (innerhalb der Beute)
-	- Externen Temperatur
-	- Wägezellen Temperatur (ggfs. zur Kompensation einer Temperaturdrift)
-	- => Alle Temp. Sensoren sind über das OneWire Protokoll direkt an den GPIO4 Port des Raspi angeschlossen.
-	- Messung des Batteriespannungspegel
-+ Optional
-	- xternes IR-Kameramodul -> Bienensitz im Winter
-	- SM7000E NB-IoT Modul zur Funk-Fernübertragung via GPRS
-	- GPS Maus
-
-###Die Wägezellen Auswahl
-Eine Standardwägezelle mit geringer Temperaturdrift und hoher Gewichtsstabilität sowie Messwiederholgenauigkeit weist heutzutage typischerweise vorkalibrierte Dehnmesstreifen in einer Wheatstonebrücke verschaltet auf. Diese ist eine gegenläufige Verschaltung von 4 Dehnmessstreifen (DMS) im Rautenmodell auf (siehe Schaltbild weiter unten) incl. Temperaturdriftkompensation.
-Meine Auswahl fiel (wie bei so manchen anderen Waagen-Projekte im Netz auch) auf den Hersteller Bosche. Die Wägezelle muss folgenden Anforderungen entsprechen:
-+ Mssbereich 100Kg (Waagedeckel + Beute (2 Brut- und 2 Honig-Zargen) + Deckel und Abdeckgewicht.
-+ Sabile Verschraubung des Waagedeckels (für Zander: 40 x 50cm) mit dem Unterboden
-+ Dadurch geringe Eckgewichtslast-Fehler
-+ Spannungsversorgung ab 5V (aus Raspi Versorgungsspannung)
-+ Großer Temperaturmessbereich -30 … +50 Grad
-+ bei vorgegebener Genauigkeit: Class C3: 2mV/V
-	- Bei  5V Messzellenspannung ergibt das eine Messabweichung von
-(100kg/5V)*2mV => +/- 40Gramm
-+ Wasserfestigkeit IP65 (spritzwassergeschützt)
-
-Daher fiel die Wahl auf die: **Bosche H40A Wägezelle** mit den Eigenschaften:
-+ Nennlast 100 kg
-+ Kompensierte Eckenlastfehler
-+ Für Dauereinsatz geeignet
-+ Bezug direkt über den Bosche Shop: http://www.bosche.eu
-+ Material: Aluminium
-+ Genauigkeitsklasse bis C4 (C3 Standard, C4 auf Anfrage), Y=15.000, Nennwert-Toleranz: 2,0 mV/V
-+ Eichfähig nach OIML R60 bis 4000D, Prüfscheinnummer: DK0199-R60-12.19
-+ Aufbau: Das Messelement ist vergossen, Schutzklasse: IP65
-+ Max. Plattformgröße: 500 x 500 mm
-+ Stromversorgung: 5 – 12V
-+ Temperarturbereich: - 30 ... + 70 °C
-+ Anschluskabel: 1,8m
-+ Preis: 58€
-
-Anfangs habe ich mit dieser wesentlich günstigeren Wägezelle gestartet: --YZC161E-- (ca. 4,50€/Zelle)
-Durch den Aufbau bedingt verkraftet diese Zelle aber nur 50Kg pro Zelle und ist baulich als Auflagesensor gedacht. Daher werden 4 Stück an jeder Ecke benötigt, die als Wheatstone-Brücke verschaltet werden müssen.
-
-Wie aus dem unteren Bild (linke Hälfte) aber ersichtlich weisen die Auflagepunkte Reibung auf (je mehr Gewicht desto höher), die bei einer horizontalen Temperatur-Ausgleichsbewegung der Stabilisierungsträger Verspannungen hervorruft, und somit die Messzelle und damit die DMS vorspannt und zu starken Messfehlern führt.
-Besonders unangenehm ist das „Springen“ der Auflage über den Messzellenauflagepunkt ab Überschreitung einer max. Spannung, was wiederum zu Messwertsprüngen führt. Diese lassen sich auch über eine Messzellen-Temperaturmessung nicht mehr verlässlich kompensieren.
-Diese Wägezelle eignet sich vorrangig für Körperwaagen, wo i.d.R. nur Einzel-Messungen mit Rücksprung auf Null Gewicht erfolgen. Für konstante Dauermessungen auf höherem Gewichtsniveau eignen sie sich nicht.
-
-<img src="./images_v2/WeightCellDesign.jpg">
-
-Daher habe ich diese zwar günstige aber aufwändig installierbare und nicht kalibrierbare Variante wieder verworfen.
-
-Die Anbindung der **Bosche Wägezelle H40A** an den Raspberry PI (GPIO Ports) erfolgt über das 24bit A/D-Wandler Modul ‘HX711‘. Dieses wurde speziell für Wägezellen mit Wheatstone-Brücke konzipiert und weisst eine einstellbare Verstärkung und integrierte Referenz-Spannungsversorgung auf.
-Beim Kauf ist darauf zu achten, dass die Module an den Anschlüssen E- bzw. BLK mit GND verbunden sind, was sich sonst in einer geringeren Temperaturstabilität und Meßstreuung auswirkt. Im Zweifel muss die Draht-Brücke selbst durch einen externen Draht nachgearbeitet werden.
-Module mit grüner Schutzfarbe sind aber i.d.R. richtig beschaltet.
-Desweitern werden die Wägezellen durch ihre Anzahl an Dehnmessstreifen (DMS) mit einer Wheatstonebrücke versehen. Ein DMS wandelt eine Gewichtsbelastung an einer Körperoberfläche in Widerstandsänderungen der Größenordnung Faktor 0,0001 – 0,001 eines Referenzwertes von ca. 400 Ohm um. Diese sehr geringe Änderung ist durch eine Messbrücke nach Wheatstone zu vermessen, welche durch ihre gegenläufigen Widerstandspaare temperaturstabilisierend und messverstärkend wirkt.
-In der Bosche H40A sind die DMS derart verschaltet, dass das Ausgangssignal direkt auf den A/D Wandler HX711 geführt werden kann, was den Aufbau stark vereinfacht.
-
-###AD Wandler HX711
-Der AD Wandler HX711 ist für die Messung von Wheastonebrücken optimiert und bietet dazu 4 Anschlüsse E+/- + A+/-. An den Pins B+/B- liegt die Messspannung für die Waagzellenbrücke an. In unserem Fall die 5V von der Raspi Hauptstromversorgung.
-
-Auf der rechten Seite befinden sich 4 Anschlüsse zur digitalen Anbindung an die GPIO Ports:
-
-<img src="./images_v2/HX711Board.jpg">
-
-Die Eigenschaften des HX711:
-+ 2 wählbare Eingänge zur Differenzmessung
-+ Ein On-chip active rauscharme Steuereinheit mit wählbarer Verstärkung (32, 64 und 128)
-+ On-chip Stromversorgungskontrolle für die Waagzelle
-+ On-chip Rest nach Einschaltung
-+ Einfache digitale Anbindung
-+ Wählbare Samplegeschwindigkeit (10SPS oder 80SPS)
-+ Stromsparregler: normaler Betrieb < 1.5mA, Off Mode < 1uA
-+ Spannungsversorgungsbereich: 2.6 - 5.5V
-+ Temperaturbereich: -40 - +85?
-
-Zum Anschluss der HX711 I2C Ports an den Raspi werden nur 2 der generischen GPIO Ports benötigt (I2C: Data + SClk). Um eine möglichst stabile und störungsfreie Stromversorgung auf den 3.3V (digital) und 5V (Analog-) Schiene zu haben werden je 1x 100nF Siebkondensatoren sowie je ein 4,7uF Puffer-Elko verwendet.
-Zur Abwägung des Stabilisierungsaufwandes dient folgende Genauigkeitsbetrachtung:
-
-+ Gegeben: Speisespannung der Wheatstonebrücke von 3.3 Volt und einer Nennwert-Toleranz von 2mV/V (Class C3)
-+ Bei 5V Messzellenspannung ergibt das eine **Messabweichung** von (100kg/3.3V)*2mV => **+/- 60 Gramm**
-+ Eine **Empfindlichkeit** von 5V * 2mV/100kg = 0,066mV/kg
-
-Der verwendete A/D Wandler darf somit eine maximale Schrittweite von **~0,5 µV** (entspricht 20Gr) haben.
-Das Bedarf einer sehr stabilen Referenzspannung und der ADC muss mind. 24Bit Auflösung haben (3.3V/2hoch23 = 0,4 µV). Damit ist der HX711 mit 24bit Genauigkeit an 3.3V also genau passend.
-Die Streuung um die 3.3V Stromversorgung bestimmt also direkt die Qualität/Streuung der Messwerte.
-Diese Streuung kann über Mittlung von mehreren (~10-20) Messwerten schon deutlich verringert werden und den Messfehler verringern und damit den Vertrauensbereich deutlich erhöhen.
-
-###Temperatursensoren
-Für den Anschluss von mehreren Messeinheiten über einen (3-pol.) Eingangsport bietet sich das serielle OneWire Protokoll an. Dafür steht eine große Palette an günstigen Sensoren zur Auswahl.
-Für die benötigte Genauigkeit der Temperaturmessung wird der Sensor DS18B20 von Dallas verwendet, den es in der Bauform als 1,8m langes Versorgungskabel (3-pol.) und IP67 Abdichtung mit einer robusten Aluminium-Messspitze als Messsonde gibt.
-
-Wie aus dem Bild ersichtlich, werden einfach alle OneWire Sensoren mit ihren 3 pol. Leitung parallel angeschlossen (es sind bis zu 10 Sensoren möglich). Zur Versorgungsstabilisierung der Datenleitung reicht ein Pullup Widerstand von 4.7k Ohm gegen 3.3V für alle angeschlossenen Sensoren.
-
-<img src="./images_v2/BeeIoT_Schematics.jpg">
-
-Über einen externen Stecker könnten noch weitere Sensoren angeschlossen werden.
-
-
-###LED-Status Anzeige
-Zur Anzeige der Spannungsversorgung Status (An/Aus) wird eine grüne LED verwendet.
-
-Eine rote LED kann über einen GPIO Port getrennt angesteuert werden und durch Blinkcodes aus dem Programm verschiedene, Zustände (Start/Runtime Aktivität) anzeigen. 
-Per default wird die Messzeit der Wägezelle durch LED(rot)= AN angezeigt.
-
-##Das BeeIoT Client Modul
-<img src="./images_v2/BeeIoT_Client_Moduleplan.jpg">
-Das vollständige Übersichtsbild der Stockwaagenmodule zeigt die Vielfalt der verwendeten Techniken, aber auch das Potential in Sachen Spannungsversorgung und Sensorik:
-
-+ Spannungsversorgung
-	- USB 5V direkt extern + optional über einen Spannungsanheber (StepUp) an Batterielader
-	- Lithium Batterie intern mit Ladekontrollmodul
-	- LAN-POE mit POE/LAN Splitter
-	- PV Modulanschluss extern
-+ Kommunikation
-	- USB/Ser. Adapter
-	- WiFI Http Port
-	- Bluetooth
-	- SIM7000E GPRS Modul
-+ Sensorik
-	- 100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)
-	- OneWire Temperatur internal Sensor an der Wägezelle
-	- OneWire Temperatursensor extern
-	- OneWire Temperatursensor extern für Stocktemperatur Messung (über 1m Leitung)
-+ Optionale Erweiterung
-	- USB GPS Maus (als Diebstahlschutz)
-	- IR Kameramodul extern (USB oder Raspi GPIO Port Anschluss)
-	- IR Lichtschranke als Fluglochzähler (beecounter)
-
-
-##Stromversorgungsoptionen
-Als größter und wichtigster Stromverbraucher gilt der ESP32 im Wifi + BT Modus mit bis zu 240mA/h an 3.3V.
-Hinzukommt das SDCard Modul mit 70mA.
-
-Diese 5V können über verschiedene Wege bereitgestellt werden:
-
-###Externer USB Port
-Der direkteste und einfachste Weg ist natürlich direkt über einen externen USB Port als Ladeanschluss (max 1A möglich).
-
-**Vorteil:** einfach und günstig über ein USB Ladegerät bereitzustellen. 
-**Nachteil:** Die Reichweite ist zur Vereidung von Stör-Strahlungseinflüssen auf wenige Meter beschränkt. –> erfordert einen wetterfesten Netzanschluss „in der Nähe“ (ev. ideal für die Heimgartenlösung).
-
-###Batterie
-Als ladbare Batterie kämen in Frage ein
-
-+ Gel/Blei Akku
-	- Positiv: 	günstig im Einkauf
-	- Negativ:	hohes Gewicht und Volumen
-+ Lithium-Fe Akku
-	- Positiv: 	Hohe Energiedichte -> geringes Volumen und Gewicht
-	- Positiv:		lange Haltbarkeit der Ladung
-	- Negativ:	sensibel bei niedrigen Temperaturen
-	- Negativ:	hoher Preis
-
-Zum Einstieg habe ich mich für einen 7.2AH/12V Gel/Blei Akku von Panasonic entschieden: 
-LC-R127R2PG1 für ca. 20€.
-Damit sollte eine Laufzeit ohne Nachladung von ca. 2 Tagen möglich sein. Das müsste aber noch im Vollausbau getestet werden.
-
-
-###PV Modul
-Nicht zuletzt die mobile Lösung durch ein externes PV Modul/Panel:
-
-	Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)
-	
-<img src="./images_v2/SolarPanel_RAVPower.jpg">
-
-Die Besonderheit liegt in der hohen Dynamik der Energieversorgung durch wechselnde Sonneneinstrahlung, weswegen ein nachgeschalteter interner Laderegler via Batterie die Energie puffert und in die gewünschte Zielspannung umsetzt. 
-Auch hier ist das Spektrum sehr groß, von einem 180W Panel 1,8m x 0,8m Größe bis hin zu einem 40W Faltpanel, teilweise gleich mit Micro USB Kabel Anschlüssen.
-
-Auch hier müssen wir eine Lösung finden die im Schnitt >16V liefert und mit ausreichender Leistung.
-Diese sind häufig im Campingbereich zu finden als Kompromiss zw. Mobilität und Leistung.
-
-In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.
-Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.
-
-###Batterie Laderegler
-Die Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.
-
-Erste Versuche habe ich mit dem **PV Solar Panel MPPT Laderegler von Sunix** gestartet: 
-
-<img src="./images_v2/SolarCharger.jpg">
-
-	Modell: SU-SU702  (CMTD 2420) / 10A mit den Maßen: 14,4 x 8,3 x 4,1 cm für 13,99€
-
-
-Er hat die interessante Zusatzfunktion neben jeder Eingangsspannung bis 70V und der Batterieausgangsspannung zw. 12-14.3V auch 2 Standard USB Ports anzubieten mit geregelten 5V.
-Diese würden direkt für den Betrieb des RaspberryPi herhalten können.
-
-Die Kennwerte dieses Moduls sind:
-> Nennspannung : 12V / 24V (Auto-Switch)
-> Max. Lade / Entlade-Strom : 10A
-> Max. Solar-Panel Eingangs-Spannung : =50V
-> Stop-Ladespannung : 14.7V / 29.4V
-> Nieder-Voltage-Wiederherstellung : 12,2 V / 24.4V
-> Nieder- Spannungsschutz : 10.5V / 21.0V
-> USB-Ausgangs-Spannung / Strom : 5V 2A
-> Kein- Lade-Verlust : =10mA
-> Temperatur Kompensation : -3mV / Cell / ° C
-> Betriebs-Temperatur : -20 ° C ~ 60 ° C
-
-Mit folgenden Schutzmassnahmen:
-1. Überlastschutz
-2. Kurzschlussschutz
-3. Blitzschutz
-4. Unterspannungsschutz
-5. Überladeschutz
-6. Verpolschutz
-
-Mit diesem Laderegler ist es möglich die Batterie-Beladung durch unterschiedliche Stromquellen über Dioden zusammengeführt zu konfigurieren, während ein Verbraucher parallel versorgt wird (können viel Batteriepacks nicht: nur Laden oder nur Liefern).
-Bei dem oben aufgeführten 16W Solarpanel habe ich den 5V Wandler der USB Ports umgangen und direkt eine Ableitung von den Panels angelötet. Dadurch erzielt man Spannung zw. 0…25V, was en Wirkungsgrad des Ladereglers erhöht.
-
-Bei einem trüben aber freundlichen Märztag war eine Ladespannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…
-
-Über 2x BY500 Dioden lassen sich weitere Stromlieferanten am Eingang einpflegen.
-Für die Kontrolle der Pegel einer jeden Spannungsquelle (3.3V, 5V, 12V usw.) wurde ein 4-Kanal 16Bit A/D Wandler ADS1115S mit SPI Anschluss vorgesehen.
-Für die eigene Versorgungsspannung Vcc= 5V des Converters habe ich 5V gewählt um ein größeres messbares Spannungsfenster an den AnalogPorts verfügbar zu haben: 0V – 4,096V -> 1mV / Step .
-
-Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenleitung auf 5V Pegel umgesetzt.
-
-<img src="./images_v2/ADS1115Schematics.png">
-
-Zur Stabilisierung der 5V Linie habe ich noch einen 10uF Kondensator spendiert.
-
-Über 2x 3.3kOhm Widerstände werden am ADS1115 AnalogPort 3 ein Spannungsteiler zur Messung der (eigenen) 5V Spannungsversorgung ermöglicht. Ähnlich müsste man bei größeren Spannungsquellen verfahren die >4V liegen.
-
-###Powerbank mit Laderegler
-Eleganter ist es aber gleich den LiPo-Laderegler einer geeigneten Powerbank zu nutzen:
-<img src="./images_v2/BeeIoT_PowerBank.jpg">
-
-Hie rhabe ich die PowerAdd Pro3 verwendet, welche gleich 2x 15.000mAh LiPo Elemente beinhaltet, nd 2 Micro-USB Ports zum Laden, sowie 3 Std. USB Ports für Verbraucher anbietet. Das Ganze für ca. 26€.
-
-Im Bild sieht man das Innenleben mit den angezaptften Sensorleitungen + Powerlines die cih über einen STepUp Buck Booster auf passende 5V regle.
-
-
-##Der Aufbau
-+ Das Rahmenwerk besteht aus wasserfesten 10mm MBF Platten sowie einer Kantholz Unterlage-Konstruktion
-+ Das Compute Node Modul ist in ein wasserdichtes Gehäuse der Schutzklasse IP67 eingebaut
-+ Kabelanbindung mit Nagetierschutz
-+ Messbereich: 0..100kg mit +/- 60 Gramm Genauigkeit und extrem geringer Temperaturdrift
-+ Start der Messung und Übertragung automatisch beim Re-/Start
-+ Einfache Konfiguration auf Basis remote erreichbarer (Windows & Linux) Konfigurationsdatei (config.ini)
-+ Alle Kabel werden an das Gerät durch wasserdichte Kabelverschraubungen angeschlossen.
-+ Alle angeschlossenen Sensoren sind auch wasserdicht, Schutzklasse IP-66 oder IP-67.
-+ Der Gehäuseaufbau erlaubt das einfache Anpassen der Auflagefläche durch massgerechte Unterlegplatte für jede Beutengröße verwendet werden.
-+ Nachkalibrierung des Waagemoduls durch SW Funktion
-
-###Stückliste
-
-| Index | Stück | Bezeichnung | Hersteller | Bezugsquelle | Preis | Kommentar |
-|-------|-------|-------------|------------|--------------|-------|-----------|
-|1|1|Plattformwägezelle H40A-C3-0100|Bosche|http://www.bosche.eu|58€|H30A v H40A 100kg|
-|2a|1|ESP32-DevKitC v4|OSS|Amazon|20€|(WROOMER32 oder WOVER32)|
-|2b|1x|SD HC Karte 2GB|||Amazon|5€|
-|3|1x|HX711 24 Bit A/D Wandler||Amazon|10€|mit grüner Lackschicht!|
-|4|2x|Montageplatte für Wägezelle ALU 200 x 200 x 10mm|Schlosserei||200€|Keine Beschichtung|
-|5|2x|4-kant Unterlageholz|Baumarkt||10€|20x40x500mm|
-|6|1x|IP67 Kunststoff-Montagebox|Maße 70x80x160mm||Amazon||
-|7|3x|Temperatursensor DS18S20|Dallas|Amazon|7,5€|Mit 1,1m Kabel|
-|8|1x|MSP Siebholzplatten 520x410x10mm |Baumarkt|Baumarkt|20€||
-|9|1x|MSP Siebholzplatten 490x380x10mm |Baumarkt|Baumarkt|20€||
-|11|2x| 520x70x10mm|Baumarkt|Baumarkt||5€|
-|12|2x| 390x70x10mm|Baumarkt|Baumarkt||5€|
-|13|16x|M12 30mm Senkkopfschrauben|Baumarkt|Baumarkt|16€||
-|14|18x|4x50mm Senkkopfschrauben|Baumarkt|Baumarkt|10€|Verbindung der MSP Platten+Leim|
-|15|1x|POE Einspeiser & Wandler 1Gb/s & POE 48V->5V||Amazon|15€|1Gb/s & Mini-USB|
-|16|div.|Litze D:1mm ca. 3m||Amazon/Conrads|10€|Sensorverdrahtung|
-|17|1x|Alu/Kunststoff-Platte 120x60x1,5mm||Amazon|8€|Anschlusspanel|
-|18|1|5-pol wetterfeste Durchführungs Rundstecker & Buchse||Amazon|5€|Für ext. OneWire Sensoren|
-|19|1|Epoxid Rundlochplatine Euro-Format(einseitig)||Conrads/Amazon|5€|ESP32 + GPIO Sensorverstärker (HX711 und OneWire Bus)|
-|20|1|Sub-D 25-pol. Stecker & Buchse||Conrads/Amazon|5€|Zum Durchführen der HX711 und OneWire Bus-signale am K.Stoff-Gehäuse|
-|21|1x|4-channel Level Converter für 3V <-> 5V Pegel,  bidirektional||Amazon|4€||
-|22|1x|A/D Converter ADS1115S||Voelkner|5€|4-fach 16Bit A/D Wandler mit I2C API zur Versorgungs-Spannungsmessung|
-|23|1x|Micro USB Buchse||Amazon|8,50€|Zur USB-A Port Durchführung am Aussenpanel|
-|24|2x|10-polige Steckerleiste|Printmontage|Amazon|1,50€|Stecker für die ADS1115S + HX711 Ports|
-|25|2x|8-polige Steckerleiste Printmontage||Amazon|1,50€|Stecker für das ePaper 2in7 API + OW/LED Leitungen|
-|26|2x|3.3kOhm Metallfilm Widerstand 1/4W||Voelkner|0,10€|Als Spannungsteiler am Analogport 3 des ADS1115S|
-||Optional:||||||
-|27|1x|ePaper Display 2in7 von WaveShare 264x176 pixel 3.3V||Amazon|25€|Extrem stromarmes S/W Display 2,7 Zoll mit SPI Interface|
-|28|1|RJ45 1Gb/s wetterfeste Durchführungsbuchse||Amazon|10€|Für LAN & POE Anschluss|
-|29|1|LAN Kabel Cat6 Outdoor 10-30m||Amazon|20-40€|Länge nach Erreichbarkeit des Switch|
-
-##Das Aussengehäuse
-
-<img src="./images_v2/BoxOutsideView.jpg">
-
-Hier sieht man schematisch im Querschnitt die Auflagekonstruktion der Wägezelle.
-
-<img src="./images_v2/BoxSideView.jpg">
-
-Der damit verbundene Deckel + Compute Node + Power Module schwebt über dem Bodenelement und liegt samt komplettem Beutengewicht ausschliesslich auf den etwa 16cm2 Fläche der verschraubten Wägezelle auf. Dies erreicht man über 6-8mm starke Zwischenbleche jeweils an der oberen und unteren Verschraubung der Wägezelle, die je mit 4x M10 Senkkopf-Schrauben fixiert ist.
-
-Steht die i.d.R. 50-70kg schwere Beute auf der Waage schwankt sie recht steif über der Bodenplatte. Dies ist ein Zeichen dafür, dass das Waagzellen Element aktiv die Kraft aufnimmt und nirgends aufliegt.
-
-In der Rückwand ist das Anschlusspanel eingearbeitet und sowie die notwendigen Aussenanschlüsse. 
-Das E-Paper Panel ist in die linke Seitenwand eingesetzt worden.
-
-###Das Anschluss Panel
-Das Gehäuse Panel ist der einzige Anschlussbereich nach Aussen. Daher werden dort wasserfeste Stecker-Kombinationen eingesetzt:
-
-+ USB-A Anschluss zur ESP32 Stromversorgung und SW Upload
-+ LAN Anschluss (1GB/s mit POE 48V)
-+ 5 pol. externer OneWire Sensor Connector für den Bienenstock Temp.Sensor
-+ LEDs für Monitor & Status
-+ ...ev. weitere Optionen.
-
-Als Träger dient eine korrosionsbeständige eloxierte ALU Platte (1mm). An dieser lassen sich die Buchsenlöcher gezielt herausarbeiten; sie trägt aber nicht so stark auf wie eine Holzplatte und kann daher in eingefräste Grate eingesetzt werden.
-
-2 LEDs zeigen die Betriebszustände der Stromversorgung (grün) und die Messaktivität (rot) an (rot = Messaktivität läuft).
-Die Aussenansicht:
-<img src="./images_v2/BackConnectors.jpg">
-
-Die Innenansichten der Anschlussstecker und der E-Control-Box:
-<img src="./images_v2/BoxInsideOvw.jpg">
-
-###Die Bosche Wägezelle
-(Einbau als Single-point Wägezelle)
-Die Wägezellen von Bosche für Plattformwaagen gibt es in 4- oder 6-pin Ausführung. 
-Beide sind funktionell gleichwertig:
-
-<img src="./images_v2/BoscheCell4.jpg"> <img src="./images_v2/BoscheCell6.jpg">
-
-Hier kommt die übliche Wheatstone-Brücke zum Einsatz, die die beste Temperatur-Kompensation bei hoher Messgenauigkeit bietet. Die Temperaturkalibrierung an den Dehnmesstreifen wurde werksseitig schon vorgenommen. Ggfs. bei Temperaturen < -5Grad kann noch eine rechnerische Kompensation softwareseitig überlagert werden und sinnvoll sein.
-
-Der Einbau gestaltet sich sehr einfach. Einzig die Fixierung der jeweils 4 Schrauben pro Auflagefläche muss sehr stabil und genau erfolgen. Hier setzt der Hebel des gesamten Beutengewichts samt Waagedeckel an.
-
-Dazu die Auszugsbilder aus der mechanischen Applikations-Beschreibung:
-
-<img src="./images_v2/BoscheApplication.jpg">
-
-und die einfache Konstruktion, wie sie hier zum Einsatz kommt:
-
-<img src="./images_v2/WeightCell.jpg">
-
-Die obere und untere Platte zur Kraftübertragung auf die Wägezelle sollte mind. 6-8mm betragen und idealerweise aus Edelstahl. Aus Kostengründen geht aber auch Aluminium. Dann aber besser mit 10mm Stärke. Die Plattenmaße betragen bei mir 12 x 18cm (darf aber auch größer sein).
-
-Die Distanzscheiben betragen bei mir je 4mm und bestehen aus separaten kleinen Aluscheiben mit dem Maßen 6x6cm inkl. den benötigten 4 Bohrungen für die M12 Schrauben.
-Die Bohrungen in der Platte sollte 1mm größer ausfallen als die Schraubenstärke und nach „aussen“ konisch durch einen Phasenschneider erweitert werden. Dadurch kann man die als Senkschrauben ausgelegten 2x4 M6-M8 Schrauben bündig abschliessen. Dies ist nötig um die Gehäuse-Deckel/Boden bündig auf die Platten zur bessern Kraftübertragung anzubringen.
-
-Die Überlastsicherung besteht aus einer M6 - M8 Gewindebohrung an der untern (oder oberen Platte) und einer Schraube, über die der Arbeitsbereich der Wägezelle eingestellt werden kann. Bei einer 100kg Wäge-Zelle erzeugt man ein Testgewicht von 110kg und man dreht die Schraube solange ein bis sie leicht an der Wägezelle aufstehen. Dadurch wird einer zerstörenden Verformung des Zellenkörpers vorgebeugt (z.B. wenn man sich auf der Beute abstützt bei aufliegendem vollen Honigraum).
-An einer Seite schaut das 4/6 adrige Kabel heraus, welches zum A/D Wandler HX711 der Compute-Einheit führt.
-
-Zuletzt wird die Platte durch weitere Gewindebohrungen mit kurzen M12 Schrauben mit dem Gehäusedeckel-/Boden verschraubt.
-
-Hier nochmal das Lagebild der Wägezelleneinheit mittig zum Gehäuse:
-
-<img src="./images_v2/Box_WeightCell.jpg">
-
-###One Wire Sensoren
-One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse Gnd, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.
-
-Durch das OneWire Bus-Protokoll können somit leicht mehrere Sensoren unterschiedlichster Art/Funktion hintereinander, an demselben Anschluss verbunden werden. Bei den Raspi GPIO Ports sind allerdings nur max. 8 Sensoren in Verbindung mit 3.3V Vcc in Kombination mit abgeschirmtem Telefonleitungen zu empfehlen.
-Jeder Sensor hat dabei zur Erkennung eine einzigartige 64 Bit ID. Verwendbar sind die Sensoren an Spannungen mit 3-5V.
-
-Der ESP32 erlaubt mit seinem GPIO Matrix Konzept jeden beliebigen IO-Port zum OneWire Port zu konfigurieren. Der OneWire Driver wendet das OW-Protokoll wie vom Hersteller „Dallas“ spezifiziert dann auf diesen Port an.
-Die Störanfälligkeit ist gering dank rein digitaler Übertragung. Die Datenleitung benötigt dazu allerdings einen Pullup von 4.7k Ohm einmalig (!) von der Daten- auf die Vcc Leitung (unabhängig von der Versorgungs-Spannung!).
-
-Neben den 2 internen Temperatursensoren habe ich über einen 7-poligen Stecker die OW-Busleitungen nach Außen zugänglich gemacht um weitere externe Sensoren zu ermöglichen.
-
-####Der DS18B20 OW-Temperatur-Sensor
-Der DS18B20 OneWire Sensor ist besonders praktisch für das Messen von Temperaturen in Wasser oder feuchten Umgebungen dank wasserdichtem 1,10m langem Kabel und der vergossenen 3 cm langen Metall-Messsonde.
-Der Temperaturbereich reicht von -55 bis 100 Grad.
-
-Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit von -10°C bis +85°C) dank einem internem vorkalibriertem 12Bit A/D Wandler und ist somit für unsere Messungen mehr als hinreichend.
-Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.
-
-**Verfügbare Ausführungen:**
-+ DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang 
-+ Kabellänge von etwa 90-110cm lang mit Durchmesser 4mm, unkonfektioniert
-
-	**Sensor-Anschluss mit 4-adrigem Kabel:**
-1. Rot:	 	3-5 V Anschluss, 
-2. Schwarz:	Masse 
-3. Weiß.		1-Wire serielles Datenprotokoll 
-4. Die äußere Kupferader wird an die Drahtabschirmung mit dem Stecker/Gehäuse verlötet.
-
-	**Sensor-Anschluss mit 3-adrigem Kabel: **
-1. Rot:		3-5 V Spannung 
-2. Blau / Schwarz: wird mit Masse verbunden 
-3. Gelb / Weiß:	1-Wire Datenleitung
-
-Weitere Links:
-* [Dallas Temperature Control Library](http://www.milesburton.com/?title=Dallas_Temperature_Control_Library "Dallas TempControl Lib")
-* [OneWire Library](http://www.pjrc.com/teensy/td_libs_OneWire.html "OneWire Lib")
-
-Obwohl die Versorgungsspannung für 1-Wire-Devices normalerweise 5 V beträgt, ist beim ESP32 die verringerte Spannung von 3,3 V nötig, weil dessen GPIO-Ports nur 3,3 V vertragen und durch höhere Spannungen zerstört werden.
-Nachfolgende Bilder zeigen die verschiedenen Anschlussmöglichkeiten. Dabei werden die dargestellten Chipformen in unserem Fall in einer Metallhülse vergossen.
-
-<img src="./images_v2/DS1820pins.jpg"> <img src="./images_v2/DS1820pins2.jpg">
-
-(Wie erwähnt: der Pullup Widerstand wird nur einmal intern angeschlossen.)
-
-###Compute Node
-Das Herzstück des Computnodes ist im BeeIoT-Client Modell der **ESP32-DevKitC**.
-
-Dieser sowie alle weiteren empfindlichen elektronischen Module wurden in eine IP67 dichte Box eingebaut. Das beugt Kondenswasserschäden vor. Widererwartens habe ich auch bei höchsten Aussentemperaturen kein Temperaturproblem am ESP32 gehabt. Dies kommt wohl durch die Isolationswirkung der massiven aufstehenden Beute von Oben:
-
-<img src="./images_v2/ESP32_Controlbox.jpg">
-
-Zwischen dem Raspi und den Sensoren dient eine Lochrasterplatine als Verbinder und Träger der Umsetzungsmodule, wie dem HX711 A/D Wandler für das Wägezellenmodul, dem Level Converter & ADS1115S, sowie diverser Widerstände und Kondensatoren zur Leitungspufferung. (Details siehe Schaltplan).
-Von rechts gesehen führt ein Mini-USB Stecker die 5V Versorgungsleitung in die Box an den ESP32. Von der ESP32-Platine führen mehrere Steckervarianten die Sensorleitungen zu einem extern 25-pol. Sub-D Stecker. Hierfür gibt es sicher noch elegantere Steckverbinder ev. incl. Abschirmung. Dieser Aufbau erwies sich aber als erstaunlich wenig störanfällig, trotz Ausseneinsatz und einer langen USB Zuleitung.
-
-###Anschlüsse
-Hier nun eine Übersicht aller verwendeten Steckervarianten:
-
-+ Links:	Der runde 6-polige One-Wire Extension Stecker mit dem typ. 3 OW Bus Leitungen.
-+ Mittig:	Der Zwischenstecker der Adapterplatine für alle verwendeten int. + externen Sensoren.
-+ Rechts:	Der 25-pol. Sub-D Stecker ausserhalb der IP67 Computenode-Box
-
-<img src="./images_v2/BeeIoT_ExternalConnectors.jpg">
-
-<img src="./images_v2/BeeIoT_InternalConnectors.jpg">
-
-Die Adapterplatine mit Komponentenbeschriftung:
-
-<img src="./images_v2/BeeIoT_BoardLayout.jpg">
-
-
-###Das E-Paper Display
-Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.
-Dadurch sieht man wesentliche Werte gleich Vorort und nicht nur über eine Webseite remote.
-
-Als Kriterien gelten:
-+ Stromsparend auch in der Wait-Loop Phase zwischen den Messungen
-+ Gute Ablesbarkeit durch hohen Kontrast auch bei direkter Sonneneinstrahlung
-+ Einfacher Anschluss an bestehende ESP32 Interface-Pegel: 3.3
-+ Einfache Ansteuerung und Kontrolle der Darstellung.
-
-Zumindest die ersten 3 Punkte konnte ich durch das ePaper von WaveShare erfüllen:
-+ Waveshare 2.7 Inch E-Paper Display HAT Module Kit 264x176 Resolution
-+ 3.3v E-ink Electronic Paper Screen with Embedded Controller
-+ for ESP32 SPI Interface
-
-Ein Stromverbrauch entsteht nur in der Ladephase der Darstellungsdaten. Größter Vorteil ist aber das passive Darstellungsmedium welches auch bei direkter Sonne wie ein gedrucktes Papier erscheint. Das erhöht die Lesbarkeit im Outdooreinsatz enorm.
-Ein LCD Display müsste hier nachgesteuert werden und muss dazu dauerhaft mit Strom versorgt werden.
-
-Das EPaper hat i.d.R. aber leider auch keine Hintergrundbeleuchtung. Dieses Modul weißt neben dem eigentlichen Display noch 4 universelle Schalter zur späteren funktionellen Erweiterung von z.B. verschiedenen Darstellungsebenen auf.
-
-<img src="./images_v2/WaveShareFront.jpg">
-
-Als Anschluss steht ein separates SPI Interface über einen 8poligen Stecker incl Kabel zur Verfügung:
-
-<img src="./images_v2/WaveShareBack.jpg">
-
-Die Anschlussbelegung des Kabelanschlusses:
-
-|Pin |Function|
-|----|--------|
-|VCC |3.3V/5V |
-|GND |Ground  |
-|DIN |SPI MOSI pin|
-|CLK |SPI SCK pin|
-|CS  |SPI Chip Selection, low active|
-|DC  |Data(=1) / Command(=0) selector|
-|RST |Reset, low active|
-|BUSY|Busy status output, low active|
-
-Für erste Testzwecke kann das gesamte Modul auch gleich auf den 40pol. IO Stecker des RaspberryPi gesteckt werden.
-Den passenden und umfangreichen DemoCode von WaveShare für RaspberryPi in C++ findet man **[hier](https://www.waveshare.com/wiki/File:2.7inch-e-paper-hat-code.7z)**.
-
-##Die ESP32 BeeIoT Sketch Software
-Ab hier folgt nun eine Schrittweise Einführung und Konfiguration der ESP32 Einheit ab der SD Karten Vorbereitung bis zum prinzipiellen Ablauf der Logger SW.
-
-###ESP32 Vorbereitungen
-Wer sich noch nicht so sehr mit dem Raspberry auskennt, dem sei diese **[Einsteiger-Seite](http://raspberrypiguide.de/ "RaspberryPi Guide")** empfohlen.
-
-In diesem Bauvorschlag wurde der RaspberryPi V3 verwendet, weil 4x USB 2.0 Ports zur standardisierten Erweiterung geboten werden (z.B. für USB WLAN-Dongle  oder USB-GPS-Maus, sowie alternative Stromversorgungen). Leider hat dieses Model einen deutlich höheren Stromverbrauch, weshalb nur ein zeitlich eingeschränkter Batteriebetrieb möglich ist.
-Wer diese Optionen aber nicht benötigt, findet die benötigten GPIO Anschlüsse bei den kleineren Raspi-Modellen (A + B) auch wieder (wenn auch nicht auf einer GPIO Leiste). 
-Die OS und SW Konfiguration sollte für alle Modelle gleich anzuwenden sein.
-
-Physikalisch ist das ESP32 DevKitC V4 Board wie folgt angeschlossen:
-* Mini USB Stecker zur 5V Versorgung 
-(vom Powermanagement Modul bzw. POE Adapter kommend)
-* Das 38-polige GPIO Port Pinning: J8 (weitere Details siehe Schaltplan):
-
-<img src="./images_v2/BeeIoT_Schematics.jpg">
-
-Der GPIO Port für 1-Wire ist konfigurierbar über /boot/config.txt: dtoverlay=w1-gpio, gpiopin=4 (nach BCM GPIO Nummerierung)
-
-Intern bietet der Raspi 3 noch ein Realtek WLAN Modul onboard.
-Der Raspi2 oder Raspi Zero bieten das nicht, haben dafür aber den geringeren Stromverbrauch. Alternativ gäbe es den hier verwendeten „Raspberry PI Zero W“, mit WiFi onboard und besserer WLAN Antenne als der 3B.
-Benötigt man dennoch einen WLAN Zugang -> muss man ansonsten noch einen 2. USB Port mit USB WLAN Dongle anschliessen (z.B.der  Minidongle von EMtec)
-
-Tips dazu finden sich hier:
-+ [USB WiFi Adapter](http://elinux.org/RPi_USB_Wi-Fi_Adapters)
-+ [USB BlueTooth Adapter](http://elinux.org/RPi_USB_Bluetooth_adapters)
-
-Hier die vollständige GPIO Stecker J8 Belegung, wie sie für alle Modelle ab v2 gültig ist.
-
-<img src="./images_v2/ESP32_DevKit_Pinout.jpg">
-
-Jeder GPIO Port darf allerdings nur mit **max. 50mA an 3.3V** belastet werden.
-
-####Der ESP32 Sketch
-**Nun kommen wir endlich zur Software Seite:**
-
-Häufig kauft man das RaspberryPi im Paket mit einer fertig getankten SD Karte (für den Einsteiger zu empfehlen). Wer es selber machen möchte:
-
-Auf die (empfohlene 16GB) SD Karte des Raspberry wird das Betriebssystem Raspbian Stretch (Debian V8 „Jessie“) aufgespielt.
-Dazu ladet ihr das NOOBS-Image (ca 1,5 GB) herunter: **[RPi Download Page](http://www.raspberrypi.org/downloads)**
-
-Unter Windows solltet ihr die SD Karte als Laufwerk bereits sehen. Sicherheitshalber über den Disk Manager die SD Karte neu mit FAT32 (Standard) formatieren (Quick format reicht).
-Das NOOBS Image mit Winzip/7Zip o.ä. entpacken und alle Dateien auf die SD karte kopieren.
-Danach diese einfach in den Raspi SD Slot einstecken. 
-
-Anfangs wird eine USB Maus+Tastatur sowie ein HDMI Display für die Erstkonfiguration benötigt.
-Nun das USB Ladekabel an den Mini-USB Stecker angeschlossen und los geht’s:
-
-Der Raspi bootet nun in ein Konfigurationsmenü raspi-config:
-+ Stelle die Zeitzone und Sprache ein
-+ Zur Nutzung der vollständigen SD Karte unter Raspbian, wähle *expand_rootfs* aus und schreibt *yes* in die Konsole.
-	- Das Board rebootet sich…
-
-####Basiskonfiguration
 Da der Raspi keinen Powerschalter besitzt, bootet er nach stecken des USB Steckers immer in die Konsole. Dort…
 + Gebt pi als Benutzernamen und raspberry als Passwort ein
 + Mit ‚df –h‘ könnt ihr nun die vergrößerte Rot Partition prüfen.
@@ -1044,7 +1435,7 @@ Abspeichern mit *Ctrl-K->X*.
 
 Weiter Standard Bash- und System Kommandos bitte in einschlägigen Linux Einsteiger-Tutorials nachlesen.
 
-####WLAN Konfiguration
+### WLAN Konfiguration
 Kompatible WLAN Module werden i.d.R sofort erkannt, da für einige Standard chipsets schon Treiber eingebaut sind: 
 z.B für **Realtek rtl8192cu**.
 
@@ -1093,7 +1484,7 @@ Abschließend die Änderungen an der Datei speichern und den Netzwerkdienst neu 
 
 Das manuelle scanning des WLAN netzes kann über  `sudo iwlist scan` forciert werden.
 
-####Remote Konsole
+#### Remote Konsole
 Besteht nun eine dauerhafte LAN Verbindung kann auch per remote Konsole gearbeitet werden.
 Das erspart die USB-Maus/-Tastatur sowie den HDMI Anschluss. Man benötigt nur noch das USB Ladekabel und den (W)LAN Zugang.
 Dazu installiert man auf dem HeimPC/Laptop das Programm PUTTY.
@@ -1113,7 +1504,7 @@ Mit Drücken des Buttons *Open* startet ein Konsolfenster mit 80x24 Zeichen Grö
 **Vorteil:** über diesen Weg kann man Text per Cut&Paste a la Microsoft auf die Konsole bringen.
 So sind Kommandos aus dem Internet leicht auf die Konsole zur Ausführung übertragbar.
 
-####Samba Konfiguration
+#### Samba Konfiguration
 Will man unter Windows Linux Verzeichnisse öffnen benötigt man einen CIFS service wie SAMBA auf Linux Seite, per Installation via
 `sudo apt-get install samba samba-common-bin`
 
@@ -1138,7 +1529,7 @@ Für das Samba-eigene User-Verzeichnis müssen noch die User Credentials angegeb
 Als letztes wird der Samba Service neu gestartet: `sudo service smbd restart`
 Nun sollten sie auf den Share: **\\raspberrypi\share** seitens WIndows mit den user credentials von *pi* zugreifen können.
 
-###GPIO Programmierung
+### GPIO Programmierung
 Für die GPIO Programmierung verwende ich die “WiringPi” Library.
 Diese muss direkt über git-hub installiert werden:
 
@@ -1163,7 +1554,7 @@ Eine detaillierte Beschreibung der WiringPi-API gibt es hier und etliche Codebei
 **Die WiringPi / GPIO Mapping Tabelle**
 <img src="./images_v2/WiringPi-Mapping.jpg">
 
-###Raspi One-Wire Modul/DeviceTree
+### Raspi One-Wire Modul/DeviceTree
 
 Das Raspbian OS hat die für den 1-Wire-Bus notwendige Treiber bereits an Bord, wobei der oben erwähnte GPIO 4 Pin (WiringPi ID:7) für den 1-Wire-Bus vorgesehen ist. Wie bei allen GPIOs werden auch hier die Daten über virtuelle Dateien im Verzeichnis /sys verarbeitet, genauer in: **/sys/bus/w1**
 
@@ -1264,7 +1655,7 @@ Weitere Literatur-Links zu OneWire Sensoren:
 + [Using the DS2480B Serial 1-Wire Line Driver](http://pdfserv.maximintegrated.com/en/an/AN192.pdf)
 + [1-Wire Search Algorithm](http://pdfserv.maximintegrated.com/en/an/AN187.pdf)
 
-###Algorithmus: OneWire Protokoll DS1820
+### Algorithmus: OneWire Protokoll DS1820
 Hier nun ein Codeauszug in ‚C‘ zur Interpretation des OneWire Protokolls via Raspberry Kernel Module für die Temperatursensoren:
 
 	aus beelog: get1wire.c
@@ -1396,7 +1787,7 @@ Diese führe ich als Konstante in der Headerdatei auf um sie im Programmlauf zu 
 Die Messwerte eines jeden Sensors ist per CRC code gesichert und kann bei Bedarf durch einen Temperaturkoeffizienten noch mal kalibriert werden (dieser Teil fehlt hier, stellt aber nur das Produkt mit einem statischen Koeffizienten dar).
 Generell gilt bei der Stockwaage: Maßgeblich sind die Relativwert-Aussagen pro Volk.
 
-###Algorithmus: A/D Wandler HX711 Protokoll
+### Algorithmus: A/D Wandler HX711 Protokoll
 Da die Bosche Wägezelle nur ein passives analoges Widerstandnetzwerk ist, kann der Messwert nur durch einen A/D Wandler quantifiziert werden. Je höher die Bit-zahl des Wandlers desto feiner die Messwertabstufung. Da die Wägezelle aber auch nur eine gewisse Genauigkeit aufweisen kann, ist ein zu hoher Bit-Wert überflüssig und führt nur zur Messung der Streuungswerte, denn zu einer höheren Genauigkeit.
 Der HX711 ist mit seinen 24Bit für die Art Wägezelle mit Wheatstonebrücke optimiert.
 (siehe Genauigkeitsrechnung zu HX711 in der Komponentendiskussion)
@@ -1505,7 +1896,7 @@ Hier nun das eigentlich Messprogramm als Auszug:
 	  return (count);	// return final bit field as data
 	}
 
-###Die Hauptprogrammstruktur
+### Die Hauptprogrammstruktur
 Das Programm Binary: BeeHive muss immer als User: root gestartet werden (wg. wiringPI GPIO Zugriffen):
 `sudo beehive &`
 
@@ -1663,7 +2054,7 @@ Alle grün markierten Parameter sind zu aktualisieren, wenn man AUTOUPDATE  = 1 
 	* EXFTPPATH   Pfad relative zum FTP root des ext. Web Proiders
 	* AUTOUPDATE =1 -> Web- und FTP folder wird mit Daten versorgt
 
-###Kalibrierung der Waage
+### Kalibrierung der Waage
 Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0kg Bezug noch nicht festgelegt wurde. Dazu dient folgende Vorgehensweise:
 
 1. Config.ini: TARARESLOCK =1	setzen (TARARESLOCK bleibt =0)
@@ -1687,7 +2078,7 @@ Ab jetzt sollte die Waage richtige Messwerte anzeigen. Der 1kg Wert kann auch du
 
 Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.
 
-###Restart via Crontab
+### Restart via Crontab
 Gibt es mal Störungen, sei es aus dem Programm selbst (nicht korrigierbarer Fehlerpfad) oder von ausserhalb (Spannungs-Drop) ist manchmal ein Restart unvermeidlich.
 Via Crontab kann das Programm BeeHive automatisch beim Booten als Hintergrundjob gestartet werden: 
 Das Einstellen des automatischen Programmstarts nach jedem reboot erreicht man durch:
@@ -1711,7 +2102,7 @@ Die Ablage der
 … immer mit root Ausführungsrechten: *chmod 755 startbh* und *chown root startbh*
 
 
-###Optional: WebUI Daten Service
+### Optional: WebUI Daten Service
 Will man Messergebnisse aus der CVS als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:
 
 Apache 2 Webserver installieren:
@@ -1734,8 +2125,8 @@ Website Passwortschutz einstellen: (siehe auch: http://peter.liscovius.de/tech/h
 	Für weitere Benutzer:
 	htpasswd /var/www/html/website1/.htpasswd benutzer2
 
-##WebUI ToDo - Liste
-###Ideen-Liste
+## WebUI ToDo - Liste
+### Ideen-Liste
 für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umgesetzt):
 + ==Header==
 	* Standortangaben zur Beute: -> Headline
@@ -1798,7 +2189,7 @@ für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umg
 + BeeCounter ?
 + 7.2Ah Blei Gel Akku (Panasonic)
 
-##ToDo: Optional HW Module
+## ToDo: Optional HW Module
 
 Wettervorhersage tool: `sudo apt-get install weather-util`
 Flughafen München „Franz Josef Strauß“ (IATA-Code: MUC, ICAO-Code: EDDM)
@@ -1823,7 +2214,7 @@ Weitere interessante Messwerte
 
 Farbig markierte Vorschläge sind in der aktuellen Programmversion v1.3 bereits enthalten.
 
-###Nutzung einer SIM-Karte
+### Nutzung einer SIM-Karte
 Aus: [**Imker-Stockwaage.de**](http://www.imker-stockwaage.de/hardware/simkarte)
 
 ==Um einen optimalen Empfang auch während der Wanderung zu nutzen und nicht immer verschiedene SIM 	Karten zu verwenden habe ich folgende Seite gefunden, die auch eine Prepaidkarte anbietet.
@@ -1837,8 +2228,8 @@ Ansonsten kann jede Prepaid-SIM verwendet werden.
 Es gibt auch kostenlose SIM´s mit kostenlosem Datenvolumen.
 Für die BeeIoT Lösung ist eine NB-LTE(IoT)SIM nötig.
 
-##Quellen/Links
-###Marktübersicht professioneller Bienenstockwaagen
+## Quellen/Links
+### Marktübersicht professioneller Bienenstockwaagen
 Professionelle Anbieter digitaler Bienenstockwaagen in der EU:
 * BeeWatch (Biene & Natur GmbH)
 * BeeWise (aus Frankreich, Hersteller nicht erkenntlich)

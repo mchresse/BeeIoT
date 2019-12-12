@@ -88,10 +88,10 @@
 #define HX711_DT    25    // serial dataline
 #define HX711_SCK   26    // Serial clock line
 
-// ADS1115 I2C Port
+// ADS1115 + RTC DS3231 - I2C Port
 #define ADS_ALERT   27    // arbitrary selection of ALERT line
-#define ADS_SDA     21    // def: SDA=21
-#define ADS_SCL     22    // def. SCL=22
+#define ADS_SDA     SDA    // def: SDA=21
+#define ADS_SCL     SCl    // def. SCL=22
 
 // OneWire Data Port:
 #define ONE_WIRE_BUS 32

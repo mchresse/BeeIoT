@@ -10,8 +10,8 @@
 
 #include <Arduino.h>
 #include <stdio.h>
-#include<iostream>
-#include<string>
+#include <iostream>
+#include <string>
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include <Preferences.h>
@@ -44,6 +44,9 @@
 #include <DallasTemperature.h>
 #include "owbus.h"
 
+// ADS1115 I2C Library
+#include <driver/i2c.h>
+
 // Libraries for WIFI & to get time from NTP Server
 #include <WiFi.h>
 // #include <NTPClient.h>
@@ -57,15 +60,9 @@
 // include MQTT Client library
 #include <MQTTClient.h>
 
-
 // Library fo HX711 Access
-#include <HX711.h>  // oder alternative:
+#include <HX711.h>
 #include "HX711Scale.h"
-
-// ADS1115 I2C Library
-#include <driver/i2c.h>
-// #include <Wire.h>
-// #include <Adafruit_ADS1015.h>
 
 #include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
 
