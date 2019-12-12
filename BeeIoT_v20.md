@@ -1,7 +1,7 @@
 # BeeIoT v2.0
 ### Eine Bienenstockwaage im Eigenbau (mit IoT Technik)
-<img src="./images_v2/BeeLogFront.jpg" width=300>
-##### 01.10.2019 by Randolph Esser
+<img src="./images_v2/BeeLogFront.jpg" width=250>
+**01.10.2019 by Randolph Esser**
 
 ---
 ## Inhaltsverzeichnis:
@@ -263,7 +263,7 @@ Zwar zeichnet sich ein Arduino 8266/UNO durch geringeren Stromverbrauch aus, der
 
 Allerdings kommt hier nicht die standardmäßig verbaute **Wroom32** Version des ESP32 zum Einsatz, sondern der **Wrover32**:
 
-<img src="./images_v2/ESP32_Wroom-32D.jpg"> ==> <img src="./images_v2/ESP32_Wrover-B_2.jpg">
+<img src="./images_v2/ESP32_WROOM-32D.jpg"> ==> <img src="./images_v2/ESP32_Wrover-B_2.jpg">
 
 Das ergibt die genaue Modul-Bezeichnung: **ESP32-DevKitC-Wrover-B**.
 
@@ -315,7 +315,7 @@ Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für un
 GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.
 
 Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der "Onboard USB to serial Converter" CP2102N im Windows Device Manager als:
-<img src="./images_v2/ESP32_COMPort.JPG">
+<img src="./images_v2/ESP32_COMPort.jpg">
 
 Über dieses COM device ist er auch für IDEs wie die *Arduino-IDF* (https://github.com/espressif/esp-idf) oder *VC-Platform-IO* erreichbar. Eine COM Port Erkennung findet zumindest bei PlatformIO automatisch statt.
 
@@ -466,7 +466,7 @@ Die Eigenschaften des HX711:
 Für Kanal A kann eine Verstärkung von 128 oder 64 gewählt werden, Kanal B bietet eine fixe Verstärkung von Faktor 32. Daher habe ich für diese Version nur den Port A mit GAIN 128 verwendet und Port B stillgelegt.
 Zum Anschluss der HX711 Logik-Ports an den ESP32 werden nur 2 der generischen duplex-fähigen GPIO Ports benötigt 
 (Data + SCK):
-```
+```cpp
 #define HX711_DT    25    // serial dataline
 #define HX711_SCK   26    // Serial clock line
 ```
@@ -486,7 +486,7 @@ Die Streuung um die 3.3V Stromversorgung bestimmt also direkt die Qualität/Stre
 Der daraus resultierende Messfehler durch die Streuung kann aber über Mittlung von mehreren (~10-20) Messwerten deutlich verringert werden und damit den Vertrauensbereich deutlich erhöhen.
 
 Im Arduino Sketch ist der HX711 Anschluss wie folgt definiert:
-```
+```cpp
 // Library fo HX711 Access
 #include <HX711.h>
 
@@ -507,7 +507,7 @@ Wie aus dem Bild ersichtlich, werden einfach alle OneWire Sensoren mit ihren 3 p
 <img src="./images_v2/BeeIoT_Schematics.jpg">
 
 Im Arduino Sketch finden sich dazu folgende Einstellungen:
-```
+```cpp
 #include "OneWire.h"
 	#include "DallasTemperature.h"
 	// Data wire is connected to ESP32 GPIO 32
@@ -520,7 +520,7 @@ Zur Anzeige des Betriebszustandes dient eine rote LED am rückseitigen externen 
 
 Diese wird über einen GPIO Port getrennt angesteuert und zeigt durch Blinkcodes verschiedene Programm- Zustände (Setup / Loop / Wait)an.
 
-```
+```cpp
 #define LED_RED     15    // GPIO number of red LED
 // reused by BEE_RST: Green LED not used anymore
 //#define LED_GREEN   14    // GPIO number of green LED
@@ -529,7 +529,7 @@ Die aufgeführte grüne LED hatte ursprünglich die Funktion als weitere Statusa
 
 ### SPI Devices
 Grundsätzlich bietet der ESP32 2 unabhängige SPI ports (VSPI & HSPI) für den Anwender extern an, die per default unter folgenden GPIO Ports (definiert über Arduino.h) erreichbar sind:
-```
+```cpp
 // ESP32 default SPI ports:
 #define VSPI_MISO   MISO  // PIN_NUM_MISO    = 19
 #define VSPI_MOSI   MOSI  // PIN_NUM_MOSI    = 23
@@ -559,7 +559,7 @@ Beim Anschluss weiterer SPI Devices stellte sich aber heraus, dass der 3.3V Logi
 Dadurch wird allerdings der 5V -> 3.3V Spannungswandler auf dem DevKitC Modul stärker belastet. (Die möglichen 1 A werden wir aber natürlich nicht erreichen.)
 
 Die GPIO Port Definitionen:
-```
+```cpp
 #include <SPI.h>	// default for all SPI devices
 // Libraries for SD card at ESP32:
 #include "SD.h"
@@ -626,7 +626,7 @@ Die GPIO Belegung ist atürlich in den leitungen MISO, MOSI und SCK identisch zu
 neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY "Draht".
 Über BUSY kann man den Upload prozess neuer Display Daten pollen. Deklariert man diese GPIO Leitung im Interrupt mode kann eine asynchrone Bedienung über eine ISR (Int. Service routine) implementiert werden. da wir aber eh '10Min.-10Sekunden' lang nichts besseres zu tun haben, reicht das sequentielle Polling.
 
-```
+```cpp
 // WavePaper ePaper port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 // Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5), 
@@ -647,7 +647,7 @@ neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY "Draht".
 Wie oben erwähnt fällt die Bedienung aber etwas aufwändiger aus, denn neben dem SPI API sind dann diverse Font Libs, und ggfs. BitMaps zu laden.
 Aktuell verwende ich die Library: https://github.com/ZinggJM/GxEPD
 mit dem für mein ePaper device spezifische Extension: GxGDEW027C44.h 
-```
+```cpp
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
 #include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
@@ -719,7 +719,7 @@ Das Dragino Manual dazu findet sich **[hier](http://wiki.dragino.com/index.php?t
 Da aber nahezu alle Leitungen des SemTech Moduls 1.1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.
 
 Die aktuell verwendeten GPIO Port Definitionen:
-```
+```cpp
 #include <SPI.h>	// default for all SPI devices
 // Libraries for LoRa
 #include "LoRa.h"
@@ -796,11 +796,11 @@ In rot umrandet eingezeichnet sind die, von mir vorgenommenen und **[allseits em
 	* RTC_Eprom: 0x53
 
 Das ergibt folgendes Mapping im I2C Adressraum des ESP32 Treibers:
-<img src="./images_v2/I2C_AddressScan.JPG">
+<img src="./images_v2/I2C_AddressScan.jpg">
 Hinter der ADresse 0x48 verbirgt sich das ADS1115 Modul.
 
 Das I2C API wird am ESP32 über 2 frei definierte GPIO Leitungen realisiert:
-```
+```cpp
 // RTC DS3231 Libraries
 #include "RTClib.h"	
 // based on Wire.h library
@@ -819,7 +819,7 @@ Die rtc.begin() Funktion stützt sich auf die default I2C GPIO Einstellungen der
 Als weiteres Feature führt dieses RTC Modul einen internen Chip-Temperatursensor, den man elegant auslesen kann. In diesem Fall verwende ich ihn zum Monitoring der Extension BOX internen Temperatur, um einem ev. Hitzetod der Elektronik an heissen Sommertagen vorzubeugen.
 
 Zuletzt gibt es noch einen SQW Pin, an dem man sehr genaue Frequenzen programmieren kann um ext. Prozesse zu steuern. Aktuell wird er in diesem Projekt aber nicht verwendet -> DS3231_OFF ... aber gut zu Wissen.
-```
+```cpp
 /** DS3231 SQW pin mode settings */
 enum Ds3231SqwPinMode {
   DS3231_OFF            = 0x01, // Off
@@ -927,7 +927,7 @@ So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anz
 
 Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.
 Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:
-```
+```cpp
 #define BATTERY_MAX_LEVEL        4150 // mV
 #define BATTERY_MIN_LEVEL        3200 // mV
 #define BATTERY_SHUTDOWN_LEVEL   3100 // mV
@@ -962,7 +962,7 @@ Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenl
 
 Durch die Verschaltung des ADDR = 0 Anschlusses erhalten wir die I2C Adresse 0x48. Somit kein Konflikt mit dem RTC Modul zu befürchten.
 Hier die Definitionen des ADS im Sketch:
-```
+```cpp
 #include <Adafruit_ADS1015.h>	// support for ADS1015/1115
 
 // ADS1115 + RTC DS3231 - I2C Port
@@ -976,7 +976,7 @@ Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
 ```
 
 Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsfähigen I2C Interfaces des ADC1115 sehr einfach geworden:
-```
+```cpp
 	adcdata = ads.readADC_SingleEnded(channel);	//channel = 0..3
 	// ADC internal Reference: +/- 6.144V 
 	// ADS1015: 11bit ADC -> 6144/2048  = 3 mV / bit
@@ -1190,7 +1190,7 @@ Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.
 	**Sensor-Anschluss mit 4-adrigem Kabel:**
 1. Rot:	 	3-5 V Anschluss, 
 2. Schwarz:	Masse 
-3. Weiß.		1-Wire serielles Datenprotokoll 
+3. Weiß:	1-Wire serielles Datenprotokoll 
 4. Die äußere Kupferader wird an die Drahtabschirmung mit dem Stecker/Gehäuse verlötet.
 
 	**Sensor-Anschluss mit 3-adrigem Kabel: **
@@ -1239,7 +1239,7 @@ Hier nun die Steckerbelegungen aller internen Steckverbinder auf der Lochrasterp
 
 Die Adapterplatine mit Komponentenbeschriftung:
 
-<img src="./images_v2/MCU_ExtBoard.JPG">
+<img src="./images_v2/MCU_ExtBoard.jpg">
 
 
 ## Die ESP32 BeeIoT Sketch Software
@@ -1322,7 +1322,7 @@ Library Download Links:
 Copy the resulting download into the Arduino IDE installation libraries folder and restart IDE.
 
 Benötigte libs im Code:
-
+```cpp
 	//*******************************************************************
 	// BeeIoT Local Libraries
 	//*******************************************************************
@@ -1384,7 +1384,7 @@ Benötigte libs im Code:
 	// #include <Adafruit_ADS1015.h>
 	
 	#include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
-
+```
 Da der Raspi keinen Powerschalter besitzt, bootet er nach stecken des USB Steckers immer in die Konsole. Dort…
 + Gebt pi als Benutzernamen und raspberry als Passwort ein
 + Mit ‚df –h‘ könnt ihr nun die vergrößerte Rot Partition prüfen.
