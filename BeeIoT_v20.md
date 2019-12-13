@@ -1,6 +1,7 @@
 # BeeIoT v2.0
 ### Eine Bienenstockwaage im Eigenbau (mit IoT Technik)
 <img src="./images_v2/BeeLogFront.jpg" width=250>
+
 **01.10.2019 by Randolph Esser**
 
 ---
@@ -47,18 +48,11 @@
 	* [ESP32 Vorbereitungen](#esp32-vorbereitungen)
 	* [ESP32 IDE](#esp32-ide)
 		+ [PlatformIO](#platformio)
-		+ [ESP32 Sensor Libraries](esp32-sensor-libraries)
-
-		+ [WLAN Konfiguration](#wlan-konfiguration)
-		+ [Remote Konsole](#remote-konsole)
-		+ [Samba Konfiguration](#samba-konfiguration)
-	* [GPIO Programmierung](#gpio-programmierung)
-	* [Raspi One-Wire Modul/DeviceTree](#raspi-one-wire-modul/device-tree)
-		+ [Algorithmus: OneWire Protokoll DS1820](#algorithmus:-onewire-protokoll-ds1820)
-	* [Algorithmus: A/D Wandler HX711 Protokoll](#algorithmus:-a/d-wandler-hx711-protokoll)
-	* [Die Hauptprogrammstruktur](#die-hauptprogrammstruktur)
+		+ [ESP32 Sensor Libraries + build](esp32-sensor-libraries-+-build)
+	* [Die Programm Struktur](#die-programm-struktur)
+		+ [Setup Phase](setup-phase)
+		+ [Loop Phase](loop-phase)
 	* [Kalibrierung der Waage](#kalibrierung-der-waage)
-	* [Restart via Crontab](#restart-via-crontab)
 	* [Optional: WebUI Daten Service](#optional:-webui-daten-service)
 - [WebUI ToDo - Liste](#webui-todo---liste)
 - [Ideen Liste](#ideen-liste)
@@ -1294,9 +1288,9 @@ Eine Beschreibung der Erstinstallation von VSCode und der Konfiguration des Plat
 Jede Menge weiterer Tutorials finden sich mit den Suchbegriffen "platformio tutorial".
 Daher gehe ich im weiteren davon aus, dass die Nutzung von PlatformIO gegeben ist, wobei der Sketch natürlich universell verwendet werden kann, wenn man die IDE library links entsprechend anpasst.
 
-PlatformIO.ini ist die zentrale Build Steuerdatei von PlatformIO, wo alle compile und link settings per Projekt geführt werden.
+**PlatformIO.ini** ist die zentrale Build Steuerdatei von PlatformIO, wo alle compile und link settings per Projekt geführt werden.
 Die Definition für das ESP32 DevKitC (esp32dev) in PlatformIO.ini lauten somit:
-```
+```cpp
 [env:esp32dev]
 platform = espressif32
 board = esp32dev
@@ -1313,797 +1307,254 @@ monitor_flags =
 ```
 
 
-#### ESP32 Sensor Libraries
-Library Download Links:
-**OneWire** -> [The OneWire library by Paul Stoffregen](https://github.com/PaulStoffregen/OneWire)
-**DS18B20** -> [The Dallas Temperature library](https://github.com/milesburton/Arduino-Temperature-Control-Library)
-**NTP** -> [NTPClient library forked by Taranais](https://github.com/taranais/NTPClient)
+### ESP32 Sensor Libraries + Build
 
-Copy the resulting download into the Arduino IDE installation libraries folder and restart IDE.
+Nachdem die IDE eurer Wahl installierte wurde, solltet ihr ein neues Projekt auf Basis der Angaben, wie oben in der platformio.ini vorgesehen, anlegen.
+In den Projektfolder kann das BeeIoT Projekt von Github ge-cloned werden. Ggfs. müssen die Sourcefiles im Projekt der IDE angemeldet werden. Die generierte platformIO.ini Datei der IDE sollte um die Angaben aus der platformIO.tpl Datei angepasst werden.
 
-Benötigte libs im Code:
+Es empfiehlt sich die Libraries nach dem herunterladen (z.B. von github, oder unterstützt durch die IDE) per 'lib_deps' Anweisung zu spezifizieren, da es sonst bei gleichen Header File Namen zu falschen Zuordnungen kommen kann (z.B. bei Lora.h).
+
+Diese kann man in platformIO.ini per Lib-Namen oder per Lib-ID angeben (eindeutiger):
 ```cpp
-	//*******************************************************************
-	// BeeIoT Local Libraries
-	//*******************************************************************
+; Library options
+lib_deps =
+    GxEPD       		; #2951 by Jean-Marc Zingg
+    DallasTemperature   ; #54 by Miles Burton
+    RTClib      		; # 83 by Adafruit
+    U8g2        		; 942 by oliver
+    Adafruit GFX Library; #13
+    SdFat       		; #322 by Bill Greiman
+    HX711       		; #1100 by bodge
+    OneWire     		; #1 by Paul Stoffregen
+    Adafruit ADS1X15 	; #342
+    LoRa        		; #1167 by Sandeep Mistry
 
-	#include <Arduino.h>
-	#include <stdio.h>
-	#include<iostream>
-	#include<string>
-	#include <esp_log.h>
-	#include "sdkconfig.h"
-	#include <Preferences.h>
-	// see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
-
-	// Libraries for SD card at ESP32_
-	// ...has support for FAT32 support with long filenames
-	#include <SPI.h>
-	#include "FS.h"
-	#include "SD.h"
-	#include "sdcard.h"
-
-	// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-	#include <GxEPD.h>
-	#include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
-	// #include "BitmapGraphics.h"
-	// #include "BitmapExamples.h"
-	#include "BitmapWaveShare.h"
-
-	// FreeFonts from Adafruit_GFX
-	#include <Fonts/FreeMonoBold9pt7b.h>
-	#include <Fonts/FreeMonoBold12pt7b.h>
-	//#include <Fonts/FreeMonoBold18pt7b.h>
-	//#include <Fonts/FreeMonoBold24pt7b.h>
-	//#include <Fonts/FreeSansBold24pt7b.h>
-
-	// DS18B20 libraries
-	#include <OneWire.h>
-	#include <DallasTemperature.h>
-	#include "owbus.h"
-
-	// Libraries for WIFI & to get time from NTP Server
-	#include <WiFi.h>
-	// #include <NTPClient.h>
-	// #include <WiFiUdp.h>
-	#include <wificfg.h>
-
-	// include TCP Client library
-	#include <TCPClient.h>
-
-	// include MQTT Client library
-	#include <MQTTClient.h>
-
-	// Library fo HX711 Access
-	#include <HX711.h>  // oder alternative:
-	#include "HX711Scale.h"
-
-	// ADS1115 I2C Library
-	#include <driver/i2c.h>
-	// #include <Wire.h>
-	// #include <Adafruit_ADS1015.h>
-	
-	#include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
+; Options for further Lora tests
+;	LMIC-Arduino 		; #852 by IBM
+;	RadioHead 	 		; #124 by Mike McCauley
+;	Heltec ESP32 Dev-Boards ; #6051 by Heltec Automation
 ```
-Da der Raspi keinen Powerschalter besitzt, bootet er nach stecken des USB Steckers immer in die Konsole. Dort…
-+ Gebt pi als Benutzernamen und raspberry als Passwort ein
-+ Mit ‚df –h‘ könnt ihr nun die vergrößerte Rot Partition prüfen.
-+ Starte raspi-config von der Konsole und setze die Erstkonfiguration fort
-+ -> Change user Passwort
-+ -> Enable Boot => Console
-+ -> Internationalisation Options:
-	- Locales: DE_DE.UTF8 oder En_GB.UTF8
-	- Timezone: Europe – Berlin
-	- Keyboard Layouts: 
-		Modell = Generic 105-key (Intl-PC)
-		Layout: German (eliminate dead keys)
-+ Wer plant noch eine Kamera zu verwenden: “Enable Camera” ausführen
-+ Konfig Programm beenden
-+ Reboot via *sudo reboot*
+Diese Lbraries sollten nach einer Installation z.B. über PlatformIO unter folgendem Pfad mit 'library Name'_ID aufgeführt sein: C:\Users\"username" \'.platformio'\lib
+
+Zuletzt müssen eure WLAN credentials in der build_flags Zeile angepasst werden.
+
+Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern der per upload auf den ESP32 geladen wird.
+
+Der Dependency Graph könnte wie folgt aussehen:
+```
+Dependency Graph
+|-- <GxEPD> 3.0.9
+|   |-- <Adafruit GFX Library> 1.6.1
+|   |   |-- <SPI> 1.0
+|   |-- <SPI> 1.0
+|-- <DallasTemperature> 3.8.0
+|   |-- <OneWire> 2.3.5
+|-- <RTClib> 1.3.3
+|   |-- <Wire> 1.0.1
+|-- <U8g2> 2.27.2
+|   |-- <SPI> 1.0
+|   |-- <Wire> 1.0.1
+|-- <Adafruit GFX Library> 1.6.1
+|   |-- <SPI> 1.0
+|-- <SdFat> 1.1.0
+|   |-- <SPI> 1.0
+|-- <HX711> 0.7.1
+|-- <LoRa> 0.7.0
+|   |-- <SPI> 1.0
+|-- <OneWire> 2.3.5
+|-- <Adafruit ADS1X15> 1.0.1
+|   |-- <Wire> 1.0.1
+|-- <FS> 1.0
+|-- <SD(esp32)> 1.0.5
+|   |-- <FS> 1.0
+|   |-- <SPI> 1.0
+|-- <SPI> 1.0
+|-- <WiFi> 1.0
+|-- <Wire> 1.0.1
+|-- <Preferences> 1.0
+|-- <ESPmDNS> 1.0
+|   |-- <WiFi> 1.0
+|-- <NTPClient> 3.1.0
+|-- <WebServer> 1.0
+|   |-- <WiFi> 1.0
+|   |-- <FS> 1.0
+```
+
+### Die Programm Struktur
+Um sich in den Source schneller zurecht zu finden, hier in paar Übersichten:
+
+Die Client HW Modul Struktur in SW Module übertragen:
+<img src="./images_v2/SWModuleSheet.jpg">
+
+Die dazugehörige Klassen-Struktur:
+<img src="./images_v2/SWClassView.jpg">
+
+Zuletzt der Funktions-Programmflussplan der Loop() Schleife:
+<img src="./images_v2/SWMainFlow.jpg">
+
+
+#### Setup Phase
+Mögliche Debugmeldungen habe ich über ein simples Macro parametrisiert:
+```cpp
+#define	BHLOG(m)	if(lflags & m)	// macro for Log evaluation
+uint16_t	lflags;      // BeeIoT log flag field; for flags enter beeiot.h
+
+void setup(){
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
+lflags = LOGBH + LOGLORA + LOGLAN;
+```
+Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.
+
+Mit den obigen 3 Schalter: LOGBH + LOGLORA + LOGLAN
+könnte der Kosnol-Output wie folgt aussehen:
+```
+>*******************************<
+> BeeIoT - BeeHive Weight Scale <
+>       by R.Esser 10/2019      <
+>*******************************<
+LogLevel: 273
+Main: Start Sensor Setup ...
+  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+  Setup: Init runtime config settings
+  Setup: Init RTC Module DS3231
+  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: STart RTC Test Output ...
+2019/12/13 (Friday) 15:15:52
+ since midnight 1/1/1970 = 1576250152s = 18243d
+ now + 7d + 30s: 2019/12/21 3:45:58
+
+  Setup: SPI Devices ...
+  Setup: HX711 Weight Cell
+  Setup: ADS11x5
+  Setup: Wifi in Station Mode
+  Setup: WIFI port in station mode
+  Wifi: Scan started...done
+  Wifi: networks found: 3
+        1: MyNet (-45)*
+        2: YOURNet (-45)*
+        3: WLAN-Foreign (-91)*
+  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  WIFI: MDNS-Responder gestartet.
+  Setup: Init NTP Client
+Friday, December 13 2019 15:15:56
+  Setup: Get new Date & Time:
+  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
+  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP: BHDB updated by RTC time
+  Setup: SD Card
+  Setup: LoRa SPI device & Base layer
+    Setup: Start Lora SPI Init
+    LoRa: init succeeded.
+  Setup: ePaper + show start frame
+  Setup: OneWire Bus setup
+  Setup: Setup done
+```
+Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wi si voneinander abhängig sind und wo möglich nach protokoll Klassen sortiert.
+So liegen die SPI devices und I2C devices je intereinander, weil sie teilweise diesselbe Vorbereitung benötigen.
+Optional resourcen (WiFi + NTP alsauch das ePaper enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Widereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.
+
+Die Logik der Setup-Bereiche:
+1. Initiaisierung des Log Flag fields
+2. Preset des Monitoring LED IO ports auf Output mode => sonst sieht man nichts...
+3. Aktivierung des Seriellen Ports für Debugmeldungen
+4. Reentry detection aus dem Sleep Mode oder nach Stromausfall (not supported yet)
+	a. -> Widerherstellung der Runtime Parameter aus dem residenten Bereich (RTC-EEPROM, oder ESP32-preferences-Area)
+	b. Check Grund des WakeUp Calls -> ggfs. Massnahme7Aktion starten (not supported yet)
+5. Hole interne unique BoardID aus der ESP32 Fuse-Area
+6. Init_Cfg() Initiaisierung aller Strukturen zur Sensordatenbehandlung (interne Mini-DB: bhdb)
+7. Init RTC Module
+8. Init SPI port
+9. Init HX711 ADC for Weight cell access
+10. Init ADS1115 for Battery monitoring
+11. Discover WiFi and NTP client service
+	a. Wenn NTP verfügbar -> read new time => init RTC Modul
+	b. If no NTP: Read time from RTC Module only
+	c. Start Web-HTTP service to offer config page for firsttime init settings -> wait till done 
+12. Init SD Card access -> create new logfile if not detected
+13. Init Lora Module for sending -> join to gateway (if any in range)
+14. Init ePaper Moduel -> Show startframe of BeeIoT
+15. init OneWire Bus -> detect expected 3 temperatur sensors
+
+Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.
+ToDo: => Ein Fehler im Programm oder in der Library ?
+
+Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist das effektiver als LoRaWan.
+
+>Hinweis:
+>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das programm mitten drinn neugestartet, aber eine WiFi Connection schlägt meist fehl. Hier ist Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel...
+
+### Loop Phase
+Nach dem Ende der Setupphase wird automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:
+
+Am Serial Monitor zeigt sie sich so:
+```
+>>****************************************<
+> Main: Start BeeIoT Weight Scale
+> Loop: 0  (Laps: 0)
+>****************************************<
+  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+  NTP: BHDB updated by RTC time
+  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+    LoRa[0x77]: Sent #0:<0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+> LoRaWAN package to 0x88 - 75 bytes -> done
+  MAIN: Enter Sleep/Wait Mode for 360 sec.
+```
+
+Auch hier die Logikreihenfolge für die loop() Routine:
+1. Get round robin index of new sensor data objekt for (BHDB-Idx)
+2. Check: Any Web request reached -> take special action (not supported yet
+3. read out time & date from  RTC Module
+4. Read new sensor data
+	a. HX711: Weigtcell value -> send message if neg. weight jump within 30 min. -> swarm alarm
+	b. OW-Bus: all temperature sensors
+	c. ADS1115: Power Source values -> ToDo: shutdown if Battery is empty
+5. Log Sensor Data to SDCard
+6. Log Sensor Data via LoRa WAN / WiFi
+7. Update epaper Display by new Sensor + Power data
+8. Start DeepSleep mode (or just delay loop with blinking LED for test purpose) for 10Min.
+10 back to loop()
 
-Nun sollte die Tastatur richtig eingestellt sein.
 
-Der Default-Hostname lautet i.d.R. *raspberrypi* und der user *pi* arbeitet unter *\home\pi*:
-*sudo* müsst ihr immer dann einem Kommando voranstellen, wenn dieses mit root Rechten ausgeführt werden soll.
-Aktuell angeschlossene USB Geräte können mit **lsusb** angezeigt werden.
-Details zur CPU erfährt man durch: **vcgencmd**
-
-Per LAN Kabel Anschluss sollte der Raspi gleich eine IP von eurem Hausnetz (per DHCP) zugewiesen bekommen.
-LAN Port settings inkl. IP findet man durch **ifconfig -a** oder **ip addr**.
-Verwendet man einen Proxyserver zum Internetzugang öffnen wir: `joe /etc/environment`
-und ergänzen:
-
-	export http:proxy=“http://proxy.net:81/
-
-Sobald ihr Netzzugang habt, sollten folgende Aufrufe zur Aktualisierung eures OS und der Applikationen durchgeführt werden:
-
-`sudo apt -get update`
-`sudo apt -get dist –upgrade`	-> upgrade der akt. Kernel version
-`sudo apt -get upgrade`
-
-Einen echten Firmware update erreicht man aber erst mit: `sudo rpi -update`
-
-Beides kann einige Zeit benötigen. Ev. Nachfragen immer mit *YES* beantworten.
-
-Da wir öfter Dateien editieren wollen, empfehle ich (neben dem Klassiker *vi* und *nano*) den für Einsteiger ev. handlicheren *JOE*: 
-`sudo apt -get install joe`
-
-Innerhalb des Editors erhaltet ihr mit *Ctrl-K -> H* weitere Hilfsmenü Angaben zur Nutzung.
-So könnt ihr z.B. via *joe .bashrc* und den Eintrag am Ende der Datei: *alias ll='ls -l*
-ein neues Konsolkommando ll einführen, was eine detallierte Folderausgabe erzeugt.
-Abspeichern mit *Ctrl-K->X*.
-
-Weiter Standard Bash- und System Kommandos bitte in einschlägigen Linux Einsteiger-Tutorials nachlesen.
-
-### WLAN Konfiguration
-Kompatible WLAN Module werden i.d.R sofort erkannt, da für einige Standard chipsets schon Treiber eingebaut sind: 
-z.B für **Realtek rtl8192cu**.
-
-Dazu via *dmesg* Kommando den Bootlog nach *Realtek devices* durchsuchen:
-<img src="./images_v2/RPI_WLAN_dmesg.jpg">
-
-Alternative sollte das device auch unter *lsmod* auftauchen:
-<img src="./images_v2/RPI_WLAN_lsmod.jpg">
-
-Die WLAN0 IP sollte dann via *ifconfig* angezeigt werden. Wenn nicht kann es auch sein, dass NOCARRIER gemeldet wird -> Mögliche Ursache: Der DSL Router ist zu weit weg oder die Antenne ist untauglich.
-
-Wichtig wäre noch den **RPi PowerSave Mode** abzuschalten, weil sonst die LAN/WiFi Connection nach einiger Zeit „flöten“ geht. Dazu benötigen wir eine neue Konfig-Datei:
-`sudo nano /etc/modprobe.d/8192cu.conf`
-
-In diese tragen wir folgendes ein:
-`options 8192cu rtw_power_mgnt=0 rtw_enusbss=0`
-
-Als Letztes: Wäre eine DHCP basierte Vergabe einer IP Adresse wünschenswert (default ist static), so müssen wir die Datei **/etc/network/interfaces** wie folgt editieren: `sudo joe /etc/network/interfaces`
-
-	auto lo
-	iface lo inet loopback
-	iface eth0 inet dhcp
-	auto wlan0
-	allow-hotplug wlan0
-	iface wlan0 inet dhcp
-	wpa-ap-scan 1
-	wpa-scan-ssid 1
-	wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
-	iface default inet dhcp
-
-Dann die individuellen Netzwerk SID + Authentication Daten eintragen: `sudo cat /etc/wpa_supplicant/wpa_supplicant.conf`
-
-	ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-	update_config=1
-	network={
-	        ssid="<my_SSID>“
-	        psk="<my_WPA2_Key>"
-	        proto=RSN
-    	    key_mgmt=WPA-PSK
-    	    pairwise=CCMP
-    	    auth_alg=OPEN
-	}
-
-Abschließend die Änderungen an der Datei speichern und den Netzwerkdienst neu starten:
-`sudo service networking restart`
-
-Das manuelle scanning des WLAN netzes kann über  `sudo iwlist scan` forciert werden.
-
-#### Remote Konsole
-Besteht nun eine dauerhafte LAN Verbindung kann auch per remote Konsole gearbeitet werden.
-Das erspart die USB-Maus/-Tastatur sowie den HDMI Anschluss. Man benötigt nur noch das USB Ladekabel und den (W)LAN Zugang.
-Dazu installiert man auf dem HeimPC/Laptop das Programm PUTTY.
-
-<img src="./images_v2/PUTTY_Screen.jpg">
-
-Dort fügt man im **Session** Menü nur noch die IP Adresse oder den Hostname sowie den **ssh Standard Port:22** ein und sichert den Eintrag unter einem beliebigen Namen.
-
-Dazu wäre auch eine SSH Key Konfiguration zusätzlich sinnvoll. Die Erzeugung und Konfiguration bitte auf den einschlägigen Raspi Blogs nachlesen, da es die Session Sicherheit zusätzlich nochmal erhöht. Das weiter auszuführen würde hier aber den Rahmen sprengen.
-
-Die Schritte nur in Kürze grob dargestellt: via raspi-config Session:
-+ Create RSA Key: sudo ssh-keygen -t rsa
-+ Activate SSH: sudo mv /boot/boot_enable_ssh.rc /boot/boot.rc
-+ sudo reboot
-
-Mit Drücken des Buttons *Open* startet ein Konsolfenster mit 80x24 Zeichen Größe.
-**Vorteil:** über diesen Weg kann man Text per Cut&Paste a la Microsoft auf die Konsole bringen.
-So sind Kommandos aus dem Internet leicht auf die Konsole zur Ausführung übertragbar.
-
-#### Samba Konfiguration
-Will man unter Windows Linux Verzeichnisse öffnen benötigt man einen CIFS service wie SAMBA auf Linux Seite, per Installation via
-`sudo apt-get install samba samba-common-bin`
-
-Nach der Installation ergänzt man in der SAMBA Config Datei:
-`sudo joe /etc/samba/smb.conf`
-
-	[share]
-	 comment=Raspberry Pi Share
-	 path=/home/pi/share
-	 browseable=Yes
-	 writeable=Yes
-	 only guest=no
-	 create mask=0775
-	 directory mask=0775
-	 public=no
-
-Im Heimverzeichnis erzeugt man dann noch das Verzeichnis: `mkdir \home\pi\share`
-Für das Samba-eigene User-Verzeichnis müssen noch die User Credentials angegeben werden:
-`sudo smbpasswd -a pi`
--> dazu gibt man das PI-Passwort nochmal an.
-
-Als letztes wird der Samba Service neu gestartet: `sudo service smbd restart`
-Nun sollten sie auf den Share: **\\raspberrypi\share** seitens WIndows mit den user credentials von *pi* zugreifen können.
-
-### GPIO Programmierung
-Für die GPIO Programmierung verwende ich die “WiringPi” Library.
-Diese muss direkt über git-hub installiert werden:
-
-`sudo apt-get install git-core`
-`git clone git://git.drogon.net/wiringPi`
-`cd WiringPi`
-`./build`
-
-Das wiringPi  GPIO-ID mapping weicht leider von der Steckerbelegung wie in der Tabelle weiter unten ersichtlich ab.
-
-Alle ID Information werden über `#include <wiringPi.h>`
-in das C programm eingebunden und über die Funktion: wiringPiSetup() initialisiert.
-
-Die Compilierung erfolgt mit dem Zusatz: -lwiringPi
-
-*Beispiel:* Das OneWire Daten-Protokoll wird per default via **BCM GPIO#4** geführt. 
-Nach WiringPi Enumeration gilt die **ID: #7 am phys. Pin7**.
-**wiringPiSetupGpio()** erlaubt aber weiterhin die GPIO BCM Enumeration auch im Code zu verwenden.
-
-Eine detaillierte Beschreibung der WiringPi-API gibt es hier und etliche Codebeispiele für verschiedene Sprachen gibt es **[hier](http://raspberrypiguide.de/howtos/raspberry-pi-gpio-how-to/)**.
-
-**Die WiringPi / GPIO Mapping Tabelle**
-<img src="./images_v2/WiringPi-Mapping.jpg">
-
-### Raspi One-Wire Modul/DeviceTree
-
-Das Raspbian OS hat die für den 1-Wire-Bus notwendige Treiber bereits an Bord, wobei der oben erwähnte GPIO 4 Pin (WiringPi ID:7) für den 1-Wire-Bus vorgesehen ist. Wie bei allen GPIOs werden auch hier die Daten über virtuelle Dateien im Verzeichnis /sys verarbeitet, genauer in: **/sys/bus/w1**
-
-Die 1-Wire-Unterstützung muss im Kernel als Modul nachgeladen werden (im SU Mode).
-Es werden zwei Module benötigt, eines für den 1-Wire-Bus allgemein und eines für die Temperaturmessung mit dem DS1820. Also geben sie ein:
-`sudo modprobe w1-gpio pullup=1`
-`sudo modprobe w1-therm`
-
-Wichtig ist der Parameter pullup=1, der besagt, dass eine parasitäre Speisung über einen Pullup-Widerstand vorhanden ist. Die Module legen im Verzeichnis /sys/bus/w1/devices mehrere symbolische Links auf Unterverzeichnisse an, zum Beispiel (Zeilen umbrochen): 
-
-	root@raspberrypi:/sys/bus/w1/devices# ls -l
-	insgesamt 0
-	lrwxrwxrwx 1 root root 0 Mai 13 07:30 10-000802bf634d
-	             -> ../../../devices/w1_bus_master1/10-000802bf634d
-	lrwxrwxrwx 1 root root 0 Mai 13 07:30 10-000802cfb15d
-	             -> ../../../devices/w1_bus_master1/10-000802cfb15d
-	lrwxrwxrwx 1 root root 0 Mai 13 07:30 w1_bus_master1
-	             -> ../../../devices/w1_bus_master1
-
-Eigentlich findet alles in dem Verzeichnis statt, das über den symbolischen Link w1_bus_master1 erreicht werden kann (wie die Verweise oben zeigen). Der Name der ersten beiden Verzeichnisse setzt sich aus dem Family-Code der Sensoren und deren eindeutigen Identifikationsnummer zusammen. Sensoren vom Typ DS1820 und DS18S20 haben den Family-Code 10, DS18B20 den Code 28 und DS1822 den Code 22.
-
-Diese Befehle laden die erforderlichen Module nur bis zum nächsten Reboot. Nach einem Neustart müssen die Treiber immer wieder neu geladen werden. Damit diese Aktivierung permanent bleibt und bei jedem Bootvorgang die Treiber automatisch geladen werden, müssen diese Aufrufe in die Datei /etc/modules eingetragen werden. Dazu werden einfach die beiden folgenden Zeilen am Ende der Datei hinzugefügt: 
-
-	# /etc/modules
-	w1-gpio pullup=1
-	w1-therm
-
-Bei anderen oder älteren Distributionen kann es möglich sein, dass noch das Modul "wire" geladen werden muss; bei mir war dies nicht nötig.
-
-Ab Kernelversion 3.18 wird für das Einsetzen der Module, der sogenannte "Device Tree" verwendet. Ab dann wird die One-Wire-Schnittstelle in der Datei */boot/config.txt* aktiviert, indem dort zwei Zeilen eingetragen werden:
-
-`dtoverlay=w1-gpio,gpiopin=4`
-
-Damit wird der Pin 4 des GPIO für One Wire reserviert. Und falls noch der interne Pullup-Widerstand geschaltet werden soll ergänzend:
-
-`dtoverlay=w1-gpio-pullup,gpiopin=4,extpullup=on`
-
-Siehe auch das Device Tree Kapitel. 
-
-Zur Zeit läßt der Treiber **bis zu 10 Sensoren** am Bus zu. Man habt jedoch die Möglichkeit, durch einen Eintrag in der Datei **/etc/modprobe.d/1-wire.conf** diese Zahl zu erhöhen. Falls die Datei noch nicht exisitert, ist sie neu zu erstellen. Dann kann mit der folgenden Zeile die Anzahl der möglichen Sensoren, z. B. auf 8, eingestellt werden:
-
-`options wire max_slave_count=8`
-
-Diese Änderung wird aber nur beim Laden des Treibers übernommen, gegebenenfalls erst nach dem nächsten Neustart.
-
-Der Zugriff auf die Sensoren erfolgt über das Dateisystem. Sie müssen auch nicht root sein, es darf jeder User lesend darauf zugreifen. Jeder Sensor wird mit seiner ID als Verzeichnis eingebunden. Ist die Hardware angeschlossen und sind die Kernel-Module geladen, können die Temperaturwerte über eine Pseudo-Datei abgerufen werden. Wie gesagt, bekommt jeder Sensor ein eigenes Verzeichnis unter **/sys/bus/w1/devices/** (symbolische Links). 
-Innerhalb des Verzeichnis eines Sensors kann die Temperatur aus der (Pseudo-)Datei **w1_slave** gelesen werden, beispielsweise durch: 
-
-	root@raspberrypi: cat /sys/bus/w1/devices/10-000802cfb15d/w1_slave
-	33 00 4b 46 ff ff 02 10 f4 : crc=f4 YES
-	33 00 4b 46 ff ff 02 10 f4 t=25625
-
-Das Ergebnis des Sensors mit der *ID 10-000802cfb15d* besteht aus zwei Zeilen, die jeweils mit der hart verdrahteten ID des Bausteins und Angaben zur Prüfinfo bzw. dem Ergebniswert enthalten.
-Die erste Zeile teilt uns mit, ob die Prüfinfo korrekt war ("YES"), in der zweiten Zeile finden wir die Temperaturangabe in Tausenstel Grad (t=25625 ? 25,625 °C).
-Das Datenblatt des Sensors ist leider ernüchternd, denn der Sensor misst keineswegs so genau. Vielmehr sind es beim Standard-Typ Abstufungen in größeren Schritten. Aber für weitere Berechnungen ist es einfacher, wenn man den Wert generell nur durch 1000 teilen muss.
-
-Im Verzeichnis **/sys/bus/w1/devices/w1_bus_master1** gibt es noch einmal die Wiederholung der Verzeichnisse für alle Sensoren und etliche interessante weitere Dateien, von denen einige besprochen werden:
-
-	root@raspberrypi:/sys/bus/w1/devices/w1_bus_master1# ls -l
-	insgesamt 0
-	drwxr-xr-x 3 root root    0 Mai 13 07:29 10-000802bf634d
-	drwxr-xr-x 3 root root    0 Mai 13 07:29 10-000802cfb15d
-	lrwxrwxrwx 1 root root    0 Mai 13 07:30 driver
-    	                     -> ../../bus/w1/drivers/w1_master_driver
-	drwxr-xr-x 2 root root    0 Mai 13 07:30 power
-	lrwxrwxrwx 1 root root    0 Mai 13 07:29 subsystem -> ../../bus/w1
-	-rw-r--r-- 1 root root 4096 Mai 13 07:29 uevent
-	-rw-rw-r-- 1 root root 4096 Mai 13 07:30 w1_master_add
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_attempts
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_max_slave_count
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_name
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_pointer
-	-rw-rw-r-- 1 root root 4096 Mai 13 07:30 w1_master_pullup
-	-rw-rw-r-- 1 root root 4096 Mai 13 07:30 w1_master_remove
-	-rw-rw-r-- 1 root root 4096 Mai 13 07:30 w1_master_search
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_slave_count
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_slaves
-	-r--r--r-- 1 root root 4096 Mai 13 07:30 w1_master_timeout
-
-Die Datei **w1_master_max_slave_count** enthält die maximal mögliche Zahl der angeschlossenen Sensoren (default: 10). 
-Das Kommando `cat w1_master_pullup` liefert uns die Einstellung für den Pullup-Parameter des Treiberaufrufs. Drei weitere Dateien geben Auskunft über Anzahl der aktiven Sensoren ("Slaves"), den Timeout bei der Messung und die IDs dar angeschlossenen Slaves:
-
-	cat w1_master_slave_count
-	2
-	
-	cat w1_master_timeout
-	10
-	
-	cat w1_master_slaves
-	10-000802bf634d
-	10-000802cfb15d
-
-Die Datei **w1_master_slaves** ermöglicht recht einfachen Zugriff auf die Slaves. Dieser Weg wird auch im beelogger Programm genutzt.
-
-Weitere Literatur-Links zu OneWire Sensoren:
-+ [Guidelines for Reliable Long Line 1-Wire Networks](http://pdfserv.maximintegrated.com/en/an/AN148.pdf)
-+ [1-Wire Communication Through Software](http://pdfserv.maximintegrated.com/en/an/AN126.pdf)
-+ [Using the DS2480B Serial 1-Wire Line Driver](http://pdfserv.maximintegrated.com/en/an/AN192.pdf)
-+ [1-Wire Search Algorithm](http://pdfserv.maximintegrated.com/en/an/AN187.pdf)
-
-### Algorithmus: OneWire Protokoll DS1820
-Hier nun ein Codeauszug in ‚C‘ zur Interpretation des OneWire Protokolls via Raspberry Kernel Module für die Temperatursensoren:
-
-	aus beelog: get1wire.c
-	 * Recommended connection (default by Wheezy kernel driver)
-	 *   1-wire sensor  | Raspberry Pin | wiringPi
-	 *   ---------------|---------------|---------
-	 *       DATA	   |  P07 - GPIO7  | -> 7
-	 *	   3.3V	   |  P01 - 3.3V   |
-	 *	   GND		|  P09 - GND    |
-	
-	#define W1_PATH		"/sys/bus/w1/devices"
-	// path to 1-wire device nodes
-	#define W1_IDCOUNT_FILE "w1_bus_master1/w1_master_slave_count"	// # of OW slave
-	#define W1_IDLIST_FILE  "w1_bus_master1/w1_master_slaves"	// contains OW slave IDs
-	#define W1_FNAME_VAL    "w1_slave"	// W1 device node value file
-	#define W1_MAX_SLAVES   64		// Max. number of served W1 slaves at 1 path
-	#define W1_SLAVE_IDLEN  16			// Max. W1 slave name lenth
-	#define W1_SLAVE_PATHLEN 1024		// length of w1 value file path
-	#define W1TYPEDS18B20   28	// W1 Slave sensor type: ID-Byte1=28 -> DS18B20
-	#define W1TYPE28NAME    "DS18B20"
-	#define W1TYPEDS1822    22	// W1 Slave sensor type: ID-Byte1=10 -> DS18S20
-	#define W1TYPE22NAME    "DS1822"
-	#define W1TYPEDS18S20   10	// W1 Slave sensor type: ID-Byte1=10 -> DS18S20
-	#define W1TYPE10NAME    "DS18S20"
-	#define CELSIUS_ZU_FAHRENHEIT( t ) ( ( t ) * 1.8 + 32 )	// get ID count	
-
-Raspberry OneWire device structure Algorithmus:
-
-	sprintf(w1line, "%s/%s", w1devpath, W1IDCOUNTFILE);  
-
-	// open W1 Device ID list file
-	fd = fopen(w1line, "r");
-    if (!fd) return NULL;
-
-	fgets(w1line, 1024, fd); // read out first line of slave counter file
-	fclose(fd);
-
-	sscanf(w1line,"%i", &i); // assumed only one value in this file/line
-	w1devidx=i;			// now we know the amount of slaves
-
-	if(i=0)				// if no slave active exit here
-	  return NULL;		 // return: no slaves detected
-
-	// get ID list by static ID of Raspberry OW Device bridge
-	sprintf(w1line, "28-041670f10bff");
-	fd=NULL;
-
-	fd = fopen(w1line, "r");		// open W1 Device ID list file
-	if (!fd) return NULL;
-	
-	fseek (fd, 0L, SEEK_END);		// check length of file 
-	if(ftell(fd) == 0)	return NULL;	// -> =0 no slaves detected
-	
-	fseek(fd, 0L, SEEK_SET);		// go back to start of file
-
-	// get ID string line per device/sensor
-	for(i=0; i < w1devidx && fgets(w1line, 1024, fd) != NULL; i++) {	
-	// fgets reads one line at a time, up to the max size
-	// but not the next block of max size.
-
-	strncpy(w1dev[i].ID, w1line, W1SLAVEIDLEN);  // fetch ID string
-	w1_dev[i].ID[W1_SLAVE_IDLEN-1] = '\0';  // assure 0 terminated string
-	strncpy(w1dev[i].type, "unknown", W1_SLAVE_IDLEN);			
-
-	// preset type name
-	sscanf(w1dev[i].ID,"%i-%s", &w1type, s1);					
-
-	// get type ID: Byte1
-	switch(w1type) {
-		case W1TYPEDS18B20: 
-			strncpy(w1dev[i].type, W1TYPE28NAME, W1SLAVEIDLEN);
-			break;
-		case W1TYPEDS18S20: 
-			strncpy(w1dev[i].type, W1TYPE10NAME, W1SLAVEIDLEN); 
-			break;
-		case W1TYPEDS1822:  
-			strncpy(w1dev[i].type, W1TYPE22NAME, W1SLAVEIDLEN); 
-			break;
-		default: 
-			strncpy(w1dev[i].type, "\0", 1); 
-			break;	// unknown type
-	}
-	// remember path to value data file of each ID
-	sprintf(w1dev[i].valpath, "%s/%s/%s", w1devpath, w1dev[i].ID,
- 										W1FNAMEVAL);  
-	w1dev[i].crc = 0;		// preset crc value field
-	w1dev[i].tval= 0;		// preset temperature value field
-	// got 1 slave id entry
-	fclose(fd);
-
-
-Und hier die Auswertung der OneWire Daten per Sensor:
-
-	// parse 1-wire sensor data to value struct	
-	fd = fopen(w1dev[i].valpath, "r");
-	if (!fd)
-		return -1;
-
-	fgets(w1line, 1024, fd);		// get 1. data line
-	// e.g.: 2d 00 4b 46 ff ff 02 10 19 : crc=19 YES
-	sscanf(w1line,"%x %x %x %x %x %x %x %x %x : crc=%x %s", &i1 ,&i2 ,&i3 ,&i4 ,&i5 ,&i6 ,&i7 ,&i8 ,&i9, &w1_dev[i].crc, s1);
-
-	if(s1 == "NO") {				// wrong CRC check
-		// try again one time
-		fclose(fd);
-		fd = fopen(w1dev[i].valpath, "r");
-		if (!fd)
-			return -1;
-
-		fgets(w1line, 1024, fd);		// get 1. data  line
-		// e.g.: 2d 00 4b 46 ff ff 02 10 19 : crc=19 YES
-		sscanf(w1line,"%x %x %x %x %x %x %x %x %x : crc=%x %s", &i1 ,&i2 ,&i3 ,&i4 ,&i5 ,&i6 ,&i7 ,&i8 ,&i9, &w1_dev[i].crc, s1);
-        if(s1 == "NO") { 			// again wrong CRC check -> give up
-			w1_dev[i].tval=0;
-			w1_dev[i].crc=0;
-			fclose(fd);
-			return -1;	// leave this entry empty
-		}
-	}
-	fgets(w1line, 1024, fd);		// get 2. data  line
-	fclose(fd);
-	// e.g.: 2d 00 4b 46 ff ff 02 10 19 t=22625
-	sscanf(w1line,"%x %x %x %x %x %x %x %x %x t=%f", &i1 ,&i2 ,&i3 ,&i4 ,&i5 ,&i6 ,&i7 ,&i8 ,&i9, &w1_dev[i].tval);
-
-	w1dev[i].tval = w1dev[i].tval / 1000; 	// got it
-
-Die OW ID eines jeden neuen Sensors wird vom Hersteller entweder mitgeliefert, oder man muss durch Deltaanalyse der gelisteten IDs diese selbst ermitteln. Bei den mir gelieferten Sensoren wies ein Aufkleber am Kabel die jeweilige ID auf. 
-Diese führe ich als Konstante in der Headerdatei auf um sie im Programmlauf zu identifizieren.
-Die Messwerte eines jeden Sensors ist per CRC code gesichert und kann bei Bedarf durch einen Temperaturkoeffizienten noch mal kalibriert werden (dieser Teil fehlt hier, stellt aber nur das Produkt mit einem statischen Koeffizienten dar).
-Generell gilt bei der Stockwaage: Maßgeblich sind die Relativwert-Aussagen pro Volk.
-
-### Algorithmus: A/D Wandler HX711 Protokoll
-Da die Bosche Wägezelle nur ein passives analoges Widerstandnetzwerk ist, kann der Messwert nur durch einen A/D Wandler quantifiziert werden. Je höher die Bit-zahl des Wandlers desto feiner die Messwertabstufung. Da die Wägezelle aber auch nur eine gewisse Genauigkeit aufweisen kann, ist ein zu hoher Bit-Wert überflüssig und führt nur zur Messung der Streuungswerte, denn zu einer höheren Genauigkeit.
-Der HX711 ist mit seinen 24Bit für die Art Wägezelle mit Wheatstonebrücke optimiert.
-(siehe Genauigkeitsrechnung zu HX711 in der Komponentendiskussion)
-Weitere Hinweise dazu finden sich auch unter:  (http://www.raspberrypi.org/archives/384)
-Hier nun das eigentlich Messprogramm als Auszug:
-
-	|HX JP2 pins | Raspberry Pin | wiringPi|
-	|------------|---------------|---------|
-	|HX 1 - GND  |  P39 - GND    |     	|
-	|HX 2 - DT   |  P16 - GPIO23 | -> 4	|
-	|HX 3 - SCK  |  P18 - GPIO24 | -> 5	|
-	|HX 4 - Vcc  |  P02 - 5V     |     	|
-	
-	// HX711 Pin control macros
-	#define SCK_ON  digitalWrite(cfgini->hc_hxclkpin,1) // set HX711 SCK pin=1
-	#define SCK_OFF digitalWrite(cfgini->hc_hxclkpin,0) // set HX711 SCK pin=0
-	#define DT_R    digitalRead(cfgini->hc_hxdatapin)   // read HX711 DT pin
-
-	// Initiate “Converter Reset” -> default: channel A gain 128
-	pinMode(cfgini->hc_hxdatapin, INPUT);
-	pinMode(cfgini->hc_hxclkpin, INPUT);
-	pinMode(cfgini->hc_hxclkpin, OUTPUT);
-	
-	SCK_OFF;
-	SCK_ON;			
-	usleep(60);		// SCK =1 for >60usec will Powerdown HX711
-	SCK_OFF;
-	usleep(60);		// SCK = 0 again ->> reset HX711 to normal mode
-	
-	// Set HX711 gain:
-	// r = 0 -> 128 gain ch a	-> 24+0 clocks
-	// r = 1 -> 32  gain ch b	-> 24+1 clocks
-	// r = 2 -> 63  gain ch a	-> 24+2 clocks
-	r = 0;		// maximale Verstärkung des Analogeingangs
-	
-	while( DT_R );		// wait till sensor is ready
-	for (i=0;i<24+r;i++) { // make a dummy read for channel selection
-		SCK_ON;
-		SCK_OFF;
-	}
-	float weight;		// final weight of hive
-	float tempcomp;	  // Temp. compensation referenced calibration
-					     //      temp - ext. temperature
-	channel = 0;		 // Select r = 0 - 128 gain ch A
-	nsamples = 30;	   // get number of reads per burst
-	 
-	// get the raw samples and calculate the average value	
-	for(i=0;i<nsamples;i++)
-		samples[i] = readcnt(channel); // read data raw from ADC (no offset)
-	
-	// All "nsamples" raw reads done -> calculate average value
-	        tmp_avg = getaverage(samples, nsamples);
-	// recalculate tempcomp here: 1 +/- compensation
-	        tempcomp = gettcomp(exttemp);
-	
-	// calculate final weight value with all compensations
-	weight = ((float) (tmp_avg - customoffset) / (float) cfgini->hxrefkg) * (float) tempcomp;
-	return (weight);}
-
-------------------------------------------------------------------------
-	// Service Function: readcnt()
-	//  Read out 1-wire sensor data according to 1-wire protocol
-	//  Be aware: works only for 1-wire sensor connected 
-	//            => no sensor selection code yet
-	
-	unsigned long readcnt(int channel) {
-		long count;
-		int i=0;
-		int b=0;
-		count = 0;		  // reset bit field for read data
-
-	  while( DT_R );		// wait for DOUT 1 -> 0
-		b++;				// => wait >= 0,1us
-		b++;
-		b++;
-		b++;
-
-	for(i=0;i<24	; i++) { // create 24 pulse <= 50us
-		SCK_ON;
-	    count = count << 1;  // shift bit file pointer to next bit
-		b++;
-		b++;
-		b++;
-		b++;
-	    SCK_OFF;
-		b++;
-		b++;
-	    if (DT_R > 0 ) { count++; }	// store read bit 0/1
-	  } // end of read pulse burst: LSB is the last one
-	
-	  for(i=0; i <= channel; i++){ // create channel selection pulses
-		SCK_ON;			  // 25. pulse -> set channel A(128)
-		b++;				 // 26. pulse -> set channel B(32)
-		b++;				 // 27. pulse -> set channel A(64)
-		b++;
-		b++;
-		SCK_OFF;
-		b++;
-		b++;
-		b++;
-		b++;
-	  }
-		if (count & 0x800000) {	// mask data field
-			count |= (long) ~0xffffff;
-		}
-	  return (count);	// return final bit field as data
-	}
-
-### Die Hauptprogrammstruktur
-Das Programm Binary: BeeHive muss immer als User: root gestartet werden (wg. wiringPI GPIO Zugriffen):
-`sudo beehive &`
-
-Der interne Programmfluss sieht wie folgt aus:
-<img src="./images_v2/SWModuleSheet.png">
-
-**Main()** Struktur:
-<img src="./images_v2/SWMainFlow.png">
-
-1. **Initall()**	Initialisiere alle Devices/Services
-	+ **Getini()**: 	Einlesen der Programm Runtime Betriebsparameter (aus config.ini)
-	+ **WiringPiSetup()**: OW System Initialisierungs Funktion (definiert in wiringPi.h)
-	+ **Getw1list()**: 	Suche nach allen existierenden OW Sensors aus dem OW device tree
-	+ **InitHX711()**:	Initialisiere/Reset HX711 A/D Wandler
-	+ **InitBHDB()**:	Initialisiere beehive interne Datenhaltung für Statistik Analysen
-	+ Rücksetzen aller Alarm-Semaphoren
-2. Globale Endlosschleife aller Messungen und Auswertungen
-	+ Prüfe Batteriespannungswerte -> ggfs. Alarm auslösen
-	+ *Auslesen aller OW Sensor	 pro ID	(s. Kapitel: OW Algoithmus)*
-	+ *Auslesen aller Bosche Wägezellen	(s. Kapitel: HX711 Algorithmus -> GetHX711() )*
-	+ Update BeeHive interne DB mit allen Messwerten
-	+ **DataCal()**: Validiere die Messwerte nach Grenzwerten/Ranges und filtere/dämpfe Störwerte
-		* Optional: Statistikermittlung Wochen-/Monatsweise
-	+ **MyAlarm()**: Prüfe aufgelaufene Alarmmeldungen und reagiere entsprechend
-	+ BeeCSV(): Speichere alle Werte in einer lokale CSV Datei zur externen Weiterverarbeitung
-	+ Optional:
-		* PutStartScreen() Update mit aktuellen Messwerten
-		* WebUI(): Transferiere alle Messdaten zu einer User Webpage zur Anzeige 
-			* Export(): per FTP, email, URL copy path
-	+ *Warte nun N Minuten (default: 10Min)*
-	+ Ev. geänderte Runtime Betriebsparameter neu einlesen
-		* **Getini()**: Einlesen der Programm Runtime Betriebsparameter (aus config.ini)
-	+ **GetNotice()** Bearbeitung eingetroffener Servicekommentare vom User/WebUI
-3. Loop End (loopcounter +1)
-
-Zur Initialisierung der Betriebs-Konfigurationskennwerte des BeeLog Programms dient eine Konfigurationsdatei: **./config.ini**.
-Diese ist im Windows klassischen INI-Format strukturiert und wird im root-Folder der Programm-binaries erwartet.
-Kann sie nicht gefunden werden, wird sie vom Programm mit default Werten neu erzeugt. Eine Anpassung durch den Anwender ist dann aber noch notwendig, um die Pfad- oder Benutzerangaben sinnvoll zu definieren. Die Grundstruktur liegt damit aber schon mal vor:
-Die farbigen Parameter müssen unbedingt überarbeitet werden bevor das Programm Beehive neu gestartet wird:
-
-	; BeeHive Logger config file for initialization 
-	; 03.01.2019
-	VERSION	= 2.2
-	; Beehive tool configuration runtime parameters
-	; This file can be modified during runtime of beehive !
-	; All Values are parsed cyclic during runtime right after the wait loop.
-	
-	[HWCONFIG]                 ; wPi-GPIO configuration settings (BCM GPIO#)
-	PINHX711DT = 23            ; J8.P16: HX711 DT  dataline
-	PINHX711CLK= 20            ; J8.P38: HX711 SCK clockline (SPI1 MOSI)
-	PINADSALERT= 22            ; J8.P15: ADS ALERT/RDY GPIO22
-	PINTESTLED = 12            ; J8.P32: TEST LED (red) /w ext. pullup
-	PINTARABT  = 16            ; J8.P36; TARA Reset ISR trigger Button
-	PINOWIOPIN = 4             ; J8.P07: OneWire dataline -> claimed by kernel cfg files
-
-	; Display: WaveShare 2.7" ePaper HAT (DISPLAY =1) SPI0 => wPi setup with GPIO#
-	EPAPERDIN  = 10            ; J8.P19 SPI0-MOSI GPIO10
-	EPAPERCLK  = 11            ; J8.P23 SPI0-SCLK GPIO11
-	EPAPERCS   = 8             ; J8.P24 SPI0-CE0  GPIO08
-	EPAPERDC   = 25            ; J8.P22 GPIO25
-	EPAPERRST  = 17            ; J8.P11 GPIO17
-	EPAPERBUSY = 24            ; J8.P18 GPIO24
-	EPAPERKEY1 = 5             ; J8.P29 GPIO05
-	EPAPERKEY2 = 6             ; J8.P31 GPIO06
-	EPAPERKEY3 = 13            ; J8.P33 GPIO13
-	EPAPERKEY4 = 26            ; J8.P37 GPIO26
-	; Component enabler
-	GPSMOUSE   = 0             ; =1 GPS mouse connected -> part of logdata
-	THERMOCAM  = 0             ; =1 Thermo camera connected >0: save pics each x min.
-	THERMOLOOP = 10            ; Wait time for thermo pic creation in minutes
-	BEECOUNTER = 0             ; =1 BeeCounter connected -> part of logdata
-	DISPLAY    = 1             ; =1 Activate local display update => =1 for WaveShare ePaper 2.7"
-	WEBUI      = 1             ; =1 Activate Webpage date preparation at BEELOGWEB
-	
-	[BEELOG]   ; Init of Main Programm
-	BHLOOPWAIT = 600           ; loop wait time in Sec. (600 = 10Min.)
-	BEELOGHOME = /home/pi/share/beelog  ; Home path for beelog housekeeping data
-	LOGFILE	   = beelog.txt ; log file name (/w extension)
-	CSVFILE    = beelog        ; *.csv data log file name (/wo extension)
-	CSVDAYS    = beedays	   ; *.csv file of daily statistic summary (/wo extension)
-	ACTIOFAIL  = 1             ; allowed action on IO Error: 0= no Action, 1= exit, 2=reboot
-	VERBOSE	   =  1         ; verbose levels +1:main flow + 2=1-wire + 4+8=hx711(lev 1+2)
-	                           ; 16=Import/export + 32=Web Update + 64=raspimon
-	                           ; +128 = statistic data calculation 
-	[HX711]   ; Init of Weight scale ADC
-	TARA       = 823500        ; Calibration for 0 kg                         
-	TARARESLOCK= 0             ; =0 TARA reset button is disabled, =1 enabled  
-	TARARESET  = 0             ; =0 TARA Button active; =1 TARA Button simulated
-	REFKG      = 46350         ; weight scale reference value of 1kg
-	HXSPREAD   = 10            ; trust range of weight scale +/- 5% = 10 per measurement
-	DATSPREAD  = 10            ; trust range of weight scale +/- 5% = 10 between 2 measurements
-	TEMPCOMP   = 0.9           ; Temp. compensation factor per Grad           
-	NSAMPLES   = 10            ; Number of read loops for average calculation 
-	                           ; Max Range: 2..100
-	[ONEWIRE]  ; Init of One-Wire devices
-	OWFILEPATH  = /sys/bus/w1/devices ; path to one wire filesystem of kernel driver
-	OWTEMPINTID =  28-012345678900  ; OW ID of DS18B20 sensor at Bosche cell
-	                                ; -> also used as Weight scale unique identifier
-	TEMPCINT    =  0.00             ; temperature compensation Internal sensor
-	OWTEMPEXTID =  28-012345678900  ; OW ID of DS18B20 sensor to get externa1 temperature
-	TEMPCEXT    =  0.00             ; temperature compensation External sensor
-	OWTEMPHIVE1ID= 28-012345678900  ; OW ID of DS18B20 sensor into first beehive
-	TEMPCHIVE1  =  0.00             ; temperature compensation Hive1 sensor
-	OWTEMPHIVE2ID= 28-012345678900  ; OW ID of DS18B20 sensor into sec. beehive (optional)
-	TEMPCHIVE2  =  0.00             ; temperature compensation Hive2 sensor
-	[WEBUI]
-	BEELOGWEB   = /var/www/beelog   ; root path to webserver home of beelog for log & data files
-	BEEKEEPER   = 'UserName'        ; Full name of Owner/User/BeeKeeper
-	LOCDAT1     = '-Garten-'        ; Location of BeeHive1
-	LOCDAT2     = 'Strasse'         ; Street
-	LOCPLZ      = 'PLZ'             ; ZIP code of location (also fro weather data from web)
-	LOCDAT3     = 'Ort'             ; location name
-	PICSMALL    = BeeLog_Picture_compressed.jpg ; Pic of BeeHive (compressed) used as WebLogo
-	PICLARGE    = BeeLog_Picture.jpg ; Pix of Beehive full size
-	AUTOUPDATE  = 0                 ; init automatic update of website
-	WEBDEFFILE  = index.html        ; default Web index file to be updated
-	NOTICEFILE  = beenote.txt       ; text file of service notices for logging
-	ALARMON     = 0                 ; =1 Global 'ALARM enabled' for security/events
-	ALARMWEIGHT = 0                 ; Alarm on Weight change > 50% in 5 seconds: thieve
-	                                ; =0 disabled, 1..99% enabled, typical 50(%)
-	ALARMSWARM  = 0                 ; Alarm on weight change > 10% in 10 minutes: swarm
-	                                ; =0 disabled, 1..99% enabled, typical 10(%)
-	ALARMBATT1  = 0                 ; =0 disabled; 1..99% enabled, typical 98(%)= 4.9V
-	ALARMBATT2  = 0                 ; =0 disabled; 1..99% enabled, typical 95(%)= 4.75V
-	
-	[EXPORT]
-	EXFTPURL    = <ftp URL>         ; FTP site URL for upload of raw logger data from BEELOGWEB
-	EXFTPPORT   = 21                ; Portnumber of URL (used as string)
-	EXFTPPATH   = imkerei/beelog    ; relative FTP path to URL
-	EXFTPPROXY  =                   ; If needed: FTP proxy server; set '' if no proxy needed
-	EXFTPPROXYPORT =                ; used proxy port (used as string)
-	EXFTPUSER   =                   ; no user name for FTP access 
-	 				 (get pwd by dialogue or local .netrc file using pwd encryption)
-	BKUPPATH    = **/home/pi/share/beelog** ; Backup file path (local or remote)
-	BKUPFILE    = beelog.bak            ; name of config/log backup file at BKUPPATH
-	
-Die rot markierten Parameter müssen aktualisiert werden:
-	* BEELOGHOME	Pfad auf das Ablaufverzeichnis des Programms
-	* BEELOGWEB	 Der Pfad dient auch der allg. CSV Datenfile und Logfile Ablage
-	* TARA		  Messwert der Waagezelle bei 0kg (abh. vom WaagenDeckel Eigengewicht)
-	* REFKG         Delta-Messwert der Waagezelle bei +1kg
-	* OWTEMPINTID, OWTEMPEXTID, OWTEMPHIVE1ID
-	 			   OneWire Unique ID Temp-Sensor strings (DS18x20 = 28-xxxxxx)
-	* OWTEMPHIVE2ID	2. Beuten Temp.Sensor und die jeweiligen Kalibrierungswerte sind optional
-	* BKUPPATH    	 Pfad für Backup Datenablage (optional)
-
-Alle grün markierten Parameter sind zu aktualisieren, wenn man AUTOUPDATE  = 1 setzt, und damit 	den Web folder update aktiviert. Dann fallen noch folgende Werte zum update an:
-	* BEELOGWEB   Pfad auf das WWW Verzeichnis welches vom Webservice 
-	 	     	per index.html Datei angezeigt wird. (z.B. Apache2: /var/www/…)
-	 			 Der Pfad dient auch der allg. CSV Datenfile und Logfile Ablage
-	* BEEKEEPER, LOCDAT2, LOCPLZ, LOCDAT3  -> Angaben zur Person des Imkers
-	* PICSMALL, PICLARGE   				->  Bilder z.B. der Stockwaage & Beute
-	* EXFTPURL	Netz Pfad auf den FTP server eines externen providers
-	 			 Authentication Daten sollten per .netrc Datei platziert werden. 
-	* EXFTPPATH   Pfad relative zum FTP root des ext. Web Proiders
-	* AUTOUPDATE =1 -> Web- und FTP folder wird mit Daten versorgt
 
 ### Kalibrierung der Waage
-Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0kg Bezug noch nicht festgelegt wurde. Dazu dient folgende Vorgehensweise:
+Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0kg Bezug  nicht passend ist. 
 
-1. Config.ini: TARARESLOCK =1	setzen (TARARESLOCK bleibt =0)
-2. Config.ini: BHLOOPWAIT = 6	setzen -> Messwert alle 6 Sekunden
-3. Config.ini: Verbose = 1	setzen -> Messdatenausgabe auch auf Konsole
-4. Stockwaage ohne Gewicht an Stromquelle anschliessen (POE LAN Kabel, PV, Batterie, USB Port)
-5. Messwert auslesen und in config.ini: TARA= eintragen. (z.B. bei mir sind es 36000 da mein Waagendeckel alleine ca. 6,5 Kilo hat. Das wird bei jedem Aufbau stark schwanken je nach Materialien)
-	+  Sofort Test durch drücken des TARA Buttons möglich, der bei jeder loop abgefragt wird.
-	+ -> Tara-Wert wird sofort vom Programm berücksichtigt.
-6. Config.ini: TARARESLOCK =0 setzen (TARARESLOCK bleibt =0)
-7. 1kg auflegen
-8. Deltawert zu 0 kg in Config.ini: ‚REFKG=‘ angeben. 
-	Dadurch wird die Gewichtskurvensteigung auf den 0kg Punkt eingestellt.
+Im Kapitel: **[AD Wandler HX711](#ad-wandler-hx711)**
+haben wir folgende Richtwerte errechnet:
+- Der ADC HX711 liefert den Wert: **44**/Gramm.
+- Als 1Kg-Scale-Divider sollte man mit dem Wert: **44000/kg** starten.
 
-Ab jetzt sollte die Waage richtige Messwerte anzeigen. Der 1kg Wert kann auch durch das eigene Körpergewicht ermittelt werden:
+Nun gilt es noch den scale_Offset Wert zu ermitteln, wie in der header datei HX711Scale.h definiert.
+
+Dazu dient folgende Vorgehensweise:
+1. In der Datei: HX711Scale.h den Wert scale_Offset rücksetzen: **#define scale_Offset 0**
+2. In Setup() Routine des main.cpp das LogFlag: um LOGHX711 ergänzen, und das Programm neu bauen und starten
+3. Ohne jedes Gewicht auf der Waage misst HX711 nun via serial Monitor den adäquaten Wert für das aktuelle Stockwaagen-Deckelgewicht (z.B. 243000 entspricht bei 44000/kg => 5.5kg).
+-> HX711: Weight(raw) : 24300 - Weight(unit): 5.523 kg
+4. In der Datei: HX711Scale.h den Wert scale_Offset nun mit diesem ersten Raw-Wert setzen.
+5. Programm neu bauen und starten
+6. Jetzt sollten ca. 0.000kg angezeigt werden und im ser.Monitor der Offsetwert ausgegeben werden
+Ideal: HX711: Weight(raw) : 0 - Weight(unit): -0.000 kg
+7. Nun ein bekanntes hohes (>50kg) Referenzgewicht auf die Waage stellen.
+8. Den HX711-Messwert im ser. Monitor durch das bekannte Gewicht teilen. Das Ergebnis sollte in der Nähe von 44000 liegen, was dem rechnerischen kg Wert entspricht.
+9. Diesen "neuen" Wert in HX711Scale als scale_DIVIDER Wert (statt 44000) festlegen
+10. In der setup() Routine das LogFlag wieder rücksetzen, Programm neu bauen und starten
+
+Nun sollte ohne jedes Gewicht weiterhin 0,0kg angezeigt werden, und das rerenzgewicht mit dem richtigen kg-Wert.
+Die Waage ist nun kalibriert und einsatzbereit
+
+Als Refernzgewicht eignet sich auch ein gut bekanntes eigenes Körpergewicht:
 -> Aufsteigen, und Deltawert durch bekanntes Körpergewicht als REFKG angeben.
 
-**Vorteil**: Der Messfehler ist um die Anzahl Kg des Körpergewichts kleiner als nur bei 1 kg.
-
-**TARARESLOCK** dient zur Simulation des TARA Buttons, wenn man mal bei aufgestellter Beute den TARA Wert remote neu einstellen will (z.B. für reine Deltamessung einer Beute, ohne Vorort gehen zu müssen um den TARA Taster zu drücken.)  -> **TARARESLOCK** setzen und bei nächstem Schleifendurchlauf wird TARA für akt. Eigengewicht der Waage incl. allem was drauf steht neu eingestellt.
+**Vorteil**: Der Messfehler ist um die Anzahl Kg des Körpergewichts kleiner als nur bei einem kleinen Refernzgewicht.
 
 Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.
 
-### Restart via Crontab
-Gibt es mal Störungen, sei es aus dem Programm selbst (nicht korrigierbarer Fehlerpfad) oder von ausserhalb (Spannungs-Drop) ist manchmal ein Restart unvermeidlich.
-Via Crontab kann das Programm BeeHive automatisch beim Booten als Hintergrundjob gestartet werden: 
-Das Einstellen des automatischen Programmstarts nach jedem reboot erreicht man durch:
-`sudo crontab –e`
-
-Ergänzung am Ende der angezeigten Datei: `@reboot /root/startbh`
-
-Das benötigte Restart-Script: **/root/startbh**:
-
-	#! /bin/sh
-	PATH=/home/pi/share/beelog
-	USER=root
-	cd $PATH
-	echo hallo >> ausgabe.txt
-	$PATH/beehive &
-	echo bhdone >> ausgabe.txt
-
-Die Ablage der 
-+ Steuerdatei: 	**/home/pi/share/beelog/config.ini**
-+ Program: 		**/home/pi/share/beelog/beehive**
-… immer mit root Ausführungsrechten: *chmod 755 startbh* und *chown root startbh*
-
 
 ### Optional: WebUI Daten Service
-Will man Messergebnisse aus der CVS als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:
+Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.
+Dort werden sie über die Zeit in einer CSV Datei zeilenweise aufgesammelt und es entsteht der Bedarf, diese als Funktions-Diagramme darzustellen.
+Will man also diese Messergebnisse als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:
 
 Apache 2 Webserver installieren:
 1. sudo apt-get update
@@ -2112,18 +1563,11 @@ Apache 2 Webserver installieren:
 4. WebHome: /var/www/html 	(Apache 2 default)
 5. Server Configuration: /etc/apache2/ports.conf
 
-Website Passwortschutz einstellen: (siehe auch: http://peter.liscovius.de/tech/htaccess/)
-1. Joe /var/www/html/website1/.htaccess
-2. **Add:**
-	AuthType Basic
-	AuthName "Zugriff verweigert - Bitte User und Passwort eingeben"
-	AuthUserFile /var/www/html/website1/.htpasswd
-	Require valid-user
-3. Chmod 644 /var/www/html/website1/.htaccess
-4. Erzeuge eine htpasswd(2):
-	htpasswd -c /var/www/html/website1/.htpasswd benutzer1
-	Für weitere Benutzer:
-	htpasswd /var/www/html/website1/.htpasswd benutzer2
+ToDo: "Hier folgt nun die Beschreibung der Webpage Datei: index.html zur darstellung der Datendiagramme mittels Dygraph-library"
+
+Beipiel:  **http://randolphesser.de/imkerei/index.html**  
+=> Menü: Bienenstockwaage 
+
 
 ## WebUI ToDo - Liste
 ### Ideen-Liste
@@ -2151,7 +1595,7 @@ für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umg
 	* ==Luftfeuchte==
 	* ==Beutentemperatur==
 	* ==Gesamt-Gewicht==
-+ Messwerte Diagramm
++ Messwerte Diagramm (auf Lora-Gateway RPi)
 	* Mit Tag Nacht Schattierung
 	* 2-Tagesfenster:
 		- ==Gewicht, Beutentemp. + Aussentemperatur + Luftfeuchte==
@@ -2175,7 +1619,7 @@ für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umg
 + ==Export/Importfunktion==
 	* ==aller Mess-/Log Daten==
 	* ==Konfigurationseinstellungen==
-	* ==Auto mirroring aller Daten auf remote server / backupPfad==
+	* ==Auto mirroring aller Daten auf remote server + backupPfad==
 + Alarm-/Diebstahlfunktion
 	* GPS Sensordaten
 	* Kombiniert mit Gewichtssprüngen
@@ -2187,7 +1631,7 @@ für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umg
 	* Sitz
 	* Temperaturzustand
 + BeeCounter ?
-+ 7.2Ah Blei Gel Akku (Panasonic)
++ ==7.2Ah Blei Gel Akku (Panasonic)==
 
 ## ToDo: Optional HW Module
 
@@ -2199,7 +1643,6 @@ Daten-Transfer und Web Anbindung per GSM Module
 
 Bienen-Stock Aussen-Kamera mit IR: Zur Kontrolle des Volkssitz im Winter
 
-<img src="./images_v2/IRCamPics.jpg">
 
 Weitere interessante Messwerte
 + Luftfeuchtigkeit (Grundkonfiguration)
@@ -2209,19 +1652,13 @@ Weitere interessante Messwerte
 + Luftdruck
 + Windstärke
 + Einbruchalarm
-+ Spannungsüberwachung der eingebauten Batterie
-+ Spannungsüberwachung der externen 12V Batterie
++ ==Spannungsüberwachung der eingebauten 3.7V Batterie
++ ==Spannungsüberwachung der externen 12V Batterie==
 
-Farbig markierte Vorschläge sind in der aktuellen Programmversion v1.3 bereits enthalten.
+Farbig markierte Vorschläge sind in der aktuellen Programmversion v2.0 bereits enthalten.
 
 ### Nutzung einer SIM-Karte
 Aus: [**Imker-Stockwaage.de**](http://www.imker-stockwaage.de/hardware/simkarte)
-
-==Um einen optimalen Empfang auch während der Wanderung zu nutzen und nicht immer verschiedene SIM 	Karten zu verwenden habe ich folgende Seite gefunden, die auch eine Prepaidkarte anbietet.
-Es handelt sich um eine SIM, die sich in alle Netze einwählt, je nach Standort.
-Einfach mal anschauen, sie hat viele Vorteile, funktioniert in ganz Europa und die Kosten liegen 	bei monatlich bei ca 1,20€, bei Nichtnutzung kostet diese nichts.
-==
-
 Siehe auch unter: *http://www.kasmocom.de*
 	und suchen dort unter: [**M2M PrePaid-SIM**](http://www.kasmocom.de/?p=2137)
 Ansonsten kann jede Prepaid-SIM verwendet werden.
