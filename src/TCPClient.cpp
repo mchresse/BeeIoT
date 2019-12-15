@@ -1,12 +1,11 @@
+// TCP Library
+// as ESP32 Arduino Version
 #include "TCPClient.h"
+
+WiFiClient client;
 
 extern uint16_t	lflags;      // BeeIoT log flag field
 
-// TCP Library
-// as ESP32 Arduino Version
-
-
-WiFiClient client;
 
 // Constructor of Class TCPClient   (function name = class name)
 TCPClient::TCPClient()
@@ -19,8 +18,7 @@ TCPClient::TCPClient()
 // Closes TCP/IP-connection
 // returns 1 when ok, 0 when error
 
-int TCPClient::Close()
-{
+int TCPClient::Close(){
     int Result = 0;
 
     client.stop();
@@ -36,9 +34,7 @@ int TCPClient::Close()
 
 // Establish TCP/IP-connection to TCP/IP-Server
 // returns 1 when ok, < 0 when error
-
-int TCPClient::Connect(char* IPAddressString, int Port)
-{
+int TCPClient::Connect(char* IPAddressString, int Port){
     // see https://www.arduino.cc/en/Reference/ClientConnect
     // Returns an int (1,-1,-2,-3,-4) indicating connection status :
     // SUCCESS 1
@@ -53,14 +49,10 @@ int TCPClient::Connect(char* IPAddressString, int Port)
 }
 
 
-
-
 // Polls if bytes were received via TCP/IP from server
 // stores it in TCPBytesReceivedBuffer which must be allocated by the calling function
 // returns the number of bytes received, 0 when no bytes were received
-
-int TCPClient::Receive(byte TCPBytesReceivedBuffer[])
-{
+int TCPClient::Receive(byte TCPBytesReceivedBuffer[]){
     // see https://www.arduino.cc/en/Reference/StreamReadBytes
     // readBytes() read characters from a stream into a buffer. 
     // The function terminates if the determined length has been read, or it times out (see setTimeout()).
@@ -74,13 +66,10 @@ int TCPClient::Receive(byte TCPBytesReceivedBuffer[])
 }
 
 
-
 // send out bytes via TCP/IP to server
 // data contains the bytes to be sent out, len is the number of bytes to be sent out
 // returns 1 when ok, 0 when error
-
-int TCPClient::Send(byte data[], int len)
-{
+int TCPClient::Send(byte data[], int len){
      int Result = 0;
 
      // see https://www.arduino.cc/en/Reference/ClientWrite
@@ -94,6 +83,4 @@ int TCPClient::Send(byte data[], int len)
      }
 
      return Result;
-};
-
-
+}

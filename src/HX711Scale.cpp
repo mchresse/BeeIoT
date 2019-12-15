@@ -31,9 +31,9 @@
 //*******************************************************************
 // Global Sensor Data Object
 //*******************************************************************
-extern uint16_t	lflags;      // BeeIoT log flag field
+extern uint16_t	lflags; // BeeIoT log flag field
 
-HX711 scale;    
+HX711 scale;            // the one and only weight cell
 
 //*******************************************************************
 // HX711Scale Setup Routine
@@ -43,21 +43,18 @@ int setup_hx711Scale() {
 
 #ifdef HX711_CONFIG
 // HX711 constructor:
-  BHLOG(LOGHX) Serial.println("  Setup: HX711 Weight cell ADC port");
+  BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
   scale.begin(HX711_DT, HX711_SCK);     // declare GPIO pin connection
   scale.set_scale(scale_DIVIDER);       // define unit value per kg
   scale.set_offset(scale_OFFSET);       // define base value for 0kg
                   // (e.g. reflects weight of weight cell cover board)
-  BHLOG(LOGHX) Serial.print("  Setup: HX711-Offset(raw): "); 
+  BHLOG(LOGHX) Serial.print("  HX711: Offset(raw): "); 
   BHLOG(LOGHX) Serial.print(scale_OFFSET, 10);
   BHLOG(LOGHX) Serial.print(" - Unit(raw): ");
   BHLOG(LOGHX) Serial.print(scale_DIVIDER, 10);
   BHLOG(LOGHX) Serial.println(" per kg");
 
-
-  // Following lines corresponds to HX711_ADC lib only.
-  // HX711 constructor (dout pin, sck pin)
-  // HX711_ADC scale.(HX711_DT, HX711_SCK);
+  scale.power_down();
 #endif // HX711_CONFIG
 
   return 0;   // HX711 & wight cell initialized
@@ -84,11 +81,12 @@ float reading = 0;
      reading = scale.get_units(5);          // get a value as average of 5 reads corrected by offset and unit value
                                             // result is a kg unit value
    } else {
-     Serial.println("  HX711 not found.");
+     Serial.println("  HX711: no weight cell not found.");
       reading = 0;
    }
   } 
 #endif // HX711_CONFIG
+
   return (reading);     // return raw value or unit value depending on the selected mode
  } // end of HX711_read()
 

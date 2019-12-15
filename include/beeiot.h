@@ -122,7 +122,7 @@
 #define BEE_DIO1	13		// Bee-Event
 #define BEE_DIO2	34		// unused by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
-#define LOOPTIME    360		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    1		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   3E7		// Mikrosekunden hier 3s
 
 // Definitions of LogLevel masks instead of verbose mode
@@ -162,10 +162,11 @@
 // Global data declarations
 //*******************************************************************
 
-#define DROWNOTELEN	128
+#define DROWNOTELEN	129
+#define LENTMSTAMP	20
 typedef struct {				// data elements of one log line entry
     int     index;
-    String  timeStamp;          // time stamp of sensor row
+    char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY-MM-DD HH:MM:SS'
 	float	HiveWeight;			// weight in [kg]
 	float	TempHive;			// internal temp. of bee hive
 	float	TempExtern;			// external temperature
@@ -180,12 +181,16 @@ typedef struct {				// data elements of one log line entry
 } datrow;
 
 #define datasetsize	6			// max. # of dynamic dataset buffer: each for "looptime" seconds
+#define LENFDATE 	21
+#define LENDATE		11
+#define LENTIME		9
+#define LENIPADDR	12
 typedef struct {
 	// save timestamp of last datarow entry:
-    String  formattedDate;      // Variable to save date and time; 2019-10-28T08:09:47Z
-    String  dayStamp;           // stamp of the day: 2019-10-28
-    String  timeStamp;          // Timestamp: 08:10:15
-    String  ipaddr;
+    char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
+    char	date[LENDATE];  // stamp of the day: 2019-10-28
+    char	time[LENTIME]; // Timestamp: 08:10:15
+    char	ipaddr[LENIPADDR];	// IPv4 Address xx:xx:xx:xx
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
     uint64_t  BoardID;          // unique Identifier of MUC board (6 Byte effective)
@@ -212,6 +217,7 @@ int 	wifi_disconnect();
 int		WiFi_AccessPointStart(char* AccessPointNetworkSSID);
 void 	WiFi_SetBothModesNetworkStationAndAccessPoint();
 String 	WiFi_GetOwnIPAddressInRouterNetwork();
+
 void 	Webserver_Start();
 String 	Webserver_GetRequestGETParameter();
 void 	Webserver_SendHTMLPage(String HTMLPage);
@@ -231,22 +237,21 @@ int    	getTimeStamp(void);
 void	printLocalTime(void);
 
 // in owbus.cpp
-void GetOWsensor	(int sample);
+void 	GetOWsensor	(int sample);
 
 // in i2c_ads.cpp
 void    i2c_scan    (void);
 int16_t ads_read	(int channel);
 
 // in main.cpp
-void    SDlogdata   (void);
-void 	mydelay		(int32_t tval);
+void	SDlogdata   (void);
+void	mydelay		(int32_t tval);
 
 // in multiSPI.cpp
 int setup_spi_VSPI	(void);
-int spi_scan    	(void);
 
 //in sdcard.cp
-int setup_sd		(void);
+int setup_sd	(void);
 
 // epd.cpp functions
 int  setup_epd		(void);
@@ -259,5 +264,5 @@ void showdata		(int sampleID);
 int  setup_LoRa		(void);
 void sendMessage	(String outgoing);
 void onReceive		(int packetSize);
-
+void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h

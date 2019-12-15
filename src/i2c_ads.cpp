@@ -56,7 +56,7 @@ int setup_i2c_ADS() {
 
   // ADS1115S constructor
 #ifdef  ADS_CONFIG
-	BHLOG(LOGADS) Serial.println("  Setup: ADS port incl. Alert line");
+	BHLOG(LOGADS) Serial.println("  ADS: Init I2C-port incl. Alert line");
 	pinMode(ADS_ALERT, INPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
 	ads.begin();					// activate I2C driver based on std. I2C pins of ESp32 board.
 
@@ -67,7 +67,7 @@ int setup_i2c_ADS() {
    // BHLOG(LOGADS) Serial.println("Comparator Threshold: 1000 (3.000V)");
    // ads.startComparator_SingleEnded(x, 1000);	// 1000 == 3.0V
 
-// 	BHLOG(LOGADS) i2c_scan();	// reqires I2C-CoreDriver running
+   // 	BHLOG(LOGADS) i2c_scan();	// reqires I2C-CoreDriver running
 #endif //ADS_CONFIG
 
   return 0;   // I2C-ADS device port is initialized
@@ -141,14 +141,14 @@ int16_t ads_read(int channel) {
 // Compare input channel with defined threshold in setup routine
 // OUT:  data  = voltage of actual adc line
 //***************************************************************
-float ads_compare(/* channel is defined in setup */) {
+float ads_compare(/* channel was defined already in setup */) {
 #ifdef ADS_CONFIG
 int16_t adcdata;
-float data;
+float 	data;
 
   // Comparator will only de-assert after a read
   adcdata = ads.getLastConversionResults();
-  BHLOG(LOGADS) Serial.print("AINx (Comp.): "); Serial.println(adcdata);
+  BHLOG(LOGADS) Serial.print("  ADS: AINx (Comp.): "); Serial.println(adcdata);
   data = (float)((float)adcdata * 0.1875)/1000;	// devide by minimal sample step in Volt: 0,1875V
 
 #endif // ADS_CONFIG

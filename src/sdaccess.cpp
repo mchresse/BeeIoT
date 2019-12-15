@@ -1,6 +1,6 @@
 //*******************************************************************
 // SD-Access - Support routines
-// Contains helper functions for SD Card file system management
+// provides basic helper functions for SD Card file system management
 //  listDir()
 //  createDir()
 //  removeDir()

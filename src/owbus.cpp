@@ -51,7 +51,7 @@ int setup_owbus() {
 
 // ONEWIRE Constructor
 #ifdef ONEWIRE_CONFIG
-  BHLOG(LOGOW) Serial.println("  Setup: OneWire Bus");
+  BHLOG(LOGOW) Serial.println("  OWBus: Init OneWire Bus");
   OWsensors.begin();    // Init OW bus devices
 
     // locate devices on the bus

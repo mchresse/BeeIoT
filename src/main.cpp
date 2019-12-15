@@ -28,8 +28,6 @@
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
 #include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
-// #include "BitmapGraphics.h"
-// #include "BitmapExamples.h"
 #include "BitmapWaveShare.h"
 
 // FreeFonts from Adafruit_GFX
@@ -49,8 +47,6 @@
 
 // Libraries for WIFI & to get time from NTP Server
 #include <WiFi.h>
-// #include <NTPClient.h>
-// #include <WiFiUdp.h>
 #include <wificfg.h>
 #include "RTClib.h"
 
@@ -115,7 +111,8 @@ extern byte   RouterNetworkDeviceState;
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;        // last send time
-int LoRa_interval      = 2000;     // interval between sends
+int LoRa_interval = 2000;     // interval between sends
+char LoRaBuffer[256];         // buffer for LoRa Packages
 
 //************************************
 // Global function declarations
@@ -134,13 +131,11 @@ void CheckWebPage();
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
-lflags = LOGBH + LOGLORA + LOGHX;
+lflags = LOGBH + LOGLORA;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
-  //  pinMode(LED_GREEN, OUTPUT); // pin resused for LORA Bee Board DIO2
   digitalWrite(LED_RED, LOW);     // signal Setup Phase
-//  digitalWrite(LED_GREEN, HIGH); // signal no function active
 
 
   while(!Serial);                 // wait to connect to computer
@@ -155,7 +150,7 @@ lflags = LOGBH + LOGLORA + LOGHX;
   if(lflags > 0)
     Serial.printf ("LogLevel: %i\n", lflags);
   
-  BHLOG(LOGBH)Serial.println("Main: Start Sensor Setup ...");
+  BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
 
 //***************************************************************
 // esp_sleep_wakeup_cause_t wakeup_cause; // Variable für wakeup Ursache
@@ -195,16 +190,12 @@ lflags = LOGBH + LOGLORA + LOGHX;
     // enter here exit code, if needed
   }
 
-  // now we have everything for ePaper Welcome Screen
-  delay(1000);  // lets enjoy Welcome screen a while
-
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell");
   if (setup_hx711Scale() != 0){
     BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell setup failed");
     // enter here exit code, if needed
   }
-
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: ADS11x5");
@@ -236,7 +227,6 @@ lflags = LOGBH + LOGLORA + LOGHX;
 // start the webserver to listen for request of clients (in LAN or own ESP32 network)
 //    BHLOG(LOGBH) Serial.println("  Setup: Start Webserver");
 //    Webserver_Start();    
-
   }
 
   getTimeStamp();  // get curr. time either by NTP or RTC -> update bhdb
@@ -256,6 +246,14 @@ lflags = LOGBH + LOGLORA + LOGHX;
   }
 
 //***************************************************************
+  BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
+  if (setup_owbus() == 0){
+    BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
+    // enter here exit code, if needed
+  }
+  GetOWsensor(0); // read temperature the first time
+
+//***************************************************************
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
   // isepd=-1; // Disable EPD for test purpose only
 
@@ -265,15 +263,7 @@ lflags = LOGBH + LOGLORA + LOGHX;
   }
 
 //***************************************************************
-  BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
-  if (setup_owbus() == 0){
-    BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
-    // enter here exit code, if needed
-  }
-  GetOWsensor(0); // read temperature the first time
-
-//***************************************************************
-  BHLOG(LOGBH) Serial.println("  Setup: Setup done");
+  BHLOG(LOGBH) Serial.println("Setup Phase done");
   Serial.println(" ");
 } // end of BeeIoT setup()
 
@@ -281,15 +271,16 @@ lflags = LOGBH + LOGLORA + LOGHX;
 
 //*******************************************************************
 // BeeIoT Main Routine: Loop()
-// 
+// endless loop
 //*******************************************************************
 void loop() {
-  // put your main code here, to run repeatedly:
-  digitalWrite(LED_RED, HIGH);
-  BHLOG(LOGBH) Serial.println(">****************************************<");
-  BHLOG(LOGBH) Serial.println("> Main: Start BeeIoT Weight Scale"); 
-  BHLOG(LOGBH) Serial.printf ("> Loop: %i  (Laps: %i)\n", bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps);
-  BHLOG(LOGBH) Serial.println(">****************************************<");
+
+  digitalWrite(LED_RED, HIGH);  // show we have reachd loop() phase
+  BHLOG(LOGBH) Serial.println(">*******************************************<");
+  BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop"); 
+  BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i])\n", 
+                  bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps, bhdb.loopid);
+  BHLOG(LOGBH) Serial.println(">*******************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
 
@@ -297,65 +288,57 @@ void loop() {
 //***************************************************************
 // Check for Web Config page update
 #ifdef WIFI_CONFIG
-//  digitalWrite(LED_GREEN, LOW);
   if(iswifi == 0){
-//      BHLOG(LOGLAN) Serial.println("    Check for new WebPage Client request...");
+//      BHLOG(LOGLAN) Serial.println("  Loop: Check for new WebPage Client request...");
 //      CheckWebPage();
   }
-//  digitalWrite(LED_GREEN, HIGH);
 #endif // WIFI_CONFIG
 
 
 //***************************************************************
-// get current time
-//  digitalWrite(LED_GREEN, LOW);
-  if(isntp==0 || isrtc==0){ // do we have a valid time source
-    getTimeStamp();         // get curr. time to bhdb
-    // store curr. timstamp for next data row
-    bhdb.dlog[bhdb.loopid].timeStamp = bhdb.timeStamp.substring(0, bhdb.timeStamp.length()-3);
+// get current time to bhdb
+  if(getTimeStamp() == -2){   // no valid time source found
+    strncpy(bhdb.dlog[bhdb.loopid].timeStamp, "0000-00-00 00:00:00", LENTMSTAMP);
   }else{
-    bhdb.timeStamp = "yyyy-mm-dd hh:mm:ss";
-    bhdb.dlog[bhdb.loopid].timeStamp = "00:00";
+    // store curr. timstamp for next data row
+    sprintf(bhdb.dlog[bhdb.loopid].timeStamp, "%s %s", bhdb.date, bhdb.time);
   }
-//  digitalWrite(LED_GREEN, HIGH);
 
 //***************************************************************
 #ifdef HX711_CONFIG
   float weight;
-  // HX711 WakeUp Device
-//  digitalWrite(LED_GREEN, LOW);
-  scale.power_up();
+  scale.power_up();  // HX711 WakeUp Device
  
   // Acquire raw reading
   weight = HX711_read(0);
-  BHLOG(LOGHX) Serial.printf("  HX711: Weight(raw) : %d", (u_int) weight);
+  BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
   
   // Acquire unit reading
   weight = HX711_read(1);
   BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
   bhdb.dlog[bhdb.loopid].HiveWeight = weight;
+
   scale.power_down();
-//  digitalWrite(LED_GREEN, HIGH);
 #endif // HX711_CONFIG
 
 //***************************************************************
 #ifdef ONEWIRE_CONFIG
   setup_owbus();
   GetOWsensor(bhdb.loopid);   // Get all temp values directly into bhdb
-  while(bhdb.dlog[bhdb.loopid].TempHive > 70){       // if we have just started lets do it again to get right values
-    GetOWsensor(bhdb.loopid);   // Get all temp values directly into bhdb
+
+  while(bhdb.dlog[bhdb.loopid].TempHive > 70){  // if we have just started lets do it again to get right values
+    GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
     delay(500);
   }
-//  digitalWrite(LED_GREEN, HIGH);
 #endif // ONEWIRE_CONFIG
 
 //***************************************************************
 #ifdef ADS_CONFIG
- int16_t addata = 0;
-  float x;
-  //  digitalWrite(LED_GREEN, LOW);
+int16_t addata = 0;   // raw ADS Data buffer
+float x;              // Volt calculation buffer
+
   // read out all ADS channels 0..3
-  BHLOG(LOGADS) Serial.print("  MAIN: ADSPort(0-3): ");
+  BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
   addata = ads_read(0);         // get 3.3V line value of ESP32 devKit in mV
   bhdb.dlog[bhdb.loopid].ESP3V = addata;
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
@@ -379,30 +362,15 @@ void loop() {
   bhdb.dlog[bhdb.loopid].Board5V = addata*2; //  measured: 5V/2 = 2,5V value
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
-//  digitalWrite(LED_GREEN, HIGH);
 #endif // ADS_CONFIG
 
 //***************************************************************
-#ifdef SD_CONFIG
-  // scan SDCard if plugged in and report parameters to serial port
-//  digitalWrite(LED_GREEN, LOW);
-  if(issdcard == 0){
-    // spi_scan();
-    BHLOG(LOGSD) Serial.println("  MAIN: update of sensor data log");
-    SDlogdata();      // save all collected sensor data
-    //  showPartialUpdate(weight);
-  }else{
-    BHLOG(LOGSD) Serial.println("  MAIN: No SDCard, no Logfile");
-  }
-//  digitalWrite(LED_GREEN, HIGH);
-#endif // SD_CONFIG
+  SDlogdata();      // save all collected sensor data to SD or send by LoRa
 
 //***************************************************************
 #ifdef EPD_CONFIG
-//    digitalWrite(LED_GREEN, LOW);
-    BHLOG(LOGEPD) Serial.println("  MAIN: Show Sensor Data on EPD");
+    BHLOG(LOGEPD) Serial.println("  Loop: Show Sensor Data on EPD");
     showdata(bhdb.loopid);
-//    digitalWrite(LED_GREEN, HIGH);
 #endif
 
 //***************************************************************
@@ -415,60 +383,65 @@ void loop() {
   }
 
 //***************************************************************
-  BHLOG(LOGBH) Serial.printf("  MAIN: Enter Sleep/Wait Mode for %i sec.\n", LOOPTIME);
+  BHLOG(LOGBH) Serial.printf("  Loop: Enter Sleep/Wait Mode for %i sec.\n", LOOPTIME);
   // Start deep sleep
   //  esp_sleep_enable_timer_wakeup(SLEEPTIME);    // Deep Sleep Zeit einstellen
   //  esp_deep_sleep_start();                       // Starte Deep Sleep
   // or
-  mydelay(LOOPTIME*1000);   // wait with blinking green LED
+  mydelay(LOOPTIME*1000);   // wait with blinking red LED
 
   BHLOG(LOGBH) Serial.println();
 } // end of loop()
 
 
+
 //*******************************************************************
 // SDlogdata()
 // Append current sensor data set to SD card -> logdata file
+// and send it via LoRaWAN
 //*******************************************************************
+String dataMessage; // Global data objects
+
 // Write the sensor readings on the SD card
 void SDlogdata(void) {
-  String dataMessage; // Global data objects
 
-  if(issdcard !=0){
-    BHLOG(LOGSD) Serial.println("  MAIN: No SDCard, no local Logfile...");
-    // return;       // do nothing: no sdcard detectd
-    // but may be via LoRa ...
-  }else{
-    dataMessage = String((bhdb.laps*datasetsize) + bhdb.loopid) + "," + 
-                String(bhdb.dayStamp) + "," + 
-                String(bhdb.timeStamp) + "," + 
-                String(bhdb.dlog[bhdb.loopid].HiveWeight) + "," +
-                String(bhdb.dlog[bhdb.loopid].TempExtern) + "," +
-                String(bhdb.dlog[bhdb.loopid].TempIntern) + "," +
-                String(bhdb.dlog[bhdb.loopid].TempHive)   + "," +
-                String(bhdb.dlog[bhdb.loopid].TempRTC)    + "," +
-                String((float)bhdb.dlog[bhdb.loopid].ESP3V/1000)      + "," +
-                String((float)bhdb.dlog[bhdb.loopid].Board5V/1000)    + "," +
-                String((float)bhdb.dlog[bhdb.loopid].BattCharge/1000) + "," +
-                String((float)bhdb.dlog[bhdb.loopid].BattLoad/1000)   + "," +
-                String(bhdb.dlog[bhdb.loopid].BattLevel)  + "\r\n";
-    Serial.print("  MAIN: ");
-    Serial.print(dataMessage);
+  dataMessage = String((bhdb.laps*datasetsize) + bhdb.loopid) + "," + 
+              String(bhdb.date) + "," + 
+              String(bhdb.time) + "," + 
+              String(bhdb.dlog[bhdb.loopid].HiveWeight) + "," +
+              String(bhdb.dlog[bhdb.loopid].TempExtern) + "," +
+              String(bhdb.dlog[bhdb.loopid].TempIntern) + "," +
+              String(bhdb.dlog[bhdb.loopid].TempHive)   + "," +
+              String(bhdb.dlog[bhdb.loopid].TempRTC)    + "," +
+              String((float)bhdb.dlog[bhdb.loopid].ESP3V/1000)      + "," +
+              String((float)bhdb.dlog[bhdb.loopid].Board5V/1000)    + "," +
+              String((float)bhdb.dlog[bhdb.loopid].BattCharge/1000) + "," +
+              String((float)bhdb.dlog[bhdb.loopid].BattLoad/1000)   + "," +
+              String(bhdb.dlog[bhdb.loopid].BattLevel)  + "\r\n";
+  Serial.printf("  Loop[%i]: ", (bhdb.laps*datasetsize) + bhdb.loopid);
+  Serial.print(dataMessage);
+
+  if(issdcard ==0){
     appendFile(SD, SDLOGPATH, dataMessage.c_str());
+  }else{
+    BHLOG(LOGSD) Serial.println("  SDLog: No SDCard, no local Logfile...");
   }
 
-// do the same via LoRa media
- if(islora==0){  // do we have an active connection (are we joined ?)
-     if (millis() - lastSendTime > LoRa_interval) {
-     sendMessage(dataMessage);
-      lastSendTime = millis();  // timestamp the message
-      LoRa_interval = 2000;     // spin up window to 2-3 seconds
+  // but may be via LoRa ...
+  if(islora==0){  // do we have an active connection (are we joined ?)
+//    if (millis() - lastSendTime > LoRa_interval) {
+
+      sendMessage(dataMessage);
+
+//      lastSendTime = millis();  // timestamp the message
+//      LoRa_interval = 2000;     // spin up window to 2 seconds
 
       LoRa.receive();           // go back into receive mode
-    }
+//    }
   }else{
-      BHLOG(LOGLORA) Serial.println("  MAIN: No LoRa, no Logfile sent...");
+      BHLOG(LOGLORA) Serial.println("  SDLog: No LoRa, no Logfile sent...");
   }
+
   return;
 }
 
@@ -477,15 +450,15 @@ void mydelay(int32_t tval){
   int i;
   for (i=0; i < fblink/2; i++){
     digitalWrite(LED_RED, LOW);
-      if(iswifi == 0){
-        CheckWebPage();
-      }
-    delay(1000);  // wait 1 second
+//      if(iswifi == 0){
+//        CheckWebPage();
+//      }
+    delay(250);  // wait 0.25 second
     digitalWrite(LED_RED, HIGH);
-      if(iswifi == 0){
-        CheckWebPage();
-      }
-    delay(1000);  // wait 1 second
+//      if(iswifi == 0){
+//        CheckWebPage();
+//      }
+    delay(2000);  // wait 2 second
   }
 }
 
@@ -499,34 +472,34 @@ void InitConfig(){
 
   bhdb.loopid       = 0;
   bhdb.laps         = 0;
-  bhdb.formattedDate= "";
-  bhdb.dayStamp     = "";
-  bhdb.timeStamp    = "";
-  bhdb.ipaddr       = "";
+  bhdb.formattedDate[0] = 0;
+  bhdb.date[0]      = 0;
+  bhdb.time[0]      = 0;
+  bhdb.ipaddr[0]    = 0;
   // bhdb.BoardID      = 0;  already defined
   for(i=0; i<datasetsize;i++){
+    bhdb.dlog[i].index       =0;
     bhdb.dlog[i].HiveWeight  =0;
     bhdb.dlog[i].TempExtern  =0;
     bhdb.dlog[i].TempIntern  =0;
     bhdb.dlog[i].TempHive    =0;
     bhdb.dlog[i].TempRTC     =0;
-    bhdb.dlog[i].timeStamp   ="";
-    bhdb.dlog[i].index       =0;
+    bhdb.dlog[i].timeStamp[0]=0;
     bhdb.dlog[i].ESP3V       =0;
     bhdb.dlog[i].Board5V     =0;
     bhdb.dlog[i].BattLevel   =0;
     bhdb.dlog[i].BattCharge  =0;
     bhdb.dlog[i].BattLoad    =0;
-    strcpy(& bhdb.dlog[i].comment[0], "OK");
+    strncpy(bhdb.dlog[i].comment, "OK", 3);
   }
   
   // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino 
   preferences.begin("MyJourney", false);
 
   // takeout 4 Strings out of the Non-volatile storage
-  String strSSID      = preferences.getString("SSID", "");
-  String strPassword  = preferences.getString("Password", "");
-  String strDeviceID  = preferences.getString("DeviceID", "");
+  String strSSID        = preferences.getString("SSID", "");
+  String strPassword    = preferences.getString("Password", "");
+  String strDeviceID    = preferences.getString("DeviceID", "");
   String strDeviceToken = preferences.getString("DeviceToken", "");
 
   // reset all default config parameter sets
@@ -566,7 +539,7 @@ void InitConfig(){
 // check the ConfigValues and set ConfigStatus
 // process the first ConfigValue to switch something like LED=ON/OFF
 void ProcessAndValidateConfigValues(int countValues){
-  BHLOG(LOGLAN) Serial.printf("    Webserver: ProcessConfigValues(%i)\n", countValues);
+  BHLOG(LOGLAN) Serial.printf("  Webserver: ProcessConfigValues(%i)\n", countValues);
   if (countValues > CONFIGSETS) {
     countValues = CONFIGSETS;
   }
@@ -582,10 +555,10 @@ void ProcessAndValidateConfigValues(int countValues){
   // in our application the first value must be "00" or "FF" (as text string)
   if ((ConfigValue[0].equals("00")) || (ConfigValue[0].equals("FF"))){
     ConfigStatus[0] = 1;    // Value is valid
-    BHLOG(LOGLAN) Serial.printf("    Webserver: Processing command: %s\n", ConfigValue[0].c_str());
+    BHLOG(LOGLAN) Serial.printf("  Webserver: Processing command: %s\n", ConfigValue[0].c_str());
   }else{
     ConfigStatus[0] = -1;   // Value is not valid
-    BHLOG(LOGLAN) Serial.printf("    Webserver: Wrong command: %s\n", ConfigValue[0].c_str());
+    BHLOG(LOGLAN) Serial.printf("  Webserver: Wrong command: %s\n", ConfigValue[0].c_str());
   }
 
   // processing command from here:
@@ -610,13 +583,13 @@ void CheckWebPage(){
   
     if (GETParameter.length() > 0){        // we got a request, client connection stays open
       BHLOG(LOGLAN) i = GETParameter.length();
-      BHLOG(LOGLAN) Serial.printf("    CheckWebPage: GETParameter[%i]=", i);
+      BHLOG(LOGLAN) Serial.printf("  CheckWebPage: GETParameter[%i]=", i);
       BHLOG(LOGLAN) Serial.println(GETParameter);
       if (GETParameter.length() > 1){      // request contains some GET parameter
           
           // decode the GET parameter and set ConfigValues
           int countValues = DecodeGETParameterAndSetConfigValues(GETParameter);
-          BHLOG(LOGLAN) Serial.printf("    CheckWebPage: Interpreting <%i> parameters for %s\n", countValues, WebRequestHostAddress.c_str());
+          BHLOG(LOGLAN) Serial.printf("  CheckWebPage: Interpreting <%i> parameters for %s\n", countValues, WebRequestHostAddress.c_str());
           
           // the user entered this address in browser, with GET parameter values for configuration
           // default: if (WebRequestHostAddress == "192.168.4.1"){
@@ -632,7 +605,7 @@ void CheckWebPage(){
                 // convert to char*: https://coderwall.com/p/zfmwsg/arduino-string-to-char
                 char* txtSSID = const_cast<char*>(strSSID.c_str()); 
                 char* txtPassword = const_cast<char*>(strPassword.c_str());
-                BHLOG(LOGLAN) Serial.printf("    WebServer: Reconnect SSID:%s - PWD:%s\n", txtSSID, txtPassword);
+                BHLOG(LOGLAN) Serial.printf("  WebServer: Reconnect SSID:%s - PWD:%s\n", txtSSID, txtPassword);
 
                 // disconnect from router network
 //                int successDisconnect = wifi_disconnect();

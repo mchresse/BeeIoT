@@ -65,8 +65,9 @@ extern MQTTClient attMQTTClient;
 //*******************************************************************
 int setup_wifi() { // WIFI Constructor
   iswifi = -1;
+
 #ifdef WIFI_CONFIG
-  BHLOG(LOGLAN) Serial.println("  Setup: WIFI port in station mode");
+  BHLOG(LOGLAN) Serial.println("  WiFi: Init port in station mode");
 
   WiFi.mode(WIFI_STA);        // set WIFI chip to station (client) mode
   BHLOG(LOGLAN) wifi_scan();  // show me all networks in space
@@ -136,10 +137,10 @@ int i;
         wifi_disconnect();
       }
     }else{
-      // Got IPv4 string
-      bhdb.ipaddr = WiFi.localIP().toString().c_str();
+      // Got IPv4 string assumed IP is in v4 format !!! v6 not supported her => cut off
+      strncpy(bhdb.ipaddr, WiFi.localIP().toString().c_str(),LENIPADDR); 
       BHLOG(LOGLAN) Serial.printf("ed with %s", ssid);
-      BHLOG(LOGLAN) Serial.printf(" - IP: %s\n", bhdb.ipaddr.c_str());
+      BHLOG(LOGLAN) Serial.printf(" - IP: %s\n", bhdb.ipaddr);
       if (MDNS.begin("BeeIoT")) {
         BHLOG(LOGLAN) Serial.println("  WIFI: MDNS-Responder gestartet.");
       }
@@ -147,7 +148,7 @@ int i;
     }
   }
   
-BHLOG(LOGLAN) Serial.println("Connection failed");
+BHLOG(LOGLAN) Serial.println("  WiFi: Connection failed");
 #endif // WIFI_CONFIG
 
 return -1;  // not connected
@@ -173,7 +174,7 @@ int wifi_disconnect(){
     success = 1;
   }
   
-  BHLOG(LOGLAN) Serial.println("Disconnected.");
+  BHLOG(LOGLAN) Serial.println("WiFi: Disconnected.");
 
   return success;
 } // end of WIFI_DISCONNECT
@@ -233,7 +234,7 @@ String Webserver_GetRequestGETParameter(){
   //Serial.print(".");
   
   if (myclient) {                            // if you get a client,
-    BHLOG(LOGLAN) Serial.println("    Get: New WebClient detected");           // print a message out the serial port
+    BHLOG(LOGLAN) Serial.println("    WebGet: New WebClient detected");           // print a message out the serial port
     String currentLine = "";                 // make a String to hold incoming data from the client
     
     while (myclient.connected()) {           // loop while the client's connected
@@ -285,7 +286,7 @@ String Webserver_GetRequestGETParameter(){
 //*******************************************************************************
 void Webserver_SendHTMLPage(String HTMLPage){
   String httpResponse = "";
-  BHLOG(LOGLAN) Serial.println("    WebServer: SendHTMLPage()");
+  BHLOG(LOGLAN) Serial.println("  WebServer: SendHTMLPage()");
 
   // begin with HTTP response header
    httpResponse += "HTTP/1.1 200 OK\r\n";
@@ -302,7 +303,7 @@ void Webserver_SendHTMLPage(String HTMLPage){
 
   // close the connection
   myclient.stop();
-  BHLOG(LOGLAN) Serial.println("    WebServer: Client Disconnected.");   
+  BHLOG(LOGLAN) Serial.println("  WebServer: Client Disconnected.");   
 };
 
 
@@ -313,7 +314,7 @@ void Webserver_SendHTMLPage(String HTMLPage){
 String EncodeFormHTMLFromValues(String TitleOfForm, int CountOfConfigValues){
    // Head of the HTML page
    String HTMLPage = "<!DOCTYPE html><html><body><h2>" + TitleOfForm + "</h2><form><table>";
-   BHLOG(LOGLAN) Serial.println("    WebServer: EncodeFormHTMLFromValues()");
+   BHLOG(LOGLAN) Serial.println("  WebServer: EncodeFormHTMLFromValues()");
    // for each configuration value
    for (int c = 0; c < CountOfConfigValues; c++){
       // set background color by the status of the configuration value
@@ -356,7 +357,7 @@ int DecodeGETParameterAndSetConfigValues(String GETParameter){
    int posFirstCharToSearch = 1;
    int count = 0;
 
-   BHLOG(LOGLAN) Serial.print("    WebServer: DecodeGETParameters():");
+   BHLOG(LOGLAN) Serial.print("  WebServer: DecodeGETParameters():");
 
 // This code goes wrong: counts chars not '&' -> to be fixed !!!
 
@@ -385,8 +386,7 @@ int DecodeGETParameterAndSetConfigValues(String GETParameter){
 
 
 // Connect to AllThingsTalk MQTT Broker and switch RGB-LEDs
-int ConnectToATT()
-{   
+int ConnectToATT(){   
     int NodeState;
 
     // closes TCP connection
@@ -425,8 +425,7 @@ int ConnectToATT()
 
 // Publish a MQTT message with SensorDate (here: 1 Byte, value 10..99) to AllThingsTalk MQTT Broker
 // SensorName is the asset name for the AllThingsTalk user device
-void SendSensorDateToATT(String SensorName, byte SensorDate)
-{
+void SendSensorDateToATT(String SensorName, byte SensorDate){
     // Dummy for message payload in JSON format
     String MString = "{\"value\": 00.0}";
   
@@ -450,6 +449,5 @@ void SendSensorDateToATT(String SensorName, byte SensorDate)
 
     // Publish the message with topic and payload
     attMQTTClient.Publish(ATT_SensorTopic, attMQTTClient.PayloadBuffer, Slength);
-
 }
 // end of wifi.cpp

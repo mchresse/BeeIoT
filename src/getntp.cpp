@@ -76,8 +76,10 @@ int setup_ntp() { // NTP Constructor
 // getTimeStamp()
 // 1. check for RTC: obtain RTC time and update BHDB
 // 2. check for NTP source -> obtain NTP time and update BHDB
-//    Return = -1: NTP access failed
-// else quit: return(-2)
+//  Return
+//     0: update RTC time to BHDB 
+//    -1: NTP access failed
+//    -2: RTC & NTP failed -> no update done
 //*******************************************************************
 int getTimeStamp() {
   struct tm timeinfo;
@@ -99,11 +101,14 @@ int getTimeStamp() {
   }else{                      // no RTC nor NTP Time at all
     isntp = -1;
     isrtc = -1;
+    sprintf(bhdb.formattedDate, "YYYY-MM-DDTHH:MM:SSZ");
+    sprintf(bhdb.date,      "YYYY-MM-DD");
+    sprintf(bhdb.time,      "HH:MM:SS");
     return(-2);               // we give up
   }
 
+// We need to extract date and time from timeinfo (struct tm)
 // The formattedDate should have the following format: 2018-05-28T16:00:13Z
-// We need to extract date and time
 // sprintf(tmstring, "%4i-%2i-%2iT%2i:%2i:%2iZ", 
 //                    1900+timeinfo.tm_year,
 //                    timeinfo.tm_mon,
@@ -112,20 +117,21 @@ int getTimeStamp() {
 //                    timeinfo.tm_min,
 //                    timeinfo.tm_sec);
   strftime(tmstring, 30, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-  bhdb.formattedDate = tmstring;
+  strncpy(bhdb.formattedDate, tmstring, LENFDATE);
   BHLOG(LOGLAN) Serial.print("    ");
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
   // Extract date
-  int splitT = bhdb.formattedDate.indexOf("T");
-  bhdb.dayStamp = bhdb.formattedDate.substring(0, splitT);
+  strftime(tmstring, 30, "%Y-%m-%d", &timeinfo);
+  strncpy(bhdb.date, tmstring, LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
-  BHLOG(LOGLAN) Serial.print(bhdb.dayStamp);
+  BHLOG(LOGLAN) Serial.print(bhdb.date);
  
   // Extract time
-  bhdb.timeStamp = bhdb.formattedDate.substring(splitT+1, bhdb.formattedDate.length()-1);
+  strftime(tmstring, 30, "%H:%M:%S", &timeinfo);
+  strncpy(bhdb.time, tmstring, LENTIME);
   BHLOG(LOGLAN) Serial.print(" - ");
-  BHLOG(LOGLAN) Serial.println(bhdb.timeStamp);
+  BHLOG(LOGLAN) Serial.println(bhdb.time);
 
   return(0);
 } // end of getTimeStamp()

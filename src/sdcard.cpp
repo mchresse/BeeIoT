@@ -30,16 +30,16 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 //*******************************************************************
 int setup_sd() {  // My SDCard Constructor
 #ifdef SD_CONFIG
-  BHLOG(LOGSD) Serial.println("  Setup: SD Card");
+  BHLOG(LOGSD) Serial.println("  SD: SD Card");
 
   uint8_t cardType = SD.cardType();
   if(cardType == CARD_NONE) {
     issdcard = -2;
-    Serial.println("  Setup: No SD card found");
+    Serial.println("  SD: No SD card found");
     return issdcard;
   }
   
-  BHLOG(LOGSD) Serial.print("  Setup: SD Card Type: ");
+  BHLOG(LOGSD) Serial.print("  SD: SD Card Type: ");
   if (cardType == CARD_MMC) {
     BHLOG(LOGSD) Serial.println("MMC");
   } else if (cardType == CARD_SD) {
@@ -51,8 +51,8 @@ int setup_sd() {  // My SDCard Constructor
   }
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  BHLOG(LOGSD) Serial.printf("  Setup: SD Card Size: %lluMB\n", cardSize);
-  issdcard = 0; // we have an SDCard
+  BHLOG(LOGSD) Serial.printf("  SD: SD Card Size: %lluMB\n", cardSize);
+  issdcard = 0;   // we have an SDCard
 
   if(lflags & LOGSD){   // lets get some Debug data from SDCard
     listDir(SD, "/", 3);            // list 3 directory levels from Root
@@ -64,11 +64,10 @@ int setup_sd() {  // My SDCard Constructor
   // Create a new file on the SD card and write the data label header line
   File file = SD.open(SDLOGPATH);
   if(!file) {
-    BHLOG(LOGSD) Serial.printf("  Setup: SD:Logfile %s doesn't exist -> Creating new file + header...", SDLOGPATH);
+    BHLOG(LOGSD) Serial.printf("  SD: SD:Logfile %s doesn't exist -> Creating new file + header...", SDLOGPATH);
     writeFile(SD, SDLOGPATH, "Sample-ID, Date, Time, BeeHiveWeight, TempExtern, TempIntern, TempHive, TempRTC, ESP3V, Board5V, BattCharge, BattLoad, BattLevel\r\n");
-  }
-  else {
-    BHLOG(LOGSD) Serial.printf("  Setup: SD:Logfile: %s not found\n", SDLOGPATH);  
+  } else {
+    BHLOG(LOGSD) Serial.printf("  SD: SD:Logfile: %s not found\n", SDLOGPATH);  
   }
   file.close();
 

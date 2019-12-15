@@ -51,7 +51,7 @@ uint32_t read32(SdFile& f);
 //*******************************************************************
 int setup_epd() {   // My EPD Constructor
 #ifdef EPD_CONFIG
-  BHLOG(LOGEPD) Serial.println("  Setup: EPD ePaper");
+  BHLOG(LOGEPD) Serial.println("  EPD: Start ePaper Display");
 
   if(isepd==0){ // set some presets for a std. text field
     BHLOG(LOGEPD) Serial.println("  EPD: print Welcome Display");
@@ -67,7 +67,6 @@ int setup_epd() {   // My EPD Constructor
     display.println("     by R.Esser");
     display.setFont(&FreeMonoBold9pt7b);
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);    
-
     display.update();    //refresh display by buffer content
 
     BHLOG(LOGEPD) delay(5000);
@@ -81,12 +80,74 @@ int setup_epd() {   // My EPD Constructor
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
   // EPD_KEY1 => GPIO00 == Boot Button
   // EPD_KEY2 => EN     == Reset Button 
-  pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3 
+  // Key3 reused by BEE_DIO2 -> defined there
+  // pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3 
   pinMode(EPD_KEY4, INPUT_PULLUP);  // define as active 0: Key4
-  // Key3+4 are free of use
 
-  return 0;
+  return isepd;
 }
+
+
+// show Sensor log data on epaper Display
+// Input: sampleID= Index ond Sensor dataset of BHDB
+void showdata(int sampleID){
+  uint8_t rotation = display.getRotation();
+
+  display.fillScreen(GxEPD_WHITE);
+
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold9pt7b);
+  display.setCursor(0, 0);
+  display.setRotation(45);    // print in horizontal format
+  display.println();          // adjust cursor to lower left corner of char row
+
+  display.setFont(&FreeMonoBold12pt7b);
+  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
+
+  display.setFont(&FreeMonoBold9pt7b);
+  display.println();  
+
+//  display.setTextColor(GxEPD_RED);
+  display.printf("%s %s", bhdb.date, bhdb.time);
+  
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold12pt7b);
+  display.println();  
+
+  display.print(" Gewicht:  ");
+  display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
+
+  display.print(" Temp.Beute: ");
+  display.println(String(bhdb.dlog[sampleID].TempHive,1));
+
+  display.print(" TempExtern: ");
+  display.println(String(bhdb.dlog[sampleID].TempExtern,1));
+
+  display.print(" TempIntern: ");
+  display.println(String(bhdb.dlog[sampleID].TempIntern,1));
+
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold9pt7b);
+  display.print("Batt-V:");
+  display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
+  display.print("V - Load:");
+  display.print(String(bhdb.dlog[sampleID].BattLevel));
+  display.println("%");
+
+//  display.setTextColor(GxEPD_RED);
+  display.print(HOSTNAME);
+  display.print("  (");
+  display.print(bhdb.ipaddr);
+  display.print(")");
+
+  display.setTextColor(GxEPD_BLACK);
+//  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
+
+  display.update();
+  display.setRotation(rotation); // restore
+} // end of ShowData()
+
+
 
 void drawBitmaps_200x200(){
   int16_t x = (display.width() - 200) / 2;
@@ -142,12 +203,11 @@ void drawBitmapFrom_SD_ToBuffer(const char *filename, int16_t x, int16_t y, bool
     uint16_t depth = read16(file); // bits per pixel
     uint32_t format = read32(file);
     if ((planes == 1) && ((format == 0) || (format == 3))){ // uncompressed is handled, 565 also
-      Serial.print("File size: "); Serial.println(fileSize);
+      Serial.print("File size: ");    Serial.println(fileSize);
       Serial.print("Image Offset: "); Serial.println(imageOffset);
-      Serial.print("Header size: "); Serial.println(headerSize);
-      Serial.print("Bit Depth: "); Serial.println(depth);
-      Serial.print("Image size: ");
-      Serial.print(width);
+      Serial.print("Header size: ");  Serial.println(headerSize);
+      Serial.print("Bit Depth: ");    Serial.println(depth);
+      Serial.print("Image size: ");   Serial.print(width);
       Serial.print('x');
       Serial.println(height);
       // BMP rows are padded (if needed) to 4-byte boundary
@@ -368,59 +428,3 @@ void showPartialUpdate(float data){
 }
 
 
-void showdata(int sampleID){
-  uint8_t rotation = display.getRotation();
-
-  display.fillScreen(GxEPD_WHITE);
-
-  display.setTextColor(GxEPD_BLACK);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.setCursor(0, 0);
-  display.setRotation(45);    // print in horizontal format
-  display.println();          // adjust cursor to lower left corner of char row
-
-  display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
-
-  display.setFont(&FreeMonoBold9pt7b);
-  display.println();  
-
-  display.setTextColor(GxEPD_RED);
-  display.printf("%s %s", bhdb.dayStamp.c_str(), bhdb.timeStamp.c_str());
-  
-  display.setTextColor(GxEPD_BLACK);
-  display.setFont(&FreeMonoBold12pt7b);
-  display.println();  
-
-  display.print(" Gewicht:  ");
-  display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
-
-  display.print(" Temp.Beute: ");
-  display.println(String(bhdb.dlog[sampleID].TempHive,1));
-
-  display.print(" TempExtern: ");
-  display.println(String(bhdb.dlog[sampleID].TempExtern,1));
-
-  display.print(" TempIntern: ");
-  display.println(String(bhdb.dlog[sampleID].TempIntern,1));
-
-  display.setTextColor(GxEPD_BLACK);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.print("Batt-V:");
-  display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
-  display.print("V - Load:");
-  display.print(String(bhdb.dlog[sampleID].BattLevel));
-  display.println("%");
-
-  display.setTextColor(GxEPD_RED);
-  display.print(HOSTNAME);
-  display.print("  (");
-  display.print(bhdb.ipaddr.c_str());
-  display.print(")");
-
-  display.setTextColor(GxEPD_BLACK);
-//  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
-
-  display.update();
-  display.setRotation(rotation); // restore
-} // end of ShowData()

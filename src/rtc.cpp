@@ -39,8 +39,6 @@ int   isrtc =-1;      // =0 if RTC time discovered
 
 extern uint16_t	lflags;      // BeeIoT log flag field
 
-
-
 RTC_DS3231 rtc;     // Create RTC Instance
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
@@ -49,7 +47,8 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 // Setup_RTC(): Initial Setup of RTC module instance
 //*******************************************************************
 int setup_rtc () {
-    isrtc =-1;
+  isrtc =-1;
+
   if (! rtc.begin()) {
     Serial.println("  RTC: Couldn't find RTC device");
     return(isrtc);
@@ -64,7 +63,7 @@ int setup_rtc () {
   BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C, SqarePin switched off\n", bhdb.dlog[bhdb.loopid].TempRTC);
 
   if (rtc.lostPower()) {
-    Serial.println("  RTC: lost power, lets set the time manually or by NTP !");
+    Serial.println("  RTC: lost power, check battery; lets set the time manually or by NTP !");
     // following line sets the RTC to the date &amp; time this sketch was compiled
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date &amp; time, for example to set
@@ -125,19 +124,19 @@ int getRTCtime(){
 
   BHLOG(LOGLAN) Serial.print("  RTC: Get RTC Time: ");
 
-  // using ISO 8601 Timestamp functions:
-  bhdb.formattedDate = dt.timestamp(DateTime::TIMESTAMP_FULL);     // YYYY-MM-DDTHH:MM:SS
+  // using ISO 8601 Timestamp functions: YYYY-MM-DDTHH:MM:SS
+  strncpy(bhdb.formattedDate, dt.timestamp(DateTime::TIMESTAMP_FULL).c_str(), LENFDATE);
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
-  // Extract date
-  bhdb.dayStamp = dt.timestamp(DateTime::TIMESTAMP_DATE);          // YYYY-MM-DD
+  // Extract date: YYYY-MM-DD
+  strncpy(bhdb.date, dt.timestamp(DateTime::TIMESTAMP_DATE).c_str(), LENDATE); 
   BHLOG(LOGLAN) Serial.print(" - ");
-  BHLOG(LOGLAN) Serial.print(bhdb.dayStamp);
+  BHLOG(LOGLAN) Serial.print(bhdb.date);
  
-  // Extract time
-  bhdb.timeStamp = dt.timestamp(DateTime::TIMESTAMP_TIME);         // HH:MM:SS
+  // Extract time: HH:MM:SS
+  sprintf(bhdb.time, dt.timestamp(DateTime::TIMESTAMP_TIME).c_str(), LENTIME); 
   BHLOG(LOGLAN) Serial.print(" - ");
-  BHLOG(LOGLAN) Serial.println(bhdb.timeStamp);
+  BHLOG(LOGLAN) Serial.println(bhdb.time);
 
   return 0;
 } // end of getRTCtime()

@@ -47,7 +47,9 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RST); // (SPIclass, EPD_CS, DC, RST, backlight=0) 
 GxEPD_Class display(io, EPD_RST, EPD_BUSY);  // (io-class GxGDEW027C44, RST, BUSY)
 
-static const int spiClk = SPISPEED; // 2 MHz
+// #define SPISPEED    2000000  // SPI speed: 2MHz
+// static const int spiClk = SPISPEED; // 2 MHz
+
 int isepd =-1;          // =0 ePaper found
 int issdcard =-1;       // =0 SDCard found
 
@@ -55,7 +57,7 @@ int issdcard =-1;       // =0 SDCard found
 // SPI Port Setup Routine for 2 SPI ports: SDCard + ePaper  + LoRa Module at VSPI
 //*******************************************************************
 int setup_spi_VSPI() {    // My SPI Constructor
-    BHLOG(LOGSPI) Serial.println("  Setup: VSPI port for 3 devices");
+    BHLOG(LOGSPI) Serial.println("  MSPI: VSPI port for 3 devices");
 
 // First disabe all SPI devices CS line to avoid collisions
     pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
@@ -78,49 +80,27 @@ int setup_spi_VSPI() {    // My SPI Constructor
     pinMode(BEE_DIO1, INPUT_PULLUP);
     pinMode(BEE_DIO2, INPUT_PULLUP);
     digitalWrite(BEE_RST, HIGH);
-    digitalWrite(BEE_MOSI, HIGH);
+//    digitalWrite(BEE_MOSI, HIGH); // done via VSPI_MOSI if the same
 
 // Preset SPI dev: BEE-LoRa Module
     pinMode(EPD_RST, OUTPUT);
     digitalWrite(EPD_RST, HIGH);
 
-
-    BHLOG(LOGSPI) Serial.println("  Setup: SPI-Init: ePaper EPD part1 ...");
-    display.init();   // enable diagnostic output on Serial
-    isepd = 0;
-    
-    BHLOG(LOGSPI) Serial.print("  Setup: SPI-Init of SD card...");
+    BHLOG(LOGSPI) Serial.print("  MSPI: SPI-Init of SD card...");
     if (!SD.begin(SD_CS)){
         issdcard = -1;
-        BHLOG(LOGSPI) Serial.println("SD Card Mount Failed");
-        return issdcard;
+        BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
     } else {
-        BHLOG(LOGSPI) Serial.println("SD Card mounted");
+        BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
+        issdcard = 0;
     }
-    issdcard = 0;
-    
+
      // override the default CS, reset, and IRQ pins (optional)
     LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
-
-    return 0;   // SPI port is initialized
+    
+    BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");
+    display.init();   // enable diagnostic output on Serial
+    isepd = 0;    
+    
+    return (isepd + issdcard);   // SPI port is initialized
 } // end of setup_spi_sd_epd()
-
-
-//***************************************************************
-// SPI_scan()
-// Test of SPI device Scanner
-//***************************************************************
-int spi_scan(void) {
-int rc =0;
-//  static char tag[] = "spiscanner";
-//	ESP_LOGD(tag, ">> spiScanner");
-
-return rc; // Shortcut function.
-
-#ifdef SD_CONFIG
-   BHLOG(LOGSPI) Serial.println("  SPISCAN: No SDCard found");
-   rc = -1;
-#endif // SD_CONFIG
-
-return rc;       // sdcard found
-} // end of spi_scan
