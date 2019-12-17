@@ -4,3 +4,4 @@
 .vscode
 .travis.yml
 examples
+platformio.ini

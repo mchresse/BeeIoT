@@ -31,7 +31,7 @@ board = esp32dev
 framework = arduino
 
 ; build_flags = 
-build_flags = -DCONFIG_WIFI_SSID=\"MYAP\" -DCONFIG_WIFI_PASSWORD=\"MYPASS\"
+build_flags = -DCONFIG_WIFI_SSID=\"MYDOMAIN\" -DCONFIG_WIFI_PASSWORD=\"MYPASSWD\"
 
 ; Library options
 lib_deps =
@@ -48,9 +48,9 @@ lib_deps =
 
 ; Serial Monitor Options
 monitor_speed = 115200
-monitor_flags =
-    --encoding
-    hexlify
+;monitor_flags =
+;    --encoding
+;    hexlify
 
 ; Unit Testing options
 test_ignore = test_desktop
