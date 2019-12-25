@@ -101,28 +101,28 @@ int getTimeStamp() {
   }else{                      // no RTC nor NTP Time at all
     isntp = -1;
     isrtc = -1;
-    sprintf(bhdb.formattedDate, "YYYY-MM-DDTHH:MM:SSZ");
-    sprintf(bhdb.date,      "YYYY-MM-DD");
+    sprintf(bhdb.formattedDate, "YYYY\\MM\\DDTHH:MM:SSZ");
+    sprintf(bhdb.date,      "YYYY\\MM\\DD");
     sprintf(bhdb.time,      "HH:MM:SS");
     return(-2);               // we give up
   }
 
 // We need to extract date and time from timeinfo (struct tm)
 // The formattedDate should have the following format: 2018-05-28T16:00:13Z
-// sprintf(tmstring, "%4i-%2i-%2iT%2i:%2i:%2iZ", 
+// sprintf(tmstring, "%4i\%2i\%2iT%2i:%2i:%2iZ", 
 //                    1900+timeinfo.tm_year,
 //                    timeinfo.tm_mon,
 //                    timeinfo.tm_mday,
 //                    timeinfo.tm_hour,
 //                    timeinfo.tm_min,
 //                    timeinfo.tm_sec);
-  strftime(tmstring, 30, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+  strftime(tmstring, 30, "%Y\%m\%dT%H:%M:%SZ", &timeinfo);
   strncpy(bhdb.formattedDate, tmstring, LENFDATE);
   BHLOG(LOGLAN) Serial.print("    ");
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
   // Extract date
-  strftime(tmstring, 30, "%Y-%m-%d", &timeinfo);
+  strftime(tmstring, 30, "%Y\%m\%d", &timeinfo);
   strncpy(bhdb.date, tmstring, LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.print(bhdb.date);

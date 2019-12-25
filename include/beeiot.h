@@ -122,7 +122,7 @@
 #define BEE_DIO1	13		// Bee-Event
 #define BEE_DIO2	34		// unused by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
-#define LOOPTIME    1		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    360		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   3E7		// Mikrosekunden hier 3s
 
 // Definitions of LogLevel masks instead of verbose mode
@@ -153,10 +153,35 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4150 // mV 
-    #define BATTERY_MIN_LEVEL        3200 // mV
-    #define BATTERY_SHUTDOWN_LEVEL   3100 // mV
+    #define BATTERY_MAX_LEVEL        4200 // mV 
+    #define BATTERY_MIN_LEVEL        3300 // mV
+    #define BATTERY_SHUTDOWN_LEVEL   3200 // mV
 #endif
+
+#define MAX_PAYLOAD_LENGTH  0x80  // max length of LoRa MAC raw package
+#define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
+#define MSGBURSTRETRY	3	// Do it 3 times the same.
+
+// LoRa raw data package format (for cast on LoRa MAC payload)
+typedef struct {
+	byte	destID;		// last ID of receiver (GW)
+	byte	sendID;		// last ID of BeeIoT Node sent the stream
+	byte	index;		// last package index
+	byte	cmd;		// command code from Node
+	byte	length;		// length of last status data string
+	char	status[MAX_PAYLOAD_LENGTH-5+1]; // remaining status array
+} beeiotdata_t;
+
+// LoRa "SendMessage()" user command codes
+#define CMD_NOP			0	// do nothing -> for xfer test purpose
+#define CMD_LOGSTATUS	1	// process Sensor log data set
+#define CMD_SDLOG		2	// one more line of SD card log file
+#define CMD_NOP3		3	// reserved
+#define CMD_NOP4		4	// reserved
+#define CMD_NOP5		5	// reserved
+#define CMD_NOP6		6	// reserved
+#define CMD_NOP7		7	// reserved
+
 
 //*******************************************************************
 // Global data declarations
@@ -166,7 +191,7 @@
 #define LENTMSTAMP	20
 typedef struct {				// data elements of one log line entry
     int     index;
-    char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY-MM-DD HH:MM:SS'
+    char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY\MM\DD HH:MM:SS'
 	float	HiveWeight;			// weight in [kg]
 	float	TempHive;			// internal temp. of bee hive
 	float	TempExtern;			// external temperature
@@ -188,7 +213,7 @@ typedef struct {				// data elements of one log line entry
 typedef struct {
 	// save timestamp of last datarow entry:
     char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
-    char	date[LENDATE];  // stamp of the day: 2019-10-28
+    char	date[LENDATE];  // stamp of the day: 2019\10\28
     char	time[LENTIME]; // Timestamp: 08:10:15
     char	ipaddr[LENIPADDR];	// IPv4 Address xx:xx:xx:xx
     int     loopid;             // sensor data read sample ID
@@ -260,9 +285,9 @@ void drawBitmaps_200x200();
 void drawBitmaps_other(void);
 void showdata		(int sampleID);
 
-// LoRa.cpp functions
+// BeeLoRa.cpp functions
 int  setup_LoRa		(void);
-void sendMessage	(String outgoing);
+void sendMessage	(byte cmd, String outgoing);
 void onReceive		(int packetSize);
 void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h

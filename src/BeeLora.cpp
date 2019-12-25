@@ -22,17 +22,19 @@ const int csPin     = BEE_CS;     // LoRa radio chip select
 const int resetPin  = BEE_RST;    // LoRa radio reset
 const int irqPin    = BEE_DIO0;   // change for your board; must be a hardware interrupt pin
 
-// String outgoing;              // outgoing message
+// String outgoing;           // outgoing message
 byte msgCount = 0;            // count of outgoing messages
 byte localAddress = 0x77;     // address/ID of this device
 byte destination  = 0x88;     // destination ID to send to
 
 #define LORA_SF   7           // preset spreading factor
-#define LoRaWANSW 0xf3	      // LoRa WAN public sync word; def: 0x34
-#define SIGNALBW  0x125E3     // default Signal bandwidth
+#define LoRaWANSW 0x34	      // LoRa WAN public sync word; def: 0x34
+#define SIGNALBW  125E3       // default Signal bandwidth
 #define LORA_FREQ 8681E5      // Band: 868 MHz
 #define LORA_PWR  14          // Power Level: 14dB
-#define PAYLOAD_LENGTH       0x40
+
+#define CODINGRATE 5
+#define LPREAMBLE  8
 
 //*********************************************************************
 // Setup_LoRa(): init BEE-client object: LoRa
@@ -47,18 +49,26 @@ int setup_LoRa(){
     return(islora);                          // No SX1276 module found -> Stop LoRa protocol
   }
 
-// Presetting of all LoRa protocol parameters if apart from the class default
-  LoRa.setSpreadingFactor(LORA_SF);     // ranges from 6-12,default 7 see API docs
-  LoRa.setSyncWord(LoRaWANSW);          // ranges from 0-0xFF, default 0x34, see API docs
-  LoRa.setTxPower(LORA_PWR);            // no boost mode, outputPin = default
-  LoRa.setSignalBandwidth(SIGNALBW);    // set Signal Bandwidth 
+    // Presetting of all LoRa protocol parameters if apart from the class default
+    LoRa.sleep();
+    // RFOUT_pin could be RF_PACONFIG_PASELECT_PABOOST or RF_PACONFIG_PASELECT_RFO
+    //   - RF_PACONFIG_PASELECT_PABOOST -- LoRa single output via PABOOST, maximum output 20dBm
+    //   - RF_PACONFIG_PASELECT_RFO     -- LoRa single output via RFO_HF / RFO_LF, maximum output 14dBm
+    LoRa.setSpreadingFactor(LORA_SF);     // ranges from 6-12,default 7 see API docs
+    LoRa.setSyncWord(LoRaWANSW);          // ranges from 0-0xFF, default 0x34, see API docs
+    LoRa.setTxPower(LORA_PWR,PA_OUTPUT_PA_BOOST_PIN); // no boost mode, outputPin = default
+    LoRa.setSignalBandwidth(SIGNALBW);    // set Signal Bandwidth     LoRa.setCodingRate4(CODINGRATE);
+    LoRa.setPreambleLength(LPREAMBLE);
+    LoRa.crc();                           // enable CRC
+    LoRa.idle();
+  
 //  LoRa.dumpRegisters(Serial);         // dump all SX1276 registers in 0xyy format for debugging
 
+  msgCount = 0;                         // no package sent by now
   LoRa.onReceive(onReceive);            // set callback function
   LoRa.receive();                       // start flow control
   BHLOG(LOGLORA) Serial.println("  LoRa: entered receive mode");
 
-  msgCount = 0;                         // no package sent by now
   islora=0;                             // -> LORA is active
   BHLOG(LOGLORA) Serial.println("  LoRa: init succeeded.");
 
@@ -66,29 +76,31 @@ int setup_LoRa(){
 } // enfd of Setup_LoRa()
 
 
-void sendMessage(String outgoing) {
+void sendMessage(byte cmd, String outgoing) {
 int length;
 
   if(LoRa.beginPacket() ==0)  // start package creation
     return;                   // still transmitting -> come back later
 
   length = (int) outgoing.length();
-  if(length > PAYLOAD_LENGTH)
-    length=PAYLOAD_LENGTH;         // limit payload length
+  if(length-5 > MAX_PAYLOAD_LENGTH)
+    length=MAX_PAYLOAD_LENGTH;          // limit payload length
 
   LoRa.write(destination);              // add destination address
   LoRa.write(localAddress);             // add sender address
-  LoRa.write(msgCount);                 // add message ID
-  LoRa.write(length);                   // limit payload length
+  LoRa.write(msgCount);                 // add message ID = package serial number
+  LoRa.write(cmd);                      // store function/command for GW 
+  LoRa.write(length);                   // payload length
   LoRa.print(outgoing);                 // add payload
   LoRa.endPacket();                     // finish packet and send it
 
-  BHLOG(LOGLORA) Serial.printf("  LoRa[0x%x > 0x%x]: #%i:<%s> to 0x%x - %i bytes\n", 
-        localAddress, destination, msgCount, outgoing.c_str(), destination, length);
-  BHLOG(LOGLORA) hexdump((unsigned char*) & outgoing[0], outgoing.length());
+  BHLOG(LOGLORA) Serial.printf("  LoRa[0x%x > 0x%x]: #%i(%d)%s - %i bytes\n", 
+        localAddress, destination, msgCount, cmd, outgoing.c_str(), length);
+  BHLOG(LOGLORA) hexdump((unsigned char*) outgoing.c_str(), length);
 
-  msgCount++;                           // increment message ID
 }
+
+
 
 // IRQ callback function -> package received
 void onReceive(int packetSize) {

@@ -138,6 +138,8 @@ int getRTCtime(){
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.println(bhdb.time);
 
+  // last but not least: get current RTC temperature
+  bhdb.dlog[bhdb.loopid].TempRTC = rtc.getTemperature();  // RTC module temperature in celsius degree
   return 0;
 } // end of getRTCtime()
 

@@ -113,6 +113,8 @@ extern byte   RouterNetworkDeviceState;
 long lastSendTime = 0;        // last send time
 int LoRa_interval = 2000;     // interval between sends
 char LoRaBuffer[256];         // buffer for LoRa Packages
+extern byte msgCount;
+
 
 //************************************
 // Global function declarations
@@ -283,7 +285,7 @@ void loop() {
   BHLOG(LOGBH) Serial.println(">*******************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-
+  strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
 
 //***************************************************************
 // Check for Web Config page update
@@ -404,9 +406,12 @@ String dataMessage; // Global data objects
 
 // Write the sensor readings on the SD card
 void SDlogdata(void) {
+uint16_t sample;
+int i;
+  sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
-  dataMessage = String((bhdb.laps*datasetsize) + bhdb.loopid) + "," + 
-              String(bhdb.date) + "," + 
+  dataMessage =  
+              String(bhdb.date) + " " + 
               String(bhdb.time) + "," + 
               String(bhdb.dlog[bhdb.loopid].HiveWeight) + "," +
               String(bhdb.dlog[bhdb.loopid].TempExtern) + "," +
@@ -417,8 +422,11 @@ void SDlogdata(void) {
               String((float)bhdb.dlog[bhdb.loopid].Board5V/1000)    + "," +
               String((float)bhdb.dlog[bhdb.loopid].BattCharge/1000) + "," +
               String((float)bhdb.dlog[bhdb.loopid].BattLoad/1000)   + "," +
-              String(bhdb.dlog[bhdb.loopid].BattLevel)  + "\r\n";
-  Serial.printf("  Loop[%i]: ", (bhdb.laps*datasetsize) + bhdb.loopid);
+              String(bhdb.dlog[bhdb.loopid].BattLevel)  + "#" +
+              String(sample) + " " +
+              String(bhdb.dlog[bhdb.loopid].comment) +
+              "\r\n";
+  Serial.printf("  Loop[%i]: ", sample);
   Serial.print(dataMessage);
 
   if(issdcard ==0){
@@ -431,12 +439,14 @@ void SDlogdata(void) {
   if(islora==0){  // do we have an active connection (are we joined ?)
 //    if (millis() - lastSendTime > LoRa_interval) {
 
-      sendMessage(dataMessage);
-
+      for(i=0; i<MSGBURSTRETRY; i++){
+        sendMessage(CMD_LOGSTATUS, dataMessage);
+        delay(MSGBURSTWAIT);
+      }
 //      lastSendTime = millis();  // timestamp the message
 //      LoRa_interval = 2000;     // spin up window to 2 seconds
-
-      LoRa.receive();           // go back into receive mode
+      msgCount++;            // increment global sequ. package/message ID
+      LoRa.idle();           // go back into idle mode
 //    }
   }else{
       BHLOG(LOGLORA) Serial.println("  SDLog: No LoRa, no Logfile sent...");
