@@ -60,6 +60,7 @@
 #include <HX711.h>
 #include "HX711Scale.h"
 
+#include "beelora.h"
 #include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
 
 //************************************
@@ -437,19 +438,9 @@ int i;
 
   // but may be via LoRa ...
   if(islora==0){  // do we have an active connection (are we joined ?)
-//    if (millis() - lastSendTime > LoRa_interval) {
-
-      for(i=0; i<MSGBURSTRETRY; i++){
-        sendMessage(CMD_LOGSTATUS, dataMessage);
-        delay(MSGBURSTWAIT);
-      }
-//      lastSendTime = millis();  // timestamp the message
-//      LoRa_interval = 2000;     // spin up window to 2 seconds
-      msgCount++;            // increment global sequ. package/message ID
-      LoRa.idle();           // go back into idle mode
-//    }
+    LoRaLog(CMD_LOGSTATUS, dataMessage);
   }else{
-      BHLOG(LOGLORA) Serial.println("  SDLog: No LoRa, no Logfile sent...");
+    BHLOG(LOGLORA) Serial.println("  SDLog: No LoRa, no Logfile on air ...");
   }
 
   return;

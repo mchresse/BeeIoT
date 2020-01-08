@@ -158,30 +158,6 @@
     #define BATTERY_SHUTDOWN_LEVEL   3200 // mV
 #endif
 
-#define MAX_PAYLOAD_LENGTH  0x80  // max length of LoRa MAC raw package
-#define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
-#define MSGBURSTRETRY	3	// Do it 3 times the same.
-
-// LoRa raw data package format (for cast on LoRa MAC payload)
-typedef struct {
-	byte	destID;		// last ID of receiver (GW)
-	byte	sendID;		// last ID of BeeIoT Node sent the stream
-	byte	index;		// last package index
-	byte	cmd;		// command code from Node
-	byte	length;		// length of last status data string
-	char	status[MAX_PAYLOAD_LENGTH-5+1]; // remaining status array
-} beeiotdata_t;
-
-// LoRa "SendMessage()" user command codes
-#define CMD_NOP			0	// do nothing -> for xfer test purpose
-#define CMD_LOGSTATUS	1	// process Sensor log data set
-#define CMD_SDLOG		2	// one more line of SD card log file
-#define CMD_NOP3		3	// reserved
-#define CMD_NOP4		4	// reserved
-#define CMD_NOP5		5	// reserved
-#define CMD_NOP6		6	// reserved
-#define CMD_NOP7		7	// reserved
-
 
 //*******************************************************************
 // Global data declarations
@@ -287,7 +263,7 @@ void showdata		(int sampleID);
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(void);
-void sendMessage	(byte cmd, String outgoing);
+int sendMessage	(byte cmd, String outgoing);
 void onReceive		(int packetSize);
 void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h

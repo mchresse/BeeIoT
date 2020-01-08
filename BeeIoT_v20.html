@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>BeeIoT_v20.html</title>
+  <meta name="generator" content="Haroopad 0.13.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>div.oembedall-githubrepos{border:1px solid #DDD;border-radius:4px;list-style-type:none;margin:0 0 10px;padding:8px 10px 0;font:13.34px/1.4 helvetica,arial,freesans,clean,sans-serif;width:452px;background-color:#fff}div.oembedall-githubrepos .oembedall-body{background:-moz-linear-gradient(center top,#FAFAFA,#EFEFEF);background:-webkit-gradient(linear,left top,left bottom,from(#FAFAFA),to(#EFEFEF));border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-top:1px solid #EEE;margin-left:-10px;margin-top:8px;padding:5px 10px;width:100%}div.oembedall-githubrepos h3{font-size:14px;margin:0;padding-left:18px;white-space:nowrap}div.oembedall-githubrepos p.oembedall-description{color:#444;font-size:12px;margin:0 0 3px}div.oembedall-githubrepos p.oembedall-updated-at{color:#888;font-size:11px;margin:0}div.oembedall-githubrepos ul.oembedall-repo-stats{border:none;float:right;font-size:11px;font-weight:700;padding-left:15px;position:relative;z-index:5;margin:0}div.oembedall-githubrepos ul.oembedall-repo-stats li{border:none;color:#666;display:inline-block;list-style-type:none;margin:0!important}div.oembedall-githubrepos ul.oembedall-repo-stats li a{background-color:transparent;border:none;color:#666!important;background-position:5px -2px;background-repeat:no-repeat;border-left:1px solid #DDD;display:inline-block;height:21px;line-height:21px;padding:0 5px 0 23px}div.oembedall-githubrepos ul.oembedall-repo-stats li:first-child a{border-left:medium none;margin-right:-3px}div.oembedall-githubrepos ul.oembedall-repo-stats li a:hover{background:5px -27px no-repeat #4183C4;color:#FFF!important;text-decoration:none}div.oembedall-githubrepos ul.oembedall-repo-stats li:first-child a:hover{border-bottom-left-radius:3px;border-top-left-radius:3px}ul.oembedall-repo-stats li:last-child a:hover{border-bottom-right-radius:3px;border-top-right-radius:3px}span.oembedall-closehide{background-color:#aaa;border-radius:2px;cursor:pointer;margin-right:3px}div.oembedall-container{margin-top:5px;text-align:left}.oembedall-ljuser{font-weight:700}.oembedall-ljuser img{vertical-align:bottom;border:0;padding-right:1px}.oembedall-stoqembed{border-bottom:1px dotted #999;float:left;overflow:hidden;width:730px;line-height:1;background:#FFF;color:#000;font-family:Arial,Liberation Sans,DejaVu Sans,sans-serif;font-size:80%;text-align:left;margin:0;padding:0}.oembedall-stoqembed a{color:#07C;text-decoration:none;margin:0;padding:0}.oembedall-stoqembed a:hover{text-decoration:underline}.oembedall-stoqembed a:visited{color:#4A6B82}.oembedall-stoqembed h3{font-family:Trebuchet MS,Liberation Sans,DejaVu Sans,sans-serif;font-size:130%;font-weight:700;margin:0;padding:0}.oembedall-stoqembed .oembedall-reputation-score{color:#444;font-size:120%;font-weight:700;margin-right:2px}.oembedall-stoqembed .oembedall-user-info{height:35px;width:185px}.oembedall-stoqembed .oembedall-user-info .oembedall-user-gravatar32{float:left;height:32px;width:32px}.oembedall-stoqembed .oembedall-user-info .oembedall-user-details{float:left;margin-left:5px;overflow:hidden;white-space:nowrap;width:145px}.oembedall-stoqembed .oembedall-question-hyperlink{font-weight:700}.oembedall-stoqembed .oembedall-stats{background:#EEE;margin:0 0 0 7px;padding:4px 7px 6px;width:58px}.oembedall-stoqembed .oembedall-statscontainer{float:left;margin-right:8px;width:86px}.oembedall-stoqembed .oembedall-votes{color:#555;padding:0 0 7px;text-align:center}.oembedall-stoqembed .oembedall-vote-count-post{font-size:240%;color:#808185;display:block;font-weight:700}.oembedall-stoqembed .oembedall-views{color:#999;padding-top:4px;text-align:center}.oembedall-stoqembed .oembedall-status{margin-top:-3px;padding:4px 0;text-align:center;background:#75845C;color:#FFF}.oembedall-stoqembed .oembedall-status strong{color:#FFF;display:block;font-size:140%}.oembedall-stoqembed .oembedall-summary{float:left;width:635px}.oembedall-stoqembed .oembedall-excerpt{line-height:1.2;margin:0;padding:0 0 5px}.oembedall-stoqembed .oembedall-tags{float:left;line-height:18px}.oembedall-stoqembed .oembedall-tags a:hover{text-decoration:none}.oembedall-stoqembed .oembedall-post-tag{background-color:#E0EAF1;border-bottom:1px solid #3E6D8E;border-right:1px solid #7F9FB6;color:#3E6D8E;font-size:90%;line-height:2.4;margin:2px 2px 2px 0;padding:3px 4px;text-decoration:none;white-space:nowrap}.oembedall-stoqembed .oembedall-post-tag:hover{background-color:#3E6D8E;border-bottom:1px solid #37607D;border-right:1px solid #37607D;color:#E0EAF1}.oembedall-stoqembed .oembedall-fr{float:right}.oembedall-stoqembed .oembedall-statsarrow{background-image:url(http://cdn.sstatic.net/stackoverflow/img/sprites.png?v=3);background-repeat:no-repeat;overflow:hidden;background-position:0 -435px;float:right;height:13px;margin-top:12px;width:7px}.oembedall-facebook1{border:1px solid #1A3C6C;padding:0;font:13.34px/1.4 verdana;width:500px}.oembedall-facebook2{background-color:#627add}.oembedall-facebook2 a{color:#e8e8e8;text-decoration:none}.oembedall-facebookBody{background-color:#fff;vertical-align:top;padding:5px}.oembedall-facebookBody .contents{display:inline-block;width:100%}.oembedall-facebookBody div img{float:left;margin-right:5px}div.oembedall-lanyard{-webkit-box-shadow:none;-webkit-transition-delay:0s;-webkit-transition-duration:.4000000059604645s;-webkit-transition-property:width;-webkit-transition-timing-function:cubic-bezier(0.42,0,.58,1);background-attachment:scroll;background-clip:border-box;background-color:transparent;background-image:none;background-origin:padding-box;border-width:0;box-shadow:none;color:#112644;display:block;float:left;font-family:'Trebuchet MS',Trebuchet,sans-serif;font-size:16px;height:253px;line-height:19px;margin:0;max-width:none;min-height:0;outline:#112644 0;overflow-x:visible;overflow-y:visible;padding:0;position:relative;text-align:left;vertical-align:baseline;width:804px}div.oembedall-lanyard .tagline{font-size:1.5em}div.oembedall-lanyard .wrapper{overflow:hidden;clear:both}div.oembedall-lanyard .split{float:left;display:inline}div.oembedall-lanyard .prominent-place .flag:active,div.oembedall-lanyard .prominent-place .flag:focus,div.oembedall-lanyard .prominent-place .flag:hover,div.oembedall-lanyard .prominent-place .flag:link,div.oembedall-lanyard .prominent-place .flag:visited{float:left;display:block;width:48px;height:48px;position:relative;top:-5px;margin-right:10px}div.oembedall-lanyard .place-context{font-size:.889em}div.oembedall-lanyard .prominent-place .sub-place{display:block}div.oembedall-lanyard .prominent-place{font-size:1.125em;line-height:1.1em;font-weight:400}div.oembedall-lanyard .main-date{color:#8CB4E0;font-weight:700;line-height:1.1}div.oembedall-lanyard .first{width:48.57%;margin:0 0 0 2.857%}.mermaid .label{color:#333}.node circle,.node polygon,.node rect{fill:#cde498;stroke:#13540c;stroke-width:1px}.edgePath .path{stroke:green;stroke-width:1.5px}.cluster rect{fill:#cdffb2;rx:40;stroke:#6eaa49;stroke-width:1px}.cluster text{fill:#333}.actor{stroke:#13540c;fill:#cde498}text.actor{fill:#000;stroke:none}.actor-line{stroke:grey}.messageLine0{stroke-width:1.5;stroke-dasharray:"2 2";marker-end:"url(#arrowhead)";stroke:#333}.messageLine1{stroke-width:1.5;stroke-dasharray:"2 2";stroke:#333}#arrowhead{fill:#333}#crosshead path{fill:#333!important;stroke:#333!important}.messageText{fill:#333;stroke:none}.labelBox{stroke:#326932;fill:#cde498}.labelText,.loopText{fill:#000;stroke:none}.loopLine{stroke-width:2;stroke-dasharray:"2 2";marker-end:"url(#arrowhead)";stroke:#326932}.note{stroke:#6eaa49;fill:#fff5ad}.noteText{fill:#000;stroke:none;font-family:'trebuchet ms',verdana,arial;font-size:14px}.section{stroke:none;opacity:.2}.section0,.section2{fill:#6eaa49}.section1,.section3{fill:#fff;opacity:.2}.sectionTitle0,.sectionTitle1,.sectionTitle2,.sectionTitle3{fill:#333}.sectionTitle{text-anchor:start;font-size:11px;text-height:14px}.grid .tick{stroke:lightgrey;opacity:.3;shape-rendering:crispEdges}.grid path{stroke-width:0}.today{fill:none;stroke:red;stroke-width:2px}.task{stroke-width:2}.taskText{text-anchor:middle;font-size:11px}.taskTextOutsideRight{fill:#000;text-anchor:start;font-size:11px}.taskTextOutsideLeft{fill:#000;text-anchor:end;font-size:11px}.taskText0,.taskText1,.taskText2,.taskText3{fill:#fff}.task0,.task1,.task2,.task3{fill:#487e3a;stroke:#13540c}.taskTextOutside0,.taskTextOutside1,.taskTextOutside2,.taskTextOutside3{fill:#000}.active0,.active1,.active2,.active3{fill:#cde498;stroke:#13540c}.activeText0,.activeText1,.activeText2,.activeText3{fill:#000!important}.done0,.done1,.done2,.done3{stroke:grey;fill:lightgrey;stroke-width:2}.doneText0,.doneText1,.doneText2,.doneText3{fill:#000!important}.crit0,.crit1,.crit2,.crit3{stroke:#f88;fill:red;stroke-width:2}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{stroke:#f88;fill:#cde498;stroke-width:2}.doneCrit0,.doneCrit1,.doneCrit2,.doneCrit3{stroke:#f88;fill:lightgrey;stroke-width:2;cursor:pointer;shape-rendering:crispEdges}.activeCritText0,.activeCritText1,.activeCritText2,.activeCritText3,.doneCritText0,.doneCritText1,.doneCritText2,.doneCritText3{fill:#000!important}.titleText{text-anchor:middle;font-size:18px;fill:#000}text{font-family:'trebuchet ms',verdana,arial;font-size:14px}html{height:100%}body{margin:0!important;padding:5px 20px 26px!important;background-color:#fff;font-family:"Lucida Grande","Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Lucida Sans Unicode",Helvetica,Arial,sans-serif;font-size:.9em;overflow-x:hidden;overflow-y:auto}br,h1,h2,h3,h4,h5,h6{clear:both}hr.page{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x;border:0;height:3px;padding:0}hr.underscore{border-top-style:dashed!important}body >:first-child{margin-top:0!important}img.plugin{box-shadow:0 1px 3px rgba(0,0,0,.1);border-radius:3px}iframe{border:0}figure{-webkit-margin-before:0;-webkit-margin-after:0;-webkit-margin-start:0;-webkit-margin-end:0}kbd{border:1px solid #aaa;-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;-moz-box-shadow:1px 2px 2px #ddd;-webkit-box-shadow:1px 2px 2px #ddd;box-shadow:1px 2px 2px #ddd;background-color:#f9f9f9;background-image:-moz-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:-o-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:-webkit-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:linear-gradient(top,#eee,#f9f9f9,#eee);padding:1px 3px;font-family:inherit;font-size:.85em}.oembeded .oembed_photo{display:inline-block}img[data-echo]{margin:25px 0;width:100px;height:100px;background:url(../img/ajax.gif) center center no-repeat #fff}.spinner{display:inline-block;width:10px;height:10px;margin-bottom:-.1em;border:2px solid rgba(0,0,0,.5);border-top-color:transparent;border-radius:100%;-webkit-animation:spin 1s infinite linear;animation:spin 1s infinite linear}.spinner:after{content:'';display:block;width:0;height:0;position:absolute;top:-6px;left:0;border:4px solid transparent;border-bottom-color:rgba(0,0,0,.5);-webkit-transform:rotate(45deg);transform:rotate(45deg)}@-webkit-keyframes spin{to{-webkit-transform:rotate(360deg)}}@keyframes spin{to{transform:rotate(360deg)}}p.toc{margin:0!important}p.toc ul{padding-left:10px}p.toc>ul{padding:10px;margin:0 10px;display:inline-block;border:1px solid #ededed;border-radius:5px}p.toc li,p.toc ul{list-style-type:none}p.toc li{width:100%;padding:0;overflow:hidden}p.toc li a::after{content:"."}p.toc li a:before{content:"• "}p.toc h5{text-transform:uppercase}p.toc .title{float:left;padding-right:3px}p.toc .number{margin:0;float:right;padding-left:3px;background:#fff;display:none}input.task-list-item{margin-left:-1.62em}.markdown{font-family:"Hiragino Sans GB","Microsoft YaHei",STHeiti,SimSun,"Lucida Grande","Lucida Sans Unicode","Lucida Sans",'Segoe UI',AppleSDGothicNeo-Medium,'Malgun Gothic',Verdana,Tahoma,sans-serif;padding:20px}.markdown a{text-decoration:none;vertical-align:baseline}.markdown a:hover{text-decoration:underline}.markdown h1{font-size:2.2em;font-weight:700;margin:1.5em 0 1em}.markdown h2{font-size:1.8em;font-weight:700;margin:1.275em 0 .85em}.markdown h3{font-size:1.6em;font-weight:700;margin:1.125em 0 .75em}.markdown h4{font-size:1.4em;font-weight:700;margin:.99em 0 .66em}.markdown h5{font-size:1.2em;font-weight:700;margin:.855em 0 .57em}.markdown h6{font-size:1em;font-weight:700;margin:.75em 0 .5em}.markdown h1+p,.markdown h1:first-child,.markdown h2+p,.markdown h2:first-child,.markdown h3+p,.markdown h3:first-child,.markdown h4+p,.markdown h4:first-child,.markdown h5+p,.markdown h5:first-child,.markdown h6+p,.markdown h6:first-child{margin-top:0}.markdown hr{border:1px solid #ccc}.markdown p{margin:1em 0;word-wrap:break-word}.markdown ol{list-style-type:decimal}.markdown li{display:list-item;line-height:1.4em}.markdown blockquote{margin:1em 20px}.markdown blockquote>:first-child{margin-top:0}.markdown blockquote>:last-child{margin-bottom:0}.markdown blockquote cite:before{content:'\2014 \00A0'}.markdown .code{border-radius:3px;word-wrap:break-word}.markdown pre{border-radius:3px;word-wrap:break-word;border:1px solid #ccc;overflow:auto;padding:.5em}.markdown pre code{border:0;display:block}.markdown pre>code{font-family:Consolas,Inconsolata,Courier,monospace;font-weight:700;white-space:pre;margin:0}.markdown code{border-radius:3px;word-wrap:break-word;border:1px solid #ccc;padding:0 5px;margin:0 2px}.markdown img{max-width:100%}.markdown mark{color:#000;background-color:#fcf8e3}.markdown table{padding:0;border-collapse:collapse;border-spacing:0;margin-bottom:16px}.markdown table tr td,.markdown table tr th{border:1px solid #ccc;margin:0;padding:6px 13px}.markdown table tr th{font-weight:700}.markdown table tr th>:first-child{margin-top:0}.markdown table tr th>:last-child{margin-bottom:0}.markdown table tr td>:first-child{margin-top:0}.markdown table tr td>:last-child{margin-bottom:0}@import url(http://fonts.googleapis.com/css?family=Roboto+Condensed:300italic,400italic,700italic,400,300,700);.haroopad{padding:20px;color:#222;font-size:15px;font-family:"Roboto Condensed",Tauri,"Hiragino Sans GB","Microsoft YaHei",STHeiti,SimSun,"Lucida Grande","Lucida Sans Unicode","Lucida Sans",'Segoe UI',AppleSDGothicNeo-Medium,'Malgun Gothic',Verdana,Tahoma,sans-serif;background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}.haroopad a{color:#3269a0}.haroopad a:hover{color:#4183c4}.haroopad h2{border-bottom:1px solid #e6e6e6}.haroopad h6{color:#777}.haroopad hr{border:1px solid #e6e6e6}.haroopad blockquote>code,.haroopad h1>code,.haroopad h2>code,.haroopad h3>code,.haroopad h4>code,.haroopad h5>code,.haroopad h6>code,.haroopad li>code,.haroopad p>code,.haroopad td>code{font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;font-size:85%;background-color:rgba(0,0,0,.02);padding:.2em .5em;border:1px solid #efefef}.haroopad pre>code{font-size:1em;letter-spacing:-1px;font-weight:700}.haroopad blockquote{border-left:4px solid #e6e6e6;padding:0 15px;color:#777}.haroopad table{background-color:#fafafa}.haroopad table tr td,.haroopad table tr th{border:1px solid #e6e6e6}.haroopad table tr:nth-child(2n){background-color:#f2f2f2}.hljs{display:block;overflow-x:auto;padding:.5em;background:#fdf6e3;color:#657b83;-webkit-text-size-adjust:none}.diff .hljs-header,.hljs-comment,.hljs-doctype,.hljs-javadoc,.hljs-pi,.lisp .hljs-string{color:#93a1a1}.css .hljs-tag,.hljs-addition,.hljs-keyword,.hljs-request,.hljs-status,.hljs-winutils,.method,.nginx .hljs-title{color:#859900}.hljs-command,.hljs-dartdoc,.hljs-hexcolor,.hljs-link_url,.hljs-number,.hljs-phpdoc,.hljs-regexp,.hljs-rules .hljs-value,.hljs-string,.hljs-tag .hljs-value,.tex .hljs-formula{color:#2aa198}.css .hljs-function,.hljs-built_in,.hljs-chunk,.hljs-decorator,.hljs-id,.hljs-identifier,.hljs-localvars,.hljs-title,.vhdl .hljs-literal{color:#268bd2}.hljs-attribute,.hljs-class .hljs-title,.hljs-constant,.hljs-link_reference,.hljs-parent,.hljs-type,.hljs-variable,.lisp .hljs-body,.smalltalk .hljs-number{color:#b58900}.css .hljs-pseudo,.diff .hljs-change,.hljs-attr_selector,.hljs-cdata,.hljs-header,.hljs-pragma,.hljs-preprocessor,.hljs-preprocessor .hljs-keyword,.hljs-shebang,.hljs-special,.hljs-subst,.hljs-symbol,.hljs-symbol .hljs-string{color:#cb4b16}.hljs-deletion,.hljs-important{color:#dc322f}.hljs-link_label{color:#6c71c4}.tex .hljs-formula{background:#eee8d5}.MathJax_Hover_Frame{border-radius:.25em;-webkit-border-radius:.25em;-moz-border-radius:.25em;-khtml-border-radius:.25em;box-shadow:0 0 15px #83A;-webkit-box-shadow:0 0 15px #83A;-moz-box-shadow:0 0 15px #83A;-khtml-box-shadow:0 0 15px #83A;border:1px solid #A6D!important;display:inline-block;position:absolute}.MathJax_Hover_Arrow{position:absolute;width:15px;height:11px;cursor:pointer}#MathJax_About{position:fixed;left:50%;width:auto;text-align:center;border:3px outset;padding:1em 2em;background-color:#DDD;color:#000;cursor:default;font-family:message-box;font-size:120%;font-style:normal;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;z-index:201;border-radius:15px;-webkit-border-radius:15px;-moz-border-radius:15px;-khtml-border-radius:15px;box-shadow:0 10px 20px gray;-webkit-box-shadow:0 10px 20px gray;-moz-box-shadow:0 10px 20px gray;-khtml-box-shadow:0 10px 20px gray;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}.MathJax_Menu{position:absolute;background-color:#fff;color:#000;width:auto;padding:2px;border:1px solid #CCC;margin:0;cursor:default;font:menu;text-align:left;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;z-index:201;box-shadow:0 10px 20px gray;-webkit-box-shadow:0 10px 20px gray;-moz-box-shadow:0 10px 20px gray;-khtml-box-shadow:0 10px 20px gray;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}.MathJax_MenuItem{padding:2px 2em;background:0 0}.MathJax_MenuArrow{position:absolute;right:.5em;color:#666}.MathJax_MenuActive .MathJax_MenuArrow{color:#fff}.MathJax_MenuArrow.RTL{left:.5em;right:auto}.MathJax_MenuCheck{position:absolute;left:.7em}.MathJax_MenuCheck.RTL{right:.7em;left:auto}.MathJax_MenuRadioCheck{position:absolute;left:1em}.MathJax_MenuRadioCheck.RTL{right:1em;left:auto}.MathJax_MenuLabel{padding:2px 2em 4px 1.33em;font-style:italic}.MathJax_MenuRule{border-top:1px solid #CCC;margin:4px 1px 0}.MathJax_MenuDisabled{color:GrayText}.MathJax_MenuActive{background-color:Highlight;color:HighlightText}.MathJax_Menu_Close{position:absolute;width:31px;height:31px;top:-15px;left:-15px}#MathJax_Zoom{position:absolute;background-color:#F0F0F0;overflow:auto;display:block;z-index:301;padding:.5em;border:1px solid #000;margin:0;font-weight:400;font-style:normal;text-align:left;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;box-shadow:5px 5px 15px #AAA;-webkit-box-shadow:5px 5px 15px #AAA;-moz-box-shadow:5px 5px 15px #AAA;-khtml-box-shadow:5px 5px 15px #AAA;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}#MathJax_ZoomOverlay{position:absolute;left:0;top:0;z-index:300;display:inline-block;width:100%;height:100%;border:0;padding:0;margin:0;background-color:#fff;opacity:0;filter:alpha(opacity=0)}#MathJax_ZoomFrame{position:relative;display:inline-block;height:0;width:0}#MathJax_ZoomEventTrap{position:absolute;left:0;top:0;z-index:302;display:inline-block;border:0;padding:0;margin:0;background-color:#fff;opacity:0;filter:alpha(opacity=0)}.MathJax_Preview{color:#888}#MathJax_Message{position:fixed;left:1px;bottom:2px;background-color:#E6E6E6;border:1px solid #959595;margin:0;padding:2px 8px;z-index:102;color:#000;font-size:80%;width:auto;white-space:nowrap}#MathJax_MSIE_Frame{position:absolute;top:0;left:0;width:0;z-index:101;border:0;margin:0;padding:0}.MathJax_Error{color:#C00;font-style:italic}footer{position:fixed;font-size:.8em;text-align:right;bottom:0;margin-left:-25px;height:20px;width:100%}</style>
+</head>
+<body class="markdown haroopad">
+<h1 id="beeiot-v2.0"><a name="beeiot-v2.0" href="#beeiot-v2.0"></a>BeeIoT v2.0</h1><h3 id="eine-bienenstockwaage-im-eigenbau-(mit-iot-technik)"><a name="eine-bienenstockwaage-im-eigenbau-(mit-iot-technik)" href="#eine-bienenstockwaage-im-eigenbau-(mit-iot-technik)"></a>Eine Bienenstockwaage im Eigenbau (mit IoT Technik)</h3><p><img src="images_v2/BeeLogFront.jpg" width="250"></p><p><strong>01.10.2019 by Randolph Esser</strong></p><hr class="section"><h2 id="inhaltsverzeichnis:"><a name="inhaltsverzeichnis:" href="#inhaltsverzeichnis:"></a>Inhaltsverzeichnis:</h2><ul>
+<li><a href="#einführung">Einführung</a><ul>
+<li><a href="#gewichtsschwankungen-pro-tag">Gewichtsschwankungen pro Tag</a></li><li><a href="#gewichtsschwankungen-pro-jahr">Gewichtsschwankung pro Jahr</a></li><li><a href="#ereignisse">Ereignisse</a></li></ul>
+</li><li><a href="#das-modul-konzept">Das Modul-Konzept</a></li><li><a href="#iot-für-bienen">IoT für Bienen</a></li><li><a href="#das-finale-beeiot-client-modul">Das finale BeeIoT Client Modul</a></li><li><a href="#die-mcu-arduino-ESP32-platform">Die MCU Arduino/ESP32 Platform</a><ul>
+<li><a href="#das-esp32-devkitc-board">Das ESP32-DevKitC Board</a><ul>
+<li><a href="#esp32-devkitc-sockel-belegung">ESP32 DevKitC Sockel Belegung</a></li><li><a href="#esp32-gpio-nutzung">ESP32 GPIO Nutzung</a></li></ul>
+</li></ul>
+</li><li><a href="#die-beeiot-sensorik">Die BeeIoT Sensorik</a><ul>
+<li><a href="#die-wägezellen-auswahl">Die Wägezellen Auswahl</a></li><li><a href="#ad-wandler-hx711">AD Wandler HX711</a></li><li><a href="#temperatursensoren">Temperatursensoren</a></li><li><a href="#led-status-anzeige">LED-Status Anzeige</a></li><li><a href="#spi-devices">SPI Devices</a><ul>
+<li><a href="#micro-sdcard-modul">Micro-SDCard Modul</a></li><li><a href="#lora-wan-support">LoRa WAN Support</a></li><li><a href="#narrowband-iot">NarrowBand-IoT</a></li><li><a href="#rtc-uhrzeit-modul">RTC Uhrzeit-Modul</a></li></ul>
+</li></ul>
+</li><li><a href="#power-management">Power Management</a><ul>
+<li><a href="#externer-usb-port">Externer USB Port</a></li><li><a href="#batterie-akku">Batterie/Akku</a></li><li><a href="#power-monitoring">Power Monitoring</a></li><li><a href="#pv-solar-modul">PV Solar-Modul</a></li><li><a href="#alternativer-batterie-laderegler">Alternativer Batterie Laderegler</a></li></ul>
+</li><li><p><a href="#der-aufbau">Der Aufbau</a></p>
+<ul>
+<li><a href="#stückliste">Stückliste</a></li><li><a href="#das-aussengehäuse">Das Aussengehäuse</a><ul>
+<li><a href="#die-bosche-wägezelle">Die Bosche Wägezelle</a></li><li><a href="#das-anschluss-panel">Das Anschluss Panel</a><ul>
+<li><a href="#one-wire-sonsoren">One Wire Sensoren</a></li><li><a href="#der-ds18b20-ow-temperatur-sensor">Der DS18B20 OW-Temperatur-Sensor</a></li></ul>
+</li></ul>
+</li><li><a href="#compute-node-box">Compute Node Box</a></li><li><a href="#steckverbinder">Steckverbinder</a></li></ul>
+</li><li><p><a href="#die-esp32-beeiot-sketch-software">Die ESP32 BeeIoT Sketch Software</a></p>
+<ul>
+<li><a href="#esp32-vorbereitungen">ESP32 Vorbereitungen</a></li><li><a href="#esp32-ide">ESP32 IDE</a><ul>
+<li><a href="#platformio">PlatformIO</a></li><li><a href="esp32-sensor-libraries-+-build">ESP32 Sensor Libraries + build</a></li></ul>
+</li><li><a href="#die-programm-struktur">Die Programm Struktur</a><ul>
+<li><a href="setup-phase">Setup Phase</a></li><li><a href="loop-phase">Loop Phase</a></li></ul>
+</li><li><a href="#kalibrierung-der-waage">Kalibrierung der Waage</a></li><li><a href="#optional:-webui-daten-service">Optional: WebUI Daten Service</a></li></ul>
+</li><li><a href="#webui-todo---liste">WebUI ToDo - Liste</a></li><li><a href="#ideen-liste">Ideen Liste</a></li><li><a href="#todo:-optional-hw-module">ToDo: Optional HW Module</a><ul>
+<li><a href="#nutzung-einer-sim-karte">Nutzung einer SIM-Karte</a></li></ul>
+</li><li><a href="#quellen/links">Quellen/Links</a><ul>
+<li><a href="#marktübersicht-professioneller-bienenstockwaagen">Marktübersicht professioneller Bienenstockwaagen</a><!-- toc -->
+</li></ul>
+</li></ul><hr class="section"><h2 id="einführung"><a name="einführung" href="#einführung"></a>Einführung</h2><p>Wie oft wünscht man sich als Imker, vor dem Standbesuch, zu wissen in welchem Zustand das Volk sich befindet, bevor man es öffnet. Dabei liegen die Vorteile auf der Hand:</p><ul>
+<li>Maßnahmen können vorher zeitlich eingeplant werden</li><li>Benötigtes Material kann für den Standbesuch vorbereitet werden</li><li>Die Behandlungszeit bei offener Beute kann ggfs. kürzer ausfallen, wenn sich die Mess-Annahme bestätigt</li></ul><p>Interessante Parameter zum Bienen-Monitoring, die einem dabei behilflich sein können sind</p><ul>
+<li><strong>Der Beuten-Gewichtsverlauf</strong>:<ul>
+<li>Honigverbrauch im Winter</li><li>Honigvorräte im Frühjahr (bis Trachtbeginn)</li><li>Anzeige von Honigverlust durch Räuberei in trachtarmer Zeit</li><li>Honigeintrag zur Haupt-Trachtzeit</li><li>Bedarf weiterer Honigräume</li><li>Zeitpunkt für Honigernte (Trachtende) bestimmen</li></ul>
+</li><li><strong>Die Stocktemperatur</strong><ul>
+<li>Temperaturverlauf im Bienenstock (Tag/Nacht) im Vergleich zur Aussentemperatur<br>  -&gt; Anzeichen für die Aktivität des Volkes (besonders im Winter)</li><li>Beginn der Brutzeit durch Messung der Temperatur im Brutnest (&gt;30° C)</li><li>Warnung bei Überhitzung des Bienenstocks (Gefahr für Brut und schweren Honigwaben)</li><li>Temperatur der Wintertraube (15-25 C) überwachen</li><li>Brutfreiheit für MS (Milchsäure) oder OS (Oxalsäure) Behandlung</li></ul>
+</li><li><strong>Fluglochaktivität</strong> durch<ul>
+<li>Lichtschranke am Nesteingang<ul>
+<li>Räubereialarm (Kämpfe am Nesteingang)</li><li>Schwarmalarm bei viel Aktivität am Nesteingang in sehr kurzer Zeit (30Min.)      korrespondierend mit spontanem Gewichtsverlust (Delta: ca. 1,5 kg)</li></ul>
+</li></ul>
+</li><li><strong>Örtliche Wetterdaten</strong></li></ul><p>Das Ziel wäre dann aus diesen Daten Schlussfolgerungen für den nächsten Standbesuch zu ziehen oder die Wirkung letzter Massnahmen zu verfolgen:</p><ul>
+<li><strong>Futterzustand</strong> von Einwinterung E9 bis zur Auswinterung im Frühjahr A4</li><li><strong>Brut-Aktivität</strong> durch ganzjährigen Temperaturverlauf im Bienenstock<ul>
+<li>Brutende zum Jahresende            -&gt; Möglichkeit zur Varroabehandlung</li><li>Brutbeginn zum Jahresanfang         -&gt; “Bee-Alive” Status des Volkes</li></ul>
+</li><li><strong>Honigeintrag</strong> und Trachtende zu den jeweiligen Trachtphasen</li><li><strong>Schwarmabgang</strong> („bei dem Event weiss ich, ich war zu spät“)</li></ul><p>Weitere optionale Sensor-Module:</p><ul>
+<li>Mit der <em>Infra-Rot Kamera</em> von außen auf die Gesamtbeute gerichtet:<br>Liefert Hinweise auf den Bienensitz, und die Populationsaktivität im Winter</li><li>Mit dem <em>Fluglochzähler</em>: Flugaktivität am Flugloch</li></ul><p>Um die anfallenden Sensordaten auswerten zu können muss ein gewisses <em>Referenz-Verhalten</em> an jedem Sensor angenommen werden um Abweichungen/Fehlmessungen zu erkennen (<mark> Anomalie-Erkennung </mark>).<br>So gibt es allgemeine Gewichtsverläufe über das ganze Jahr hinweg, aber auch innerhalb eines Tages, die man recht gut bestimmten Volks-Zuständen zuordnen kann:</p><h3 id="gewichtsschwankungen-pro-tag"><a name="gewichtsschwankungen-pro-tag" href="#gewichtsschwankungen-pro-tag"></a>Gewichtsschwankungen pro Tag</h3><p>Hier nun ein idealisierter qualitativer Gewichtsverlauf eines sonnigen Sommertages (=Flugwetter):</p><p><img src="images_v2/WeightDayChart.jpg"></p><p>Der Tag beginnt mit dem Ausflug der Bienen (ca. 1-2kg). Da eine Biene etwa 0.1 Gramm wiegt und ca. 10-15.000 Flugbienen möglich sind ergibt sich somit ein Delta von 1-1,5kg. Diese kehren in den folgenden Stunden immer wieder mit Honig, Pollen und Wasser zurück, so dass das Gewicht kontinuierlich steigt.<br>Bis zum Sonnenuntergang ist die „Rückkehr“ der Sammlerinnen abgeschlossen und die Honigtrocknung durch die Stockbienen beginnt (begünstigt durch die kühleren Nachttemperaturen).<br>Das Delta stellt den Tageseintrag dar.</p><h3 id="gewichtsschwankung-pro-jahr"><a name="gewichtsschwankung-pro-jahr" href="#gewichtsschwankung-pro-jahr"></a>Gewichtsschwankung pro Jahr</h3><p>Über das Jahr wirken die verschiedenen Maßnahmen an den Völkern auf die Gewichtskurve ein und lassen ggfs. Erfolg (z.B. Honigeintrag) oder Misserfolg (z.B. keine Futterannahme) kontrollieren.</p><p><img src="images_v2/WeightYearChart.jpg"><br>Natürlich ist der Verlauf stark von den individuellen Behandlungs-Konzepten des Imkers abhängig, weshalb in den Stockwaagendiagrammen an jedem Änderungspunkt die entsprechende Massnahme markiert ist, um den Kurvenverlauf besser interpretieren zu können. So würde eine totale Brutentnahme im Sommer nach der letzten Schleuderung einen deutlich anderen Spätsommerverlauf haben; ebenso eine 3. Schleuderung bei Spättracht-Imkerei.</p><p>Spätestens bei der letzten Einfütterung und Einwinterung sind aber wieder alle Verläufe gleich zu erwarten.<br>Der tageweise Honigeintrag der Früh- und Sommertracht ist, wie aus dem oben dargestellten Tagesverlauf abgeleitet, durch den Treppenverlauf markant zu erkennen.</p><p>Ebenso auffällig sind die Ruhephasen eines Volkes nach/während der AS Behandlung. Diese werden aber teilweise durch die allgemeine Volksumstellung auf Winterbrut überlagert.</p><h3 id="ereignisse"><a name="ereignisse" href="#ereignisse"></a>Ereignisse</h3><p>Sonderereignisse wie</p><ul>
+<li>Schwarmabgang</li><li>Schneefall</li><li>Plünderung/Diebstahl (:()</li><li>Ggfs. Räuberei</li></ul><p>sind in Abweichung zu den erwarteten Referenzverläufen ebenfalls unter Berücksichtigung der akt. Wetterlage erkennbar.</p><p>In der Regel reicht die Stockwaage nur an einem Referenzvolk pro Standort um Globalereignisse wie der richtige Schleuderzeitpunkt für alle Völker am Trachtende zu ermitteln.</p><p>Im Weiteren stelle ich nun die Funktionen der Stockwaagemodule vor.</p><h2 id="das-modul-konzept"><a name="das-modul-konzept" href="#das-modul-konzept"></a>Das Modul-Konzept</h2><p>Dieser Aufbauvorschlag besteht im Kern als Mini-Compute Node aus einem Raspberry Pi für den Ablauf das Logger Programms, einer (!) Bosche Wägezelle zur Gewichtsmessung und diverse OneWire Sensoren für verschiedene Temperaturmessungen sowie weiterem Mess-Zubehör.</p><p>Der Compute Node wird über einen Mini-USB Port mit Strom versorgt und mit FW Updates versorgt.<br>Optional kann über ein LAN Kabel die Kommunikation betrieben werden und über POE (Power over Ethernet) eine weitere Stromquelle erschlossen werden.<br>Im weiteren kann die Kommunikation über die Protokolle WiFi, BLE, GPRS betrieben werden.</p><p>Als redundante Stromquelle zum USB Port dient eine Lithium-Batteriespeisung mit Aufladung einerseits über POE oder alternativ über ein externes PV Falt-Modul. Letzteres wird für mobileren Einsatz benötigt.</p><p>Die Messdaten werden über alle Sensoren erhoben, in Datentabellen auf der SD-Karte abgespeichert und per NB-IoT/WiFi per MQTT/FTP zur Darstellung und/oder Auswertung z.B. an eine extern hosted Web Page übertragen.<br>Parallel zu dieser externen Ablage stehen die Webpage files auch über den lokalen Webserver des Raspberry als Edge Server selbst zur Verfügung.<br>Neben der einfachen Messdatensammlung dienen diverse Algorithmen auf dem Edge Server zur Plausibilisierung der Messwerte und statistischer Aufbereitung für das Tages-, Wochen- und  Monats-Mittel, welche damit ebenfalls als Diagramm aufbereitet dargestellt werden können. Der ESP32 liefert “nur” die rohen Messwertdaten.</p><p><img src="images_v2/BeeLogConcept.jpg"></p><h2 id="iot-für-bienen"><a name="iot-für-bienen" href="#iot-für-bienen"></a>IoT für Bienen</h2><p>Der obige Fat-Client Ansatz dient als POC - ProofOfConcept für alle Sensor-Algorithmen und grundsätzliche (Ver-) Messbarkeit von Vorgängen in einer Bienenbeute.</p><p>Deutlich eleganter und damit skalierbarer ist der Modulstack im IoT Aufbau:</p><p><img src="images_v2/BeeIoT_Concept.jpg"></p><p>Die eigentliche Aufgabe der Sensorsteuerung und Roh-Messdatenaufnahme kann auch mit einer Arduino kompatiblen MCU (ESP32, XMC, …) geleistet werden:</p><p><strong>Vorteil:</strong></p><ul>
+<li>geringerer Stromverbrauch pro Sensorclient Modul</li><li>geringere Invest-Kosten</li><li>übersichtlichere Programmstruktur durch entzerrten Modulstack</li><li>Skalierbarkeit durch standardisierte Schnittstellen <ul>
+<li>-&gt; eine gesicherte Übertragung ist leichter realisierbar</li></ul>
+</li><li>Dadurch sind nahezu beliebig viele Sensor Clients in Reichweite verwaltbar.</li></ul><p><strong>Nachteil:</strong></p><ul>
+<li>eine weitere Instanz zur Datenaufnahme</li><li>Mindestens 2 neue zu sichernde remote Kommunikationskanäle (NB-IOT/LTE + REST/Cloud service)</li><li>Dadurch höhere Kosten für mehr Remote Übertragungswege (-Verträge)</li></ul><p>Grundsätzlich dient das Edge Device zur Registrierung und Kontaktierung der Sensor Clients via MQTT. Dabei findet eine  Konsolidierung der Rohdaten auf das wesentliche zur Übertragung an einen Cloud-/Web Service statt.<br>Erste Plausibilitätschecks und Tag-/Monat-/Jahres-Statistiken können ebenfalls erstellt werden.<br>Denn dafür reicht die Power eines Raspi Zero o.ä. bei Weitem.</p><p>Dies als Ausblick für die noch im Bau befindliche v2.0 Verion. Die Sensorlogik und Dateninterpretation zur Völksführung ist aber weitgehend synonym zur v1.x Version.</p><h2 id="das-finale-beeiot-client-modul"><a name="das-finale-beeiot-client-modul" href="#das-finale-beeiot-client-modul"></a>Das finale BeeIoT Client Modul</h2><p>Nachdem nun die funktionalen Anforderungen klarer umrissen sind, geht es an die Modulplanung:</p><p><img src="images_v2/BeeIoT_Client_Moduleplan.jpg"></p><p>Das vollständige Übersichtsbild der Stockwaagenmodule zeigt die Vielfalt der verwendeten Techniken, aber auch das Potential in Sachen Spannungsversorgung und Sensorik:</p><p>Folgende Funktionen wollen wir unterbringen:</p><ul>
+<li>Spannungsversorgung<ul>
+<li>Für das MCU Extension board:<ul>
+<li>Interner Lithium Akku (Laufzeit 6 Monate) mit Ladekontrollmodul (BMS)<ul>
+<li>über einen Spannungsanheber/Senker (BUKBooster) mit 5V zur internen USB Buchse der MCU</li><li>Akku von Extern ladbar via 5V USB Buchse, über die aber auch FW udate betrieben werden kann</li></ul>
+</li></ul>
+</li><li>PV Modulanschluss extern -&gt; ebenfalls über den externen 5V USB Anschluss möglich zur Verlängerung der Akkulaufzeit</li><li>Optional: POE via RJ45 LAN-Hat mit POE/LAN Splitter</li></ul>
+</li><li>Kommunikation<ul>
+<li>Übertragung aller Sensordaten alle 10 Minuten um auch “Bienen-Events” mitzukriegen</li><li>lokal via externen USB auf internen USB/Ser. Adapter Port der MCU</li><li>WiFI support mit HTTP Web Service zur Startup Configuration</li><li>LoRaWAN Kommunikation mit Gateway (bis zu 7km Radius)</li><li>optional: Bluetooth (BLE)</li><li>Optional: NB-IOT via SIM7000E GPRS Modul</li></ul>
+</li><li>Sensorik<ul>
+<li>100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)</li><li>OneWire Temperatur Sensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)</li><li>OneWire Temperatursensor 12bit extern</li><li>OneWire Temperatursensor 12bit extern für Stocktemperatur Messung (über 1m Leitung)</li></ul>
+</li><li>Optionale Erweiterung<ul>
+<li>USB GPS Maus (als Diebstahlschutz)</li><li>IR Kameramodul extern (USB oder I2C Port Anschluss)</li><li>IR Lichtschranke als Fluglochzähler (beecounter)</li></ul>
+</li></ul><p>Daraus ergeben sich spezielle technische Anforderungen an jedes modul bezüglich Stromverbrauch, benötigte Schnittstellen und lokale/remote Erreichbarkeit, die wir weiter unten noch zu diskutieren haben.</p><h2 id="die-mcu-arduino/esp32-platform"><a name="die-mcu-arduino/esp32-platform" href="#die-mcu-arduino/esp32-platform"></a>Die MCU Arduino/ESP32 Platform</h2><p>Um bis zu 6 Monat Laufzeit zu erreichen darf  man bei einem  10.000mAh Akku nur im Mittel 2.3mA verbrauchen (10.000/4320). Das schafft man bei so vielen Sensoren/Modulen aber nicht im Dauerlaufzustand, sondern nur indem man Sleep Phasen einschiebt.</p><p><em>Dazu folgende Rechnung:</em><br>Unter der Annahme man benötigt für die Ermittlung der Sensordaten inkl. Übertragung z.B 10 Sekunden,<br>Wäre das Verhältnis aktiver Betriebszeit zu Sleep Phase: 10/(6<em>30</em>24<em>60</em>60)=1/1.555.200.<br>Würde man in der SleepPhase aber unter 1mA kommen hätte man für die Betriebsphase über die gesamte Laufzeit noch zur Verfügung:</p><ul>
+<li>Anteil Aktivphase: 10 Sek./10Minuten: 1/60</li><li>auf 6 Monate entspricht das (6<em>30</em>24)h/60 = 72h = 3Tage Aktivphase</li><li>=&gt; 4320-3 Tage Passivphase = 4317 Tage</li><li>Stromverbrauch Passivphase: 4317 * 1mAh = 4317mAh von 10.000mAh.</li><li>Möglicher <strong>Stromverbrauch Aktivphase</strong>: (10.000mAh - 4317mAh)/72h = 5683mAh / 72h = <strong>~80mA</strong></li></ul><p>Bezüglich Stromverbrauch kommt unterhalb des RaspberryPi Zero, der i.d.Regel &gt;150mA liegt nur noch die Arduino Klasse in Frage, mit seinen bekannten Vertretern UNO 8266 und ESP32 von Espressif:</p><h3 id="das-esp32-devkitc-board"><a name="das-esp32-devkitc-board" href="#das-esp32-devkitc-board"></a>Das ESP32-DevKitC Board</h3><p>Als kompakteste MCU Variante mit sehr niedrigem Stromverbrauch, grosser Anzahl GPIO Ports  und weitverbreiteter Sensor-Unterstützung kommt hier der Arduino kompatible ESP32 in Form des ESP32-DevKitC zum Einsatz.</p><p>Der ESP32 unterstützt folgende APIs:</p><ul>
+<li>3x UART (RS232, RS485 und auch IrDA)</li><li>4x SPI (SPI0/1 for RD/WR flash Cache only; HSPI and VSPI free in Master/Slave Mode)</li><li>2x I2C (Std: 100 KBit/s und Fast-Mode (400 KBit/s))<ul>
+<li>2x GPIO ports - SW konfigurierte IO pins via <em>i2c_param_config()</em></li></ul>
+</li><li>1x CAN Bus v2.0</li><li>18x 12bit AD Converter</li><li>2x 8bit DA Converter</li><li>1x HW-PWM</li><li>16x SW-PWM</li><li>1x IR Controller</li><li>4x 64bit Timer</li><li>1x int. HALL sensor</li><li>1x int. Temperatur Sensor (40-125 Grad F.)</li><li>Secure Boot Mode -&gt; erlaubt das <em>Root of Trust</em> Konzept durch den “eFuse Speicher”.</li></ul><p>Zwar zeichnet sich ein Arduino 8266/UNO durch geringeren Stromverbrauch aus, der ESP32 hat aber mehr GPIO Leitungen, die wir dringend für alle verwendeten Module benötigen.</p><p>Allerdings kommt hier nicht die standardmäßig verbaute <strong>Wroom32</strong> Version des ESP32 zum Einsatz, sondern der <strong>Wrover32</strong>:</p><p><img src="images_v2/ESP32_WROOM-32D.jpg"> ==&gt; <img src="images_v2/ESP32_Wrover-B_2.jpg"></p><p>Das ergibt die genaue Modul-Bezeichnung: <strong>ESP32-DevKitC-Wrover-B</strong>.</p><p>Der <strong>Wrover-B</strong> hat neben dem 4MB Flash Memory auch noch einen zusätlichen 8-16MB PSRam Bereich, indem wir temporär anfallende residente Sensordaten ablegen/puffern können.<br>Ansonsten sind sie Pin- und Code-Kompatibel so dass grundsätzlich auch der Wroom verwendet werden kann. Die Nutzung des PSRam erörtern wir später.</p><p>Die Variante DevKit-C bringt bereits einige wichtige Betriebsfunktionen mit sich und ist durch ihr Standardsockelformat leichter auf ein 2,4” Lochrasterboard zu löten.<br>OnBoard findet sich auch bereits eine Bluetooth (4.2 + BLE) und WiFI (IEE 802.11 b/g/n) Unterstützung mit onboard Antenne. Zur Reichweitenvergrößerung ist bei manchen Ausführungen ein weiterer Antennen-Stecker vorhanden, an den eine zusätzliche externe WiFI Antenne angeschlossen werden kann.</p><h4 id="esp32-devkitc-sockel-belegung"><a name="esp32-devkitc-sockel-belegung" href="#esp32-devkitc-sockel-belegung"></a>ESP32 DevKitC Sockel Belegung</h4><p>Zunächst das Standard-Pinning und die Default-Functional Overlays des DevKit C boards, wie sie durch den Microcode bei Power-ON voreingestellt sind:</p><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th>PIN</th>
+<th>*</th>
+<th>PIN</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>3.3V</td>
+<td>1</td>
+<td>*</td>
+<td>38</td>
+<td>GND</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>SW2</td>
+<td></td>
+<td></td>
+<td>EN</td>
+<td>2</td>
+<td>*</td>
+<td>37</td>
+<td>IO23</td>
+<td>GPIO23</td>
+<td>VSPI-MOSI</td>
+<td></td>
+</tr>
+<tr>
+<td>Sens-VP</td>
+<td>ADC1-0</td>
+<td>GPIO36</td>
+<td>SP</td>
+<td>3</td>
+<td>*</td>
+<td>36</td>
+<td>IO22</td>
+<td>GPIO22</td>
+<td>I2C-SCL</td>
+<td>-&gt;Wire</td>
+</tr>
+<tr>
+<td>Sens-VN</td>
+<td>ADC1-3</td>
+<td>GPIO39</td>
+<td>SN</td>
+<td>4</td>
+<td>*</td>
+<td>35</td>
+<td>TXD</td>
+<td>GPIO01</td>
+<td>UART0-TXD</td>
+<td>-&gt;USB</td>
+</tr>
+<tr>
+<td></td>
+<td>ADC1-6</td>
+<td>GPIO34</td>
+<td>IO34</td>
+<td>5</td>
+<td>*</td>
+<td>34</td>
+<td>RXD</td>
+<td>GPIO03</td>
+<td>UART0-RXD</td>
+<td>-&gt;USB</td>
+</tr>
+<tr>
+<td></td>
+<td>ADC1-7</td>
+<td>GPIO35</td>
+<td>IO05</td>
+<td>6</td>
+<td>*</td>
+<td>33</td>
+<td>IO21</td>
+<td>GPIO21</td>
+<td>I2C-SDA</td>
+<td>-&gt;Wire</td>
+</tr>
+<tr>
+<td>XTAL32</td>
+<td>ADC1-4</td>
+<td>GPIO32</td>
+<td>IO32</td>
+<td>7</td>
+<td>*</td>
+<td>32</td>
+<td>GND</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>XTAL32</td>
+<td>ADC1-5</td>
+<td>GPIO33</td>
+<td>IO33</td>
+<td>8</td>
+<td>*</td>
+<td>31</td>
+<td>IO19</td>
+<td>GPIO19</td>
+<td>VSPI-MISO</td>
+<td></td>
+</tr>
+<tr>
+<td>DAC1</td>
+<td>ADC2-8</td>
+<td>GPIO25</td>
+<td>IO25</td>
+<td>9</td>
+<td>*</td>
+<td>30</td>
+<td>IO18</td>
+<td>GPIO18</td>
+<td>VSPI-SCK</td>
+<td>U0-CTS</td>
+</tr>
+<tr>
+<td>DAC2</td>
+<td>ADC2-9</td>
+<td>GPIO26</td>
+<td>IO26</td>
+<td>10</td>
+<td>*</td>
+<td>29</td>
+<td>IO05</td>
+<td>GPIO05</td>
+<td>VSPI-SS</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>ADC2-7</td>
+<td>GPIO27</td>
+<td>IO27</td>
+<td>11</td>
+<td>*</td>
+<td>28</td>
+<td>IO17</td>
+<td>GPIO17</td>
+<td>UART2-TXD</td>
+<td></td>
+</tr>
+<tr>
+<td>HSPI-SCK</td>
+<td>ADC2-6</td>
+<td>GPIO14</td>
+<td>IO14</td>
+<td>12</td>
+<td>*</td>
+<td>27</td>
+<td>IO16</td>
+<td>GPIO16</td>
+<td>UART2-RXD</td>
+<td></td>
+</tr>
+<tr>
+<td>HSPI-MISO</td>
+<td>ADC2-5</td>
+<td>GPIO12</td>
+<td>IO12</td>
+<td>13</td>
+<td>*</td>
+<td>26</td>
+<td>IO04</td>
+<td>GPIO04</td>
+<td>HSPI-4HD</td>
+<td>ADC2-0</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>GND</td>
+<td>14</td>
+<td>*</td>
+<td>25</td>
+<td>IO00</td>
+<td>GPIO00</td>
+<td>SW1</td>
+<td>ADC2-1</td>
+</tr>
+<tr>
+<td>HSPI-MOSI</td>
+<td>ADC2-4</td>
+<td>GPIO13</td>
+<td>IO13</td>
+<td>15</td>
+<td>*</td>
+<td>24</td>
+<td>IO02</td>
+<td>GPIO02</td>
+<td>HSPI-4WP</td>
+<td>ADC2-2</td>
+</tr>
+<tr>
+<td>U1-RXD</td>
+<td>FLASH-D2</td>
+<td>GPIO09</td>
+<td>SD2</td>
+<td>16</td>
+<td>*</td>
+<td>23</td>
+<td>IO15</td>
+<td>GPIO15</td>
+<td>HSPI-SS</td>
+<td>ADC2-3</td>
+</tr>
+<tr>
+<td>U1-TXD</td>
+<td>FLASH-D3</td>
+<td>GPIO10</td>
+<td>SD3</td>
+<td>17</td>
+<td>*</td>
+<td>22</td>
+<td>SD1</td>
+<td>GPIO08</td>
+<td>FLASH D1</td>
+<td>U2-CTS</td>
+</tr>
+<tr>
+<td>U1-RTS</td>
+<td>FLASH-CMD</td>
+<td>GPIO11</td>
+<td>CMD</td>
+<td>18</td>
+<td>*</td>
+<td>21</td>
+<td>SD0</td>
+<td>GPIO07</td>
+<td>FLASH D0</td>
+<td>U2-RTS</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Vin</td>
+<td>+5V</td>
+<td>19</td>
+<td>*</td>
+<td>20</td>
+<td>CLK</td>
+<td>GPIO06</td>
+<td>FLASH CLK</td>
+<td>U1-CTS</td>
+</tr>
+</tbody>
+</table><p><strong>Pinning durch IDE board pre-selection = “esp32dev” für ESP32 DevKit-C boards </strong></p><p>Welche default Einstellung pro Board bei der IDE gilt kann man bei Platformio z.B. hier finden:<br>C:\Users\’benutzername’.platformio\packages\framework-arduinoespressif32\variants\’boardtype’\pins_arduino.h</p><p>Als nächstes macht man sich auf die Suche nach geeigneten GPIO Control Leitungen, die mit ihren Eigenschaften der angeschlossenen Funktion für den Modulanschluss entsprechen müssen. Manche GPIO Leitungen sind, anders als bei einem reinen ESP32 Modul bereits durch onboard Funktionen des DevKitC Boards belegt. Dies muss aber kein Nachteil sein, weil die Funktionen ja auch benötigt werden:</p><p>Geflasht wird der ESP32 über die onboard USB-A Buchse die auch gleichzeitig zur 5V Stromversorgung des DevKitC Boards verwendet wird (standard). Onboard wird dann die 3.3V Leitung für die ESP32 MCU über einen internen DC/DC Wandler AMS1117-3.3 von Microship erzeugt, der max. 1A durchsetzen kann.<br>Zur USB/Ser.Kommunikation sind daher die Leitungen GPIO 1+3 (RX+TX)belegt.</p><p>Ein besonderes Augenmerk ist bei den Logikanschlüssen auf die richtige Logiklevel Nutzung bei unterschiedlich verwendeten Stromversorgungen der Sensormodule aufzubringen, wie sich später noch zeigen wird…(s. Micro SD-Card Modul)</p><p><strong>Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten aber ausschliesslich mit 3.3V.</strong></p><p>Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für unser Projekt daher nicht zur Verfügung. Auch die Leitungen EN(Boot-Button) und GPIO36(SP) + 39(SN) sind bereits belegt.<br>GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.</p><p>Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der “Onboard USB to serial Converter” CP2102N im Windows Device Manager als:<br><img src="images_v2/ESP32_COMPort.jpg"></p><p>Über dieses COM device ist er auch für IDEs wie die <em>Arduino-IDF</em> (<a href="https://github.com/espressif/esp-idf">https://github.com/espressif/esp-idf</a>) oder <em>VC-Platform-IO</em> erreichbar. Eine COM Port Erkennung findet zumindest bei PlatformIO automatisch statt.</p><p>Auf einem Linux System nennt sich das USB Converter Device: <em>/dev/ttyUSB0</em>.</p><p>Als Standard Baudrate sollte man es erstmal mit 115200 versuchen.<br>Der USB/UART Converter CP2102 schafft aber max. 921600 Baud rate.</p><h4 id="esp32-gpio-nutzung"><a name="esp32-gpio-nutzung" href="#esp32-gpio-nutzung"></a>ESP32 GPIO Nutzung</h4><p>Und nun konkret die gewählte GPIO-Belegung der ESP32 DevKitC Sockel-Pins für das BeeIoT Projekt:<br>(gilt für WROOM32D alsauch Wrover-B Module)</p><table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Ref.</th>
+<th>IO#</th>
+<th>DevKitC</th>
+<th></th>
+<th>Protocol</th>
+<th>Components</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>+3.3V</td>
+<td></td>
+<td></td>
+<td></td>
+<td>+3.3V</td>
+<td>3.3V</td>
+</tr>
+<tr>
+<td>2</td>
+<td>EN</td>
+<td></td>
+<td>SW2</td>
+<td></td>
+<td></td>
+<td>ePaper-Key2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>*  SVP</td>
+<td>GPIO36</td>
+<td>Sens-VP</td>
+<td>ADC1-0</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>4</td>
+<td>*  SVN</td>
+<td>GPIO39</td>
+<td>Sens-VN</td>
+<td>ADC1-3</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>5</td>
+<td>* IO34</td>
+<td>GPIO34</td>
+<td></td>
+<td>ADC1-6</td>
+<td></td>
+<td>ePD-K3/LoRa DIO2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>* IO35</td>
+<td>GPIO35</td>
+<td></td>
+<td>ADC1-7</td>
+<td></td>
+<td>ePaper-Key4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>IO32</td>
+<td>GPIO32</td>
+<td>XTAL32</td>
+<td>ADC1-4</td>
+<td>OneWire-SD</td>
+<td>DS18B20(3x)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>IO33</td>
+<td>GPIO33</td>
+<td>XTAL32</td>
+<td>ADC1-5</td>
+<td></td>
+<td>LoRa DIO0</td>
+</tr>
+<tr>
+<td>9</td>
+<td>IO25</td>
+<td>GPIO25</td>
+<td>DAC1</td>
+<td>ADC2-8</td>
+<td>Wire-DT</td>
+<td>HX711-DT</td>
+</tr>
+<tr>
+<td>10</td>
+<td>IO26</td>
+<td>GPIO26</td>
+<td>DAC2</td>
+<td>ADC2-9</td>
+<td>Wire-Clk</td>
+<td>HX711-SCK</td>
+</tr>
+<tr>
+<td>11</td>
+<td>IO27</td>
+<td>GPIO27</td>
+<td></td>
+<td>ADC2-7</td>
+<td>ADS-Alert</td>
+<td>ADS1115/BMS</td>
+</tr>
+<tr>
+<td>12</td>
+<td>IO14</td>
+<td>GPIO14</td>
+<td>HSPI-CLK</td>
+<td>ADC2-6</td>
+<td>Status-LED</td>
+<td>LoRa RST</td>
+</tr>
+<tr>
+<td>13</td>
+<td>IO12</td>
+<td>GPIO12</td>
+<td>HSPI-MISO</td>
+<td>ADC2-5</td>
+<td>SPI1-MISO</td>
+<td>LoRa CS\</td>
+</tr>
+<tr>
+<td>14</td>
+<td>GND</td>
+<td></td>
+<td></td>
+<td></td>
+<td>GND</td>
+<td>GND</td>
+</tr>
+<tr>
+<td>15</td>
+<td>IO13</td>
+<td>GPIO13</td>
+<td>HSPI-MOSI</td>
+<td>ADC2-4</td>
+<td>SPI1-MOSI</td>
+<td>LoRa DIO1</td>
+</tr>
+<tr>
+<td>16</td>
+<td>SD2</td>
+<td>GPIO09</td>
+<td>FLASH-D2</td>
+<td>U1-RXD</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>17</td>
+<td>SD3</td>
+<td>GPIO10</td>
+<td>FLASH-D3</td>
+<td>U1-TXD</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>18</td>
+<td>CMD</td>
+<td>GPIO11</td>
+<td>FLASH-CMD</td>
+<td>U1-RTS</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>19</td>
+<td>+5V</td>
+<td></td>
+<td></td>
+<td></td>
+<td>+5V_Ext</td>
+<td>n.a</td>
+</tr>
+<tr>
+<td>20</td>
+<td>CLK</td>
+<td>GPIO06</td>
+<td>FLASH-CLK</td>
+<td>U1-CTS</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>21</td>
+<td>SD0</td>
+<td>GPIO07</td>
+<td>FLASH-D0</td>
+<td>U2-RTS</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>22</td>
+<td>SD1</td>
+<td>GPIO08</td>
+<td>FLASH-D1</td>
+<td>U2-CTS</td>
+<td>-</td>
+<td>x</td>
+</tr>
+<tr>
+<td>23</td>
+<td>IO15</td>
+<td>GPIO15</td>
+<td>HSPI-SS</td>
+<td>ADC2-3</td>
+<td>MonLED-red</td>
+<td>Red LED</td>
+</tr>
+<tr>
+<td>24</td>
+<td>IO02</td>
+<td>GPIO02</td>
+<td>HSPI-4WP</td>
+<td>ADC2-2</td>
+<td>SPI-CS</td>
+<td>SDcard CS\</td>
+</tr>
+<tr>
+<td>25</td>
+<td>IO00</td>
+<td>GPIO00</td>
+<td>SW1</td>
+<td>ADC2-1</td>
+<td></td>
+<td>ePaper-Key1</td>
+</tr>
+<tr>
+<td>26</td>
+<td>IO04</td>
+<td>GPIO04</td>
+<td>HSPI-4HD</td>
+<td>ADC2-0</td>
+<td>CLK</td>
+<td>ePaper BUSY</td>
+</tr>
+<tr>
+<td>27</td>
+<td>IO16</td>
+<td>GPIO16</td>
+<td>UART2-RXD</td>
+<td></td>
+<td>DT</td>
+<td>ePaper RST</td>
+</tr>
+<tr>
+<td>28</td>
+<td>IO17</td>
+<td>GPIO17</td>
+<td>UART2-TXD</td>
+<td></td>
+<td></td>
+<td>ePaper D/C</td>
+</tr>
+<tr>
+<td>29</td>
+<td>IO05</td>
+<td>GPIO05</td>
+<td>VSPI-SS</td>
+<td></td>
+<td>SPI0-CS0</td>
+<td>ePD CS\</td>
+</tr>
+<tr>
+<td>30</td>
+<td>IO18</td>
+<td>GPIO18</td>
+<td>VSPI-CLK</td>
+<td></td>
+<td>SPI0-Clk</td>
+<td>ePD/SD/LoRa Clk</td>
+</tr>
+<tr>
+<td>31</td>
+<td>IO19</td>
+<td>GPIO19</td>
+<td>VSPI-MISO</td>
+<td>U0-CTS</td>
+<td>SPI0-MISO</td>
+<td>SD/LoRa MISO</td>
+</tr>
+<tr>
+<td>32</td>
+<td>GND</td>
+<td></td>
+<td></td>
+<td></td>
+<td>GND</td>
+<td>GND</td>
+</tr>
+<tr>
+<td>33</td>
+<td>IO21</td>
+<td>GPIO21</td>
+<td>VSPI-4HD</td>
+<td></td>
+<td>I2C-SDA</td>
+<td>ADS1115/BMS</td>
+</tr>
+<tr>
+<td>34</td>
+<td>RXD0</td>
+<td>GPIO03</td>
+<td>UART0-RX</td>
+<td>U0-RXD</td>
+<td>-&gt; USB</td>
+<td>USB intern</td>
+</tr>
+<tr>
+<td>35</td>
+<td>TXD0</td>
+<td>GPIO01</td>
+<td>UART0-TX</td>
+<td>U0-TXD</td>
+<td>-&gt; USB</td>
+<td>USB intern</td>
+</tr>
+<tr>
+<td>36</td>
+<td>IO22</td>
+<td>GPIO22</td>
+<td>VSPI-4WP</td>
+<td>U0-RTS</td>
+<td>I2C-SCL</td>
+<td>ADS1115/BMS</td>
+</tr>
+<tr>
+<td>37</td>
+<td>IO23</td>
+<td>GPIO23</td>
+<td>VSPI-MOSI</td>
+<td></td>
+<td>SPI0-MOSI</td>
+<td>ePD/SD/LoRa MOSI</td>
+</tr>
+<tr>
+<td>38</td>
+<td>GND</td>
+<td></td>
+<td></td>
+<td></td>
+<td>GND</td>
+<td>GND</td>
+</tr>
+</tbody>
+</table><p>(x unter components =&gt; darf nicht verwendet werden.)</p><p>Das MCU board erhält die 5V versorgung über den internen USB connector und erzeugt die 3.3V selbst.<br>Der 5V_Ext Anschluss wird nicht verwendet. Die 5V Leitung des MCU Extension Boards wird direkt von der Batterieversorgung gespeist.</p><p>Damit sind alle möglichen GPIO Leitungen funktionell belegt. Eine Erweiterung wäre nur noch über aufwendige IO port Multiplexer möglich. Die Auswahlkriterien werden weiter unten nochmal pro Sensor diskutiert.</p><h2 id="die-beeiot-sensorik"><a name="die-beeiot-sensorik" href="#die-beeiot-sensorik"></a>Die BeeIoT Sensorik</h2><p>Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:</p><ul>
+<li>1x Wägezelle    -&gt; über einen 24bit A/D Wandler HX711 an die GPIO Ports des ESP32 angeschlossen.</li><li>3x Temperatursensoren zur Messung der (DS18B20 OneWire)<ul>
+<li>Intern: Stocktemperatur (innerhalb der Beute)</li><li>Externe Temperatur</li><li>Wägezellen Temperatur (ggfs. zur Kompensation einer Temperaturdrift)</li><li>=&gt; Alle Temp. Sensoren sind über das OneWire Protokoll direkt an einen GPIO Port des ESP32 angeschlossen.</li></ul>
+</li><li>1x ADS1115 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung</li><li>1x RTC Modul (I2C)(DS3231) incl. Eprom</li><li>1x Micro SD Card Modul (SPI)</li><li>1x ePaper 2.7” (SPI) + 4 F-Keys.</li><li>1x LoRa MAC Modul (Dragino LoRa Bee 868MHz)</li><li><strong>Optional</strong><ul>
+<li>1x xternes IR-Kameramodul -&gt; für Bienensitz im Winter</li><li>NB-IoT Modul zur Funk-Fernübertragung via GPRS (SM7000E)</li><li>USB GPS Maus (mapped über ser. Port RX/TX)</li></ul>
+</li></ul><h3 id="die-wägezellen-auswahl"><a name="die-wägezellen-auswahl" href="#die-wägezellen-auswahl"></a>Die Wägezellen Auswahl</h3><p>Eine Standardwägezelle mit geringer Temperaturdrift und hoher Gewichtsstabilität sowie Messwiederholgenauigkeit weist heutzutage typischerweise vorkalibrierte Dehnmesstreifen in einer Wheatstonebrücke verschaltet auf. Diese ist eine gegenläufige Verschaltung von 4 Dehnmessstreifen (DMS) im Rautenmodell (siehe Schaltbild weiter unten) incl. Temperaturdriftkompensation.</p><p>Meine Auswahl fiel (wie bei so manchen anderen Waagen-Projekte im Netz auch) auf den Hersteller Bosche. Die Wägezelle muss folgenden Anforderungen entsprechen:</p><ul>
+<li>Messbereich 100Kg (Waagendeckel + Beute (2 Brut- und 2 Honig-Zargen) + Deckel und Abdeckgewicht.</li><li>Stabile Verschraubung mit dem Waagendeckel zur Kraftübertragung möglich (für Zander: 40 x 50cm) Unterboden</li><li>Dadurch geringe Eckgewichtslast-Fehler</li><li>Spannungsversorgung ab 5V (aus Raspi Versorgungsspannung)</li><li>Großer Temperaturmessbereich -30 … +50 Grad</li><li>bei vorgegebener Genauigkeit: Class C3: 2mV/V<ul>
+<li>Bei  5V Messzellenspannung ergibt das eine Messabweichung von<br>(100kg/5V)*2mV =&gt; +/- 40Gramm</li></ul>
+</li><li>Wasserfestigkeit IP65 (spritzwassergeschützt)</li></ul><p>Daher fiel die Wahl auf die: <strong>Bosche H40A Wägezelle</strong> :<br><img src="images_v2/WeightCell.jpg"><br>mit den Eigenschaften</p><ul>
+<li>Nennlast 100 kg</li><li>Kompensierte Eckenlastfehler</li><li>Für Dauereinsatz geeignet</li><li>Bezug direkt über den Bosche Shop: <a href="http://www.bosche.eu">http://www.bosche.eu</a></li><li>Material: Aluminium</li><li>Genauigkeitsklasse bis C4 (C3 Standard, C4 auf Anfrage), Y=15.000, Nennwert-Toleranz: 2,0 mV/V</li><li>Eichfähig nach OIML R60 bis 4000D, Prüfscheinnummer: DK0199-R60-12.19</li><li>Aufbau: Das Messelement ist vergossen, Schutzklasse: IP65</li><li>Max. Plattformgröße: 500 x 500 mm</li><li>Stromversorgung: 5 – 12V</li><li>Temperarturbereich: - 30 … + 70 °C</li><li>Anschluskabel: 1,8m</li><li>Preis: 58€</li></ul><p>Anfangs habe ich mit dieser wesentlich günstigeren Wägezelle gestartet: —YZC161E— (ca. 4,50€/Zelle)<br>Durch den Aufbau bedingt verkraftet diese Zelle aber nur 50Kg pro Zelle und ist baulich als Auflagesensor gedacht. Daher werden 4 Stück an jeder Ecke benötigt, die als Wheatstone-Brücke verschaltet werden müssen.</p><p>Wie aus dem unteren Bild (linke Hälfte) aber ersichtlich weisen die Auflagepunkte eine Reibung auf (je mehr Gewicht desto höher), die bei einer horizontalen Temperatur-Ausgleichsbewegung der Stabilisierungsträger Verspannungen hervorruft, und somit die Messzelle und damit die DMS vorspannt und zu starken Messfehlern führt.<br>Besonders unangenehm ist das „Springen“ der Auflage über den Messzellenauflagepunkt ab Überschreitung einer max. Dehnungs-Spannung, was wiederum zu Messwertsprüngen führt. Diese lassen sich auch über eine Messzellen-Temperaturmessung oder algorithmisch nicht mehr verlässlich kompensieren.<br>Diese Wägezelle eignet sich vorrangig für Körperwaagen, wo i.d.R. nur spontane Einzel-Messungen mit Rücksprung auf das Null-Gewichtslevel erfolgen. Für konstante Dauermessungen auf höherem Gewichtsniveau eignen sie sich nach meinen Erfahrungen nicht.</p><p><img src="images_v2/WeightCellDesign.jpg"></p><p>Daher habe ich diese zwar günstige aber aufwändig installierbare und nicht kalibrierbare Variante wieder verworfen.</p><p>Die Anbindung der <strong>Bosche Wägezelle H40A</strong> an den ESP32 erfolgt über das 24bit A/D-Wandler Modul ‘HX711‘. Dieses wurde speziell für Wägezellen mit Wheatstone-Brücke konzipiert und weisst eine einstellbare Verstärkung und integrierte Referenz-Spannungsversorgung auf.<br>Beim Kauf ist darauf zu achten, dass die Module an den Anschlüssen E- bzw. BLK mit GND verbunden sind, was sich sonst in einer geringeren Temperaturstabilität und Meßstreuung auswirkt. Im Zweifel muss die Draht-Brücke selbst durch einen externen Draht nachgearbeitet werden.<br>Module mit grüner Schutzfarbe sind aber i.d.R. richtig beschaltet.<br>Desweitern werden die Wägezellen durch ihre Anzahl an Dehnmessstreifen (DMS) mit einer Wheatstonebrücke versehen. Ein DMS wandelt eine Gewichtsbelastung an einer Körperoberfläche in Widerstandsänderungen der Größenordnung Faktor 0,0001 – 0,001 eines Referenzwertes (hier ca. 400 Ohm) um. Diese sehr geringe Änderung ist durch eine Messbrücke nach Wheatstone zu vermessen, welche durch ihre gegenläufigen Widerstandspaare temperaturstabilisierend und messverstärkend wirkt.</p><p>In der Bosche H40A sind die DMS derart verschaltet, dass das Ausgangssignal direkt auf den A/D Wandler HX711 geführt werden kann, was den Aufbau stark vereinfacht.</p><h3 id="ad-wandler-hx711"><a name="ad-wandler-hx711" href="#ad-wandler-hx711"></a>AD Wandler HX711</h3><p>Der AD Wandler HX711 ist für die Messung von Wheastonebrücken optimiert und bietet dazu 4 Anschlüsse E+/- + A+/-. An den Pins B+/B- liegt die Messspannung für die Waagzellenbrücke an.<br>In unserem Fall ist es die 3.3V Linie von der ESP32 MCU kommend. Die 5V Versorgung, welche aufgrund des weiteren Spannungsfensters einen geringeren Messfehler liefern würde, kann leider nicht genommen werden, da die zugehörigen Logikleitungen nur 3.3V aufweisen dürfen.</p><p>Hier könnte man ggfs. mit einem weiteren 5V &lt;-&gt; 3.3V Logikconverter optimieren.</p><p>Auf der rechten Seite befinden sich 4 Anschlüsse zur digitalen Anbindung an die GPIO Ports des ESP32:<br><img src="images_v2/HX711.jpg"></p><p>Die Eigenschaften des HX711:</p><ul>
+<li>2 wählbare Eingänge zur Differenzmessung</li><li>Eine On-chip active rauscharme Steuereinheit mit wählbarer Verstärkung (32, 64 und 128)</li><li>On-chip Stromversorgungskontrolle für die Waagzelle</li><li>On-chip Rest nach Einschaltung</li><li>Einfache digitale Anbindung</li><li>Wählbare Samplegeschwindigkeit (10SPS oder 80SPS)</li><li>Stromsparregler: normaler Betrieb &lt; 1.5mA, Off Mode &lt; 1uA</li><li>Spannungsversorgungsbereich: 2.6 - 5.5V mit enstellbarer Verstärkung</li><li>Temperaturbereich: -40 - +85?</li></ul><p>Für Kanal A kann eine Verstärkung von 128 oder 64 gewählt werden, Kanal B bietet eine fixe Verstärkung von Faktor 32. Daher habe ich für diese Version nur den Port A mit GAIN 128 verwendet und Port B stillgelegt.<br>Zum Anschluss der HX711 Logik-Ports an den ESP32 werden nur 2 der generischen duplex-fähigen GPIO Ports benötigt<br>(Data + SCK):</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define HX711_DT    25    // serial dataline
+#define HX711_SCK   26    // Serial clock line
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HX711_DT    25    <span class="hljs-comment">// serial dataline</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HX711_SCK   26    <span class="hljs-comment">// Serial clock line</span></span>
+</code></pre><p>Zur Stabilisierung und Entstörung der Stromversorgungsleitungen (3.3V &amp; 5V) werden je 1x 100nF Siebkondensatoren sowie je ein 4,7uF Puffer-Elko verwendet.<br>Zur Abwägung dieses Stabilisierungsaufwandes dient folgende Genauigkeitsbetrachtung:</p><ul>
+<li>Gegeben: Speisespannung der Wheatstonebrücke von 3.3 Volt und einer Nennwert-Toleranz von 2mV/V (Class C3)</li><li>Bei 5V Messzellenspannung ergibt das eine <strong>Messabweichung</strong> von (100kg/3.3V) x 2mV/V =&gt; <strong>+/- 60 Gramm</strong></li><li>Das ergibt eine <strong>Empfindlichkeit</strong> von 3.3V x 2mV/100kg = <strong>66µV/kg = 66nV/Gr</strong></li><li>Als default verstärkung (GAIN) wird 128 angenommen.</li></ul><p>Der verwendete A/D Wandler hat aber eine maximale Spannungsauflösung/bit von 128 x 3.3V/2hoch24 =<strong>~1,5 nV</strong> bei einer Vertärkung von 128 an Port A. Dies ergibt den Wert von 66nV/Gr / 1,5nV = <strong>44</strong>/Gramm.<br>Als 1Kg-Scale-Divider müsste man im Programm also später den Wert <strong>44000/kg</strong> ansetzen. Der Scale Offset Wert muss durch die Vermessung des äußeren Aufbaus (Deckel) erst ermittelt werden.</p><p>Der HX711 ist mit 24bit Genauigkeit auch an nur 3.3V also mehr als hinreichend ausgelegt. Diese Genauigkeit Bedarf aber einer gut stabilisierten Betriebsspannung.<br>Die Streuung um die 3.3V Stromversorgung bestimmt also direkt die Qualität/Streuung der Messwerte.<br>Der daraus resultierende Messfehler durch die Streuung kann aber über Mittlung von mehreren (~10-20) Messwerten deutlich verringert werden und damit den Vertrauensbereich deutlich erhöhen.</p><p>Im Arduino Sketch ist der HX711 Anschluss wie folgt definiert:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>// Library fo HX711 Access
+#include &amp;lt;HX711.h&amp;gt;
+
+// HX711 ADC GPIO Port to Espressif 32 board
+#define HX711_DT    25    // serial dataline
+#define HX711_SCK   26    // Serial clock line
+#define scale_DIVIDER 44000   // Kilo unit value (2mV/V, GAIN=128 Vdd=3.3V)
+#define scale_OFFSET 243000   // 243000 = 44000 * 5.523kg (of the cover weight)
+</code></pre>"><span class="hljs-comment">// Library fo HX711 Access</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;HX711.h&gt;</span>
+
+<span class="hljs-comment">// HX711 ADC GPIO Port to Espressif 32 board</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HX711_DT    25    <span class="hljs-comment">// serial dataline</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HX711_SCK   26    <span class="hljs-comment">// Serial clock line</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> scale_DIVIDER 44000   <span class="hljs-comment">// Kilo unit value (2mV/V, GAIN=128 Vdd=3.3V)</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> scale_OFFSET 243000   <span class="hljs-comment">// 243000 = 44000 * 5.523kg (of the cover weight)</span></span>
+</code></pre><h3 id="temperatursensoren"><a name="temperatursensoren" href="#temperatursensoren"></a>Temperatursensoren</h3><p>Für den Anschluss von mehreren Messeinheiten über einen (3-pol.) Eingangsport bietet sich das serielle OneWire Protokoll an. Dafür steht eine große Palette an günstigen (Temperatur-)Sensoren zur Auswahl.</p><p>Für die benötigte Genauigkeit der Temperaturmessung (9-12bit) wird der Sensor DS18B20 von Dallas verwendet, den es in der Bauform als 1,8m langes Versorgungskabel (3-pol.) und IP67 Abdichtung mit einer robusten Aluminium-Messspitze als Messsonde gibt.</p><p>Wie aus dem Bild ersichtlich, werden einfach alle OneWire Sensoren mit ihren 3 pol. Leitung parallel angeschlossen (es sind bis zu 10 Sensoren möglich). Zur Pullup-Versorgung der Datenleitung ist ein Widerstand von 4.7k Ohm gegen 3.3V einmalig für alle angeschlossenen Sensoren nötig, da alle Sensoren alsauch der ESP32 GPIO port mit OpenCollector Treibern arbeiten. der Pullup schafft damit einen definierten Logikpegel.</p><p><img src="images_v2/BeeIoT_Schematics.jpg"></p><p>Im Arduino Sketch finden sich dazu folgende Einstellungen:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &quot;OneWire.h&quot;
+    #include &quot;DallasTemperature.h&quot;
+    // Data wire is connected to ESP32 GPIO 32
+    #define ONE_WIRE_BUS 32
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "OneWire.h"</span>
+    <span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "DallasTemperature.h"</span>
+    <span class="hljs-comment">// Data wire is connected to ESP32 GPIO 32</span>
+    <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> ONE_WIRE_BUS 32</span>
+</code></pre><h3 id="led-status-anzeige"><a name="led-status-anzeige" href="#led-status-anzeige"></a>LED-Status Anzeige</h3><p>Zur Anzeige des Betriebszustandes dient eine rote LED am rückseitigen externen Anschlusspanel.</p><p>Diese wird über einen GPIO Port getrennt angesteuert und zeigt durch Blinkcodes verschiedene Programm- Zustände (Setup / Loop / Wait)an.</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define LED_RED     15    // GPIO number of red LED
+// reused by BEE_RST: Green LED not used anymore
+//#define LED_GREEN   14    // GPIO number of green LED
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> LED_RED     15    <span class="hljs-comment">// GPIO number of red LED</span></span>
+<span class="hljs-comment">// reused by BEE_RST: Green LED not used anymore</span>
+<span class="hljs-comment">//#define LED_GREEN   14    // GPIO number of green LED</span>
+</code></pre><p>Die aufgeführte grüne LED hatte ursprünglich die Funktion als weitere Statusanzeige musste aber mangels freier GPIO ports und Stromsparzwecken eingespart werden.</p><h3 id="spi-devices"><a name="spi-devices" href="#spi-devices"></a>SPI Devices</h3><p>Grundsätzlich bietet der ESP32 2 unabhängige SPI ports (VSPI &amp; HSPI) für den Anwender extern an, die per default unter folgenden GPIO Ports (definiert über Arduino.h) erreichbar sind:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>// ESP32 default SPI ports:
+#define VSPI_MISO   MISO  // PIN_NUM_MISO    = 19
+#define VSPI_MOSI   MOSI  // PIN_NUM_MOSI    = 23
+#define VSPI_SCK    SCK   // PIN_NUM_CLK     = 18
+#define VSPI_CS     SS    // PIN_NUM_CS      = 5
+
+#define HSPI_MISO   12    // PIN_NUM_MISO
+#define HSPI_MOSI   13    // PIN_NUM_MOSI
+#define HSPI_SCK    14    // PIN_NUM_CLK
+#define HSPI_CS     15    // PIN_NUM_CS
+</code></pre>"><span class="hljs-comment">// ESP32 default SPI ports:</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> VSPI_MISO   MISO  <span class="hljs-comment">// PIN_NUM_MISO    = 19</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> VSPI_MOSI   MOSI  <span class="hljs-comment">// PIN_NUM_MOSI    = 23</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> VSPI_SCK    SCK   <span class="hljs-comment">// PIN_NUM_CLK     = 18</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> VSPI_CS     SS    <span class="hljs-comment">// PIN_NUM_CS      = 5</span></span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HSPI_MISO   12    <span class="hljs-comment">// PIN_NUM_MISO</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HSPI_MOSI   13    <span class="hljs-comment">// PIN_NUM_MOSI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HSPI_SCK    14    <span class="hljs-comment">// PIN_NUM_CLK</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HSPI_CS     15    <span class="hljs-comment">// PIN_NUM_CS</span></span>
+</code></pre><p>Die Kurzbezeichnungen MISO, MOSI, SCK und SS stammen von der Arduino IDE via Arduino.h und definieren damit den default SPI port, wenn man keine weiteren GPIO Angaben in der Initialisierungsfunktion eines jeden SPI devices macht. (Die tatsächlichen GPIO Werte finden sich im Kommentar)</p><p>Zur Einsparung von GPIO Ports habe ich alle 3 verwendeten SPI devices (ePaper, SDCardModul und LoRa Bee) über VSPI angeschlossen.<br>Während die Leitungen MOSI, MISO und SCk zwischen allen Devices geshared werden (Parallel-Anschluss),<br>benötigt jedes device mindestens seine eigene CS\ Leitung zum Start der individuellen Protokollfensters.<br>Um Störung in der Startupphase des setup zu vermeiden werden zu Anfangs in der Setup routine alle CS\ Leitungen der 3 Devices auf inaktiv (High) vordefiniert. Das beugt Störungen bei der weiteren sequentiellen Inbetriebnahme der damit inaktiven SPI Modul Schnittstellen vor.</p><h4 id="micro-sdcard-modul"><a name="micro-sdcard-modul" href="#micro-sdcard-modul"></a>Micro-SDCard Modul</h4><p>Die Verwendung einer SD Karte ermöglicht einerseits die dauerhafte Ablage großer Mengen an Sensordaten vor dem Versand oder auch als Backup space, wenn keine Konnektivität besteht.<br>Anderseits kann im Notfall der komplette Datensatz auch manuell am Laptop ausgelesen werden.</p><p><img src="images_v2/MicroSDCard_Front.jpg"> <img src="images_v2/MicroSDCard_Back.jpg"></p><p>Dieses weitläufig verfügbare Modul enthält einen 3.3V &lt;-&gt; 5V level changer onboard und ermöglicht dadurch eine Vdd Spannung von 3.3V - 5V mit Logikleitungen auf 3.3V.<br>Beim Anschluss weiterer SPI Devices stellte sich aber heraus, dass der 3.3V Logiklevel nicht immer sauber eingehalten wird (speziell nach einem Reset). Vdd = 3.3V löste das Problem wieder.<br>Dadurch wird allerdings der 5V -&gt; 3.3V Spannungswandler auf dem DevKitC Modul stärker belastet. (Die möglichen 1 A werden wir aber natürlich nicht erreichen.)</p><p>Die GPIO Port Definitionen:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;SPI.h&amp;gt;    // default for all SPI devices
+// Libraries for SD card at ESP32:
+#include &quot;SD.h&quot;
+// ...has support for FAT32 support with long filenames
+#include &quot;FS.h&quot;
+
+#define SD_MISO     MISO  // SPI MISO -&amp;gt; VSPI = 19 shared with ePD &amp;amp; LoRa Bee
+#define SD_MOSI     MOSI  // SPI MOSI -&amp;gt; VSPI = 23 shared with ePD &amp;amp; LoRa Bee
+#define SD_SCK      SCK   // SPI SCLK -&amp;gt; VSPI = 18 shared with ePD &amp;amp; LoRa Bee
+#define SD_CS       2     // SD card CS\ line - arbitrary selection !
+#define SPISPEED 2000000  //20MHz clock speed
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;SPI.h&gt;    <span class="hljs-comment">// default for all SPI devices</span></span>
+<span class="hljs-comment">// Libraries for SD card at ESP32:</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "SD.h"</span>
+<span class="hljs-comment">// ...has support for FAT32 support with long filenames</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "FS.h"</span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_MISO     MISO  <span class="hljs-comment">// SPI MISO -&gt; VSPI = 19 shared with ePD &amp; LoRa Bee</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_MOSI     MOSI  <span class="hljs-comment">// SPI MOSI -&gt; VSPI = 23 shared with ePD &amp; LoRa Bee</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_SCK      SCK   <span class="hljs-comment">// SPI SCLK -&gt; VSPI = 18 shared with ePD &amp; LoRa Bee</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_CS       2     <span class="hljs-comment">// SD card CS\ line - arbitrary selection !</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SPISPEED 2000000  <span class="hljs-comment">//20MHz clock speed</span></span>
+</code></pre><p>Über Nutzung von FS.h ist auch der Betrieb mit long filenames bei größeren Karten möglich.<br>Dieses Modul unterstützt 2GB - 16GB Micro SD Cards, vorformatiert(!) mit FAT32 Format.</p><p>Dieses Modul wäre aber auch ein Kandidat zur EInsparung wenn wir wieter den Strombedarf reduzieren wollen.</p><h4 id="e-paper-display"><a name="e-paper-display" href="#e-paper-display"></a>E-Paper Display</h4><p>Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.<br>Dadurch sieht man wesentliche Werte und aktuelle massnahmen gleich vorort und nicht nur über eine Webseite remote.</p><p>Als Kriterien sollen gelten:</p><ul>
+<li>Stromsparend auch in der Wait-Loop Phase zwischen den Messungen</li><li>Gute Ablesbarkeit durch hohen Kontrast auch bei direkter Sonneneinstrahlung</li><li>Einfacher Anschluss an bestehende ESP32 Interface-Pegel: 3.3V</li><li>Einfache Ansteuerung und Kontrolle der Darstellung.</li></ul><p>Zumindest die ersten 3 Punkte konnte ich durch das ePaper von WaveShare erfüllen:</p><ul>
+<li>Waveshare 2.7 Inch E-Paper Display HAT Module Kit 264x176 Resolution</li><li>3.3v E-ink Electronic Paper Screen with Embedded Controller</li><li>for ESP32 SPI Interface</li></ul><p>Ein Stromverbrauch entsteht nur in der Initialisierungs- und Ladephase der Darstellungsdaten.<br>Größter Vorteil ist aber das passive Darstellungsmedium: ePaper, welches auch bei direkter Sonne wie ein gedrucktes Papier erscheint. Das erhöht die Lesbarkeit im Outdoor-Einsatz enorm.<br>Ein LCD Display müsste hier nachgesteuert werden und muss dazu dauerhaft mit Strom versorgt werden.<br>Hat allerdings den Vorteil der möglichen Beleuchtung bei Dämmerung/Dunkelheit.<br>Allerdings mal ehrlich: wer imkert dann noch ???</p><p>Daher hat ein EPaper i.d.R. auch keine Hintergrundbeleuchtung. Dieses Modul weißt neben dem eigentlichen Display dafür noch 4 universelle Schalter zur späteren funktionellen Erweiterung von z.B. verschiedenen Darstellungsebenen auf. Dazu später mehr…</p><p><img src="images_v2/WaveShareFront.jpg"></p><p>Ursprünglich stellt dieses Modul einen RaspberryPi Hat dar und hat daher auch eine 40-pol. Buchsenleiste kompatibel zum RPi. Für unsere Zwecke verwenden wir den parallelen Kabelanschluss.<br>mit einem separaten SPI Interface über einen 8poligen Stecker incl Kabel:</p><p><img src="images_v2/WaveShareBack.jpg"></p><p>Die Anschlussbelegung des SPI Kabelanschlusses:</p><table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Farbe</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VCC</td>
+<td>rot</td>
+<td>3.3V/5V</td>
+</tr>
+<tr>
+<td>GND</td>
+<td>schwarz</td>
+<td>Ground</td>
+</tr>
+<tr>
+<td>DIN</td>
+<td>blau</td>
+<td>SPI MOSI pin</td>
+</tr>
+<tr>
+<td>CLK</td>
+<td>gelb</td>
+<td>SPI SCK pin</td>
+</tr>
+<tr>
+<td>CS</td>
+<td>orange</td>
+<td>SPI Chip Selection, low active</td>
+</tr>
+<tr>
+<td>DC</td>
+<td>grün</td>
+<td>Data(=1) / Command(=0) selector</td>
+</tr>
+<tr>
+<td>RST</td>
+<td>weiss</td>
+<td>Reset, low active</td>
+</tr>
+<tr>
+<td>BUSY</td>
+<td>lila</td>
+<td>Busy status output, low active</td>
+</tr>
+</tbody>
+</table><p>Den passenden und umfangreichen DemoCode von WaveShare für RaspberryPi in C++ findet man <strong><a href="https://www.waveshare.com/wiki/File:2.7inch-e-paper-hat-code.7z">hier</a></strong>.</p><p>Die GPIO Belegung ist atürlich in den leitungen MISO, MOSI und SCK identisch zu SDCard und LoRa Bee.<br>neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY “Draht”.<br>Über BUSY kann man den Upload prozess neuer Display Daten pollen. Deklariert man diese GPIO Leitung im Interrupt mode kann eine asynchrone Bedienung über eine ISR (Int. Service routine) implementiert werden. da wir aber eh ‘10Min.-10Sekunden’ lang nichts besseres zu tun haben, reicht das sequentielle Polling.</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>// WavePaper ePaper port
+// mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
+// Default: BUSY -&amp;gt; 4,       RST -&amp;gt; 16,       DC  -&amp;gt; 17,     CS -&amp;gt; SS(5), 
+//             CLK  -&amp;gt; SCK(18), DIN -&amp;gt; MOSI(23), GND -&amp;gt; GND, 3.3V -&amp;gt; 3.3V
+#define EPD_MISO VSPI_MISO     // SPI MISO -&amp;gt; VSPI
+#define EPD_MOSI VSPI_MOSI     // SPI MOSI -&amp;gt; VSPI
+#define EPD_SCK  VSPI_SCK      // SPI SCLK -&amp;gt; VSPI
+#define EPD_CS       5         // SPI SS   -&amp;gt; VSPI
+#define EPD_DC      17         // arbitrary selection of DC   &amp;gt; def: 17
+#define EPD_RST     16         // arbitrary selection of RST  &amp;gt; def: 16
+#define EPD_BUSY     4         // arbitrary selection of BUSY &amp;gt; def:  4  -&amp;gt; if 35 -&amp;gt; RD only GPIO !
+#define EPD_KEY1     0         // via 40-pin RPi slot at ePaper Pin29 (P5)
+#define EPD_KEY2    EN         // via 40-pin RPi slot at ePaper Pin31 (P6)
+#define EPD_KEY3    34         // via 40-pin RPi slot at ePaper Pin33 (P13)
+#define EPD_KEY4    35         // via 40-pin RPi slot at ePaper Pin35 (P19)
+</code></pre>"><span class="hljs-comment">// WavePaper ePaper port</span>
+<span class="hljs-comment">// mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board</span>
+<span class="hljs-comment">// Default: BUSY -&gt; 4,       RST -&gt; 16,       DC  -&gt; 17,     CS -&gt; SS(5), </span>
+<span class="hljs-comment">//             CLK  -&gt; SCK(18), DIN -&gt; MOSI(23), GND -&gt; GND, 3.3V -&gt; 3.3V</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_MISO VSPI_MISO     <span class="hljs-comment">// SPI MISO -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_MOSI VSPI_MOSI     <span class="hljs-comment">// SPI MOSI -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_SCK  VSPI_SCK      <span class="hljs-comment">// SPI SCLK -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_CS       5         <span class="hljs-comment">// SPI SS   -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_DC      17         <span class="hljs-comment">// arbitrary selection of DC   &gt; def: 17</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_RST     16         <span class="hljs-comment">// arbitrary selection of RST  &gt; def: 16</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_BUSY     4         <span class="hljs-comment">// arbitrary selection of BUSY &gt; def:  4  -&gt; if 35 -&gt; RD only GPIO !</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_KEY1     0         <span class="hljs-comment">// via 40-pin RPi slot at ePaper Pin29 (P5)</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_KEY2    EN         <span class="hljs-comment">// via 40-pin RPi slot at ePaper Pin31 (P6)</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_KEY3    34         <span class="hljs-comment">// via 40-pin RPi slot at ePaper Pin33 (P13)</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> EPD_KEY4    35         <span class="hljs-comment">// via 40-pin RPi slot at ePaper Pin35 (P19)</span></span>
+</code></pre><p>Wie oben erwähnt fällt die Bedienung aber etwas aufwändiger aus, denn neben dem SPI API sind dann diverse Font Libs, und ggfs. BitMaps zu laden.<br>Aktuell verwende ich die Library: <a href="https://github.com/ZinggJM/GxEPD">https://github.com/ZinggJM/GxEPD</a><br>mit dem für mein ePaper device spezifische Extension: GxGDEW027C44.h </p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
+#include &amp;lt;GxEPD.h&amp;gt;
+#include &amp;lt;GxGDEW027C44/GxGDEW027C44.h&amp;gt;  // 2.7&quot; b/w/r
+#include &amp;lt;GxIO/GxIO_SPI/GxIO_SPI.cpp&amp;gt;
+#include &amp;lt;GxIO/GxIO.cpp&amp;gt;
+
+// FreeFonts from Adafruit_GFX
+#include &amp;lt;Fonts/FreeMonoBold9pt7b.h&amp;gt;
+#include &amp;lt;Fonts/FreeMonoBold12pt7b.h&amp;gt;
+#include &amp;lt;Fonts/FreeMonoBold18pt7b.h&amp;gt;
+#include &amp;lt;Fonts/FreeMonoBold24pt7b.h&amp;gt;
+#include &amp;lt;Fonts/FreeSansBold24pt7b.h&amp;gt;
+#include &quot;BitmapWaveShare.h&quot;
+
+#define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
+</code></pre>"><span class="hljs-comment">// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;GxEPD.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;GxGDEW027C44/GxGDEW027C44.h&gt;  <span class="hljs-comment">// 2.7" b/w/r</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;GxIO/GxIO_SPI/GxIO_SPI.cpp&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;GxIO/GxIO.cpp&gt;</span>
+
+<span class="hljs-comment">// FreeFonts from Adafruit_GFX</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Fonts/FreeMonoBold9pt7b.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Fonts/FreeMonoBold12pt7b.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Fonts/FreeMonoBold18pt7b.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Fonts/FreeMonoBold24pt7b.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Fonts/FreeSansBold24pt7b.h&gt;</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "BitmapWaveShare.h"</span>
+
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HAS_RED_COLOR     <span class="hljs-comment">// as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT</span></span>
+</code></pre><p>Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot. Wie sich bei der Anwendung aber herausstellte, verlängert das die eh schon mit &gt;10 Sek. recht lange Display-Update Zeiten nochmal zusätzlich. <strong>Hier ist eine Optimierung zur Stromeinsparung noch zu implementieren</strong>.<br><img src="images_v2/WaveShareFront.jpg"></p><p>Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns “weiter arbeiten/schlafen”, liegt der Stromverbrauch aber nahezu bei 0mA.</p><h4 id="lora-wan-support"><a name="lora-wan-support" href="#lora-wan-support"></a>LoRa WAN Support</h4><p>Für die remote Connection ohne “stromfressenden” WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen Topologie Reichweiten bis zu 8km ermöglichen.</p><p>Das LoRa-WAN Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.</p><p>Das verbaute Funkmodul bietet erst einmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das <strong><a href="https://lora-alliance.org/about-lorawan">LoRaWAN Protokoll</a></strong> leisten die dazugehörigen Bibliotheken (z.B. die OSS Lib: LMIC von IBM -&gt; search in GitHub).<br>Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombiniert mit SSH enthalten.<br>Es zeigten sich bei der Migration der LMIC Lib Instablitäten des LoRa Modes -&gt; es wurden immer wieder FSK Mode IRQs empfangen, was die LoRa Statusführung durcheinander bringt.<br>Auch ist das von IBM gewählte OS layer Model nicht so handsam wie erwartet.<br>In Summe stellte die LMIC-Lib für den ESP32 in Kombination mit den übrigen Aktionen zur Sensorbehandlung zumindest auf Node/Cient Seite einen ziemlichen overhead dar, der aber leider nötig ist um das vollständige LoRa-WAN Protokoll nach Spezifikation zu erfüllen (Band-Hopping, Encryption, OTAA joining usw.).<br>Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbindung hat, um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.<br>Da ein GW ggfs. mit mehreren Clients quasi-gleichzeitig zu tun hat, ist die LMIC STack implementierung optimal. Der OS Layer nimmt einem hier das Queueing hereinkommender Pakete sowie die protokollgerechte Quittierung und Bandmanagement vollständig ab.<br>Ein weiterer interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:<br><a href="https://wiki.opennet-initiative.de/wiki/LoRaSensor">https://wiki.opennet-initiative.de/wiki/LoRaSensor</a> .</p><p>Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!):<br>Soll heisen auf basis des RADIO layers von LMIC habe ich ein eigenes “schmalspur” WAN Protokoll entworfen (BeeIoT-WAN) welches die Paket Kommunikation auf den rudimentären Austausch von Sensordaten mit einfacher Quittierung (zunächst ohne Multi-Bandmanagement oder Encryption) “optimiert”.<br>Auf dieser Basis habe ich die ESP32 Client- und RaspberryPi GW-seitigen Module entworfen.<br>Kerneigenschaften der Module:</p><ul>
+<li>Erkennung durch Sender/Empfänger-IDs im “BeeIoT-WAN”-eigenen Header (nur 5 Bytes)</li><li>CRC basierte Datenprüfung</li><li>automatische Quittierung und resend/retry Kommunikation als Flow Control</li></ul><p>Was noch fehlt:</p><ul>
+<li>Collison detection (aber ggfs. durch die CRC Prüfung und ResendAnforderung abgedeckt)</li><li>Encryption auf AES Basis (abgeleitet von der LMIC AES Lib)</li><li>Multi Band management (heute wird nur 1 band gewählt, das aber nur alle 10-15 Minuten benutzt)</li><li>Duty Time recognition</li></ul><p>Hauptanbieter des LoRa-MAC Layer HW Moduls ist die Firma Semtech, die auch die <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-specification-v103">LoRaWAN Spezifikation v1.0.3</a></strong> als Member der “LoRA Alliance” mit herausgegeben hat.<br>Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats &amp; Shields entworfen.<br>Der kleinste Vertreter davon (ohne GPS Modul) ist das “Dragino Lora-Bee Modul” <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">(Wiki)</a></strong>, welches via SPI angeschlossen wird.</p><p>Darauf befindet sich ein RFII95-98W mit SPI Interface. Dieses Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllen densleben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.</p><p>Die Verdrahtung ist recht einfach:<br>Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion, eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5.<br>DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei RX/TX-Events. Für den Standard LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt (solange man beim LoRa-Mode bleibt; Für den FSK Mode werden häufig auch DIO0-2 genutzt).<br>Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.<br>Alle 3 Leitungen werden aber nur im Input Mode betrieben (zur Signalisierung des Semtech Modul Status).</p><p><img src="images_v2/Dragino_Lora_Bee.jpg"> <img src="images_v2/Dragino_Lora_Bee_Cabling.jpg"></p><p>Auf dem 2. Bild ist das grün gefärbte Semtech LoRa Modul gut zu erkennen.</p><p>Die Spezifikation weisst folgende Eigenschaften aus:</p><ul>
+<li>168 dB maximum link budget.</li><li>+20 dBm - 100 mW constant RF output vs.</li><li>+14 dBm high efficiency PA.</li><li>Programmable bit rate up to 300 kbps.</li><li>High sensitivity: down to -148 dBm.</li><li>Bullet-proof front end: IIP3 = -12.5 dBm.</li><li>Excellent blocking immunity.</li><li>Low RX current of 10.3 mA, 200 nA register retention.</li><li>Fully integrated synthesizer with a resolution of 61 Hz.</li><li>FSK, GFSK, MSK, GMSK, LoRaTM and OOK modulation.</li><li>Built-in bit synchronizer for clock recovery.</li><li>Preamble detection.</li><li>127 dB Dynamic Range RSSI.</li><li>Automatic RF Sense and CAD with ultra-fast AFC.</li><li>Packet engine up to 256 bytes with CRC.</li><li>Built-in temperature sensor and low battery indicator.</li></ul><p>Das Dragino Manual dazu findet sich <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">hier</a></strong>.</p><p><img src="images_v2/Duck_Antenna.jpg"><br>Da aber nahezu alle Leitungen des SemTech Moduls 1.1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.</p><p>Die aktuell verwendeten GPIO Port Definitionen:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;SPI.h&amp;gt;    // default for all SPI devices
+// Libraries for LoRa
+#include &quot;LoRa.h&quot;
+
+// LoRa-Bee Board at VSPI port
+#define BEE_MISO VSPI_MISO    // SPI MISO -&amp;gt; VSPI
+#define BEE_MOSI VSPI_MOSI    // SPI MOSI -&amp;gt; VSPI
+#define BEE_SCK  VSPI_SCK    // SPI SCLK -&amp;gt; VSPI
+#define BEE_CS       12        // NSS == CS
+#define BEE_RST        14      // Reset\
+#define BEE_DIO0    33        // Main Lora_Interrupt line
+#define BEE_DIO1    13        // for Bee-Events
+#define BEE_DIO2    34        // unused by BEE_Lora;  connected to EPD K3 -&amp;gt; but is a RD only GPIO !
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;SPI.h&gt;    <span class="hljs-comment">// default for all SPI devices</span></span>
+<span class="hljs-comment">// Libraries for LoRa</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "LoRa.h"</span>
+
+<span class="hljs-comment">// LoRa-Bee Board at VSPI port</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_MISO VSPI_MISO    <span class="hljs-comment">// SPI MISO -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_MOSI VSPI_MOSI    <span class="hljs-comment">// SPI MOSI -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_SCK  VSPI_SCK    <span class="hljs-comment">// SPI SCLK -&gt; VSPI</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_CS       12        <span class="hljs-comment">// NSS == CS</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_RST        14      <span class="hljs-comment">// Reset\</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO0    33        <span class="hljs-comment">// Main Lora_Interrupt line</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO1    13        <span class="hljs-comment">// for Bee-Events</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO2    34        <span class="hljs-comment">// unused by BEE_Lora;  connected to EPD K3 -&gt; but is a RD only GPIO !</span></span>
+</code></pre><p>Die Rolle des Client Node MAC layers ist in dieser <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10">Backend Specification</a></strong> festgehalten<br>Aktuell gehen meine Tests, wie oben bereits erwähnt, in Richtung der LMIC LoRaWAN SW Stack Implementierung von IBM. Der MAC Layer ist durch die Implementierungen in hal.c + Radio.c enthalten.<br>(siehe GitHub -&gt; “lmic_pi”). Dieses habe ich als Basis für den GW seitigen BeeIot-WAN Aufbau auf Basis RPi verwendet.<br>Alternative sei auch noch die “RadioHead” Implementierng genannt (s. GitHub).</p><p>Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend. Über eine vollständige WAN Kommunikation kümmere ich mich später…</p><p>Da ich ein eigens “BeeIoT-“LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses ESpP32 Nodes: Activation-by-Personalization (ABP) und als eindeutige statisceh LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-“DevAddr” zur Node-Protokoll ID (DevID) gebildet werden.<br>Eine Anbindung an das allseits beliebte offene TT-Netzwerk schränkt die Nutzung durch limitierte Anzahl Daten und Paket/Zeitraum zu sehr ein.<br>Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.) Für solch intensiven Datenaustausch ist aber Multiband management mit Duty Time Control nötig, weil sonst das einzelne Band zu sehr vereinnahmt wird.</p><h3 id="narrowband-iot"><a name="narrowband-iot" href="#narrowband-iot"></a>NarrowBand-IoT</h3><p>NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.</p><p>Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.</p><p>Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.</p><p>Das von mir bestellte Modul:<br>Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne</p><ul>
+<li>mit Breakout UART control pins (Baudrate: 300bps~3686400bps)</li><li>Control via AT commands (3GPP TS 27.007, 27.005, and SIMCOM enhanced AT Commands)</li><li>Supports SIM application toolkit: SAT Class 3, GSM 11.14 Release 98, USAT</li></ul><p><img src="images_v2/SIM7000E_NBIoT.jpg"></p><p>=&gt; Link zum <strong><a href="https://www.waveshare.com/wiki/SIM7000E_NB-IoT_HAT?Amazon">SIM7000E-HAT Wiki</a></strong></p><p>Verwendet folgende ESP32 Anschluss pins (falls verfügbar)</p><ul>
+<li>TXD0: Optional</li><li>RXD0: Optional</li></ul><p>=&gt;In V2.0 aber nicht implementiert !</p><h3 id="rtc-uhrzeit-modul"><a name="rtc-uhrzeit-modul" href="#rtc-uhrzeit-modul"></a>RTC Uhrzeit-Modul</h3><p>Für eine gutes Monitoring und auch für die LoRaWAn Kommunikation ist stets die genaue Uhrzeit zur Synchronisation der Datenpakete nötig.</p><p>Für eine genaue Uhrzeit kommen 2 Quellen in Frage:</p><ul>
+<li>Befragung eines NTP Servers via WiFI Anbindung, oder</li><li>via localem RTC Module</li></ul><p>Beide sind im Sketch implementiert und redundant zueinander verschaltet:<br>Besteht keine WiFi Verbindung wird das RTC Modul direkt befragt. Ansonsten wird via WiFi Verbindung Kontakt zu einem NTP Server aufgenommen und das lokale RTC Modul neu mit der NTP Zeit synchronisiert.<br>Darüber erhalten wir stets eine hinreichend genaue Uhrzeit vor.</p><p><img src="images_v2/RTC_DS3231.jpg"></p><p>Dieses RTC Modul mit DS3231 chip enthält neben einem sehr genauen Uhrzeitmodul auch ein internes EEPROM zur residenten Ablage von Betriebsdaten im Sleep Mode. Dies ist eine zusätzliche Alternative zur ESP NVRAM area oder gar der SDCard. Weitere Test müssen aber noch herausarbeiten, welcher Weg den geringeren Stromverbrauch bei hinreichender Speichergröße für die Sleep Mode Housekeeping Daten darstellt. Auch ist die Häufigkeit der Widerbeschreibbarkeit ein Thema, da der Sleep Mode alle 10-Minuten gestartet wird.</p><p>Dieses EEPROM 2432 ist mit einer eigenen Stromversorgung über ein 3V onboard Lithium-Akku (LIR-2032/3.6V)gepuffert.<br>Alternativ kann der Li-Akku auch durch eine normale 3V Li Zelle (CR2032 oder CR2016) ersetzt werden, dann aber mit endlicher Laufzeit. Eine “LostPower()” Funktion erlaubt einen Batterie-Stromausfall zu erkennnen und nachträglich abzufragen, um dann ggfs. die Uhrzeit neu zu stellen.</p><p>In rot umrandet eingezeichnet sind die, von mir vorgenommenen und <strong><a href="https://thecavepearlproject.org/2014/05/21/using-a-cheap-3-ds3231-rtc-at24c32-eeprom-from-ebay/">allseits empfohlenen Änderungen</a></strong> um den Stromverbrauch weiter zu reduzieren:</p><ul>
+<li>Als Massnahme zur Stromreduktion:<ul>
+<li>Abschalten der Power LED durch Abheben des Widerstandes links neben der POWER LED (oben im Bild).</li></ul>
+</li><li>Alternativer Batteriebetrieb (onboard)<ul>
+<li>Ein Jumper unterbricht den Ladekreislauf für den onboard Li-Akku, wenn stattdessen eine standard Li-Batterie verwendet wird. -&gt; Ablöten des SMD-Wiederstandes 220Ohm und Ersatz durch Jumper und STd. 220Ohm Widerstand in Reihe (Im Bild u. rechts; Widerstand ist auf der Rückseite verbaut).</li></ul>
+</li><li>Die I2C Adressierung kann im Bild unten links geändert werden: A0..A2.</li><li>Für meine Zwecke habe ich A2 kurzgeschlossen, was folgende Adressierung des RTC Moduls ergibt:<ul>
+<li>RTC_Clock: 0x68</li><li>RTC_Eprom: 0x53</li></ul>
+</li></ul><p>Das ergibt folgendes Mapping im I2C Adressraum des ESP32 Treibers:<br><img src="images_v2/I2C_AddressScan.jpg"><br>Hinter der Adresse 0x48 verbirgt sich das ADS1115 Modul.</p><p>Das I2C API wird am ESP32 über 2 frei definierte GPIO Leitungen realisiert:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>// RTC DS3231 Libraries
+#include &quot;RTClib.h&quot;    
+// based on Wire.h library
+// -&amp;gt;referenced to pins_arduino.h:
+// static const uint8_t SDA = 21;
+// static const uint8_t SCL = 22;
+
+RTC_DS3231 rtc;     // Create RTC Instance
+</code></pre>"><span class="hljs-comment">// RTC DS3231 Libraries</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "RTClib.h"    </span>
+<span class="hljs-comment">// based on Wire.h library</span>
+<span class="hljs-comment">// -&gt;referenced to pins_arduino.h:</span>
+<span class="hljs-comment">// static const uint8_t SDA = 21;</span>
+<span class="hljs-comment">// static const uint8_t SCL = 22;</span>
+
+RTC_DS3231 rtc;     <span class="hljs-comment">// Create RTC Instance</span>
+</code></pre><p>Die RTClib unterstützt die RTC Typen:    RTC_DS1307, RTC_DS3231, RTC_PCF8523</p><p>Die rtc.begin() Funktion stützt sich auf die default I2C GPIO Einstellungen der Wire Lib ab, wie sie über die IDE im Rahmen der Standard Wire-Library (Wire.h) definiert, verwendet werden.</p><p>Über das RTC Modul kann man sehr elegant zu Testzwecken weitere I2C Module anschliessen (unten im Bild), da die I2C Leitungen durchgeschleift wurden. Die benötigten Pullup Widerstände für SDA udn SCL Leitung befinden sich zur Entlastung der ESP32 Ausgangstreiber ebenfalls onboard, sichtbar durch 2 SMD chips mit dem Aufdruck 472 (verbrauchen aber ca. 4 mAh !).</p><p>Als weiteres Feature führt dieses RTC Modul einen internen Chip-Temperatursensor, den man elegant auslesen kann. In diesem Fall verwende ich ihn zum Monitoring der Extension BOX internen Temperatur, um einem ev. Hitzetod der Elektronik an heissen Sommertagen vorzubeugen.</p><p>Zuletzt gibt es noch einen SQW Pin, an dem man sehr genaue Frequenzen programmieren kann um ext. Prozesse zu steuern. Aktuell wird er in diesem Projekt aber nicht verwendet -&gt; DS3231_OFF … aber gut zu Wissen.</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>/** DS3231 SQW pin mode settings */
+enum Ds3231SqwPinMode {
+  DS3231_OFF            = 0x01, // Off
+  DS3231_SquareWave1Hz  = 0x00, // 1Hz  square wave
+  DS3231_SquareWave1kHz = 0x08, // 1kHz square wave
+  DS3231_SquareWave4kHz = 0x10, // 4kHz square wave
+  DS3231_SquareWave8kHz = 0x18  // 8kHz square wave
+}
+</code></pre>"><span class="hljs-comment">/** DS3231 SQW pin mode settings */</span>
+<span class="hljs-keyword">enum</span> Ds3231SqwPinMode {
+  DS3231_OFF            = <span class="hljs-number">0x01</span>, <span class="hljs-comment">// Off</span>
+  DS3231_SquareWave1Hz  = <span class="hljs-number">0x00</span>, <span class="hljs-comment">// 1Hz  square wave</span>
+  DS3231_SquareWave1kHz = <span class="hljs-number">0x08</span>, <span class="hljs-comment">// 1kHz square wave</span>
+  DS3231_SquareWave4kHz = <span class="hljs-number">0x10</span>, <span class="hljs-comment">// 4kHz square wave</span>
+  DS3231_SquareWave8kHz = <span class="hljs-number">0x18</span>  <span class="hljs-comment">// 8kHz square wave</span>
+}
+</code></pre><h2 id="power-management"><a name="power-management" href="#power-management"></a>Power Management</h2><p>Als größter und wichtigster Stromverbraucher gilt das ESP32-DevKitC board im Wifi + BT Modus mit bis zu 100mA an 3.3V. Diese Stromversorgung erhält der ESP32 selbst aber über das DevKitC Board und einem onboard Spannungswandler (AMS1117-3.3) von einer 5V USB Buchse.<br>Über den externen USB Port kann ebenfalls eine Ladespannung von 5V angelegt werden. Diese kann von einem PC, USB Netzteil oder einem 5V Photovoltaik Ladepanel stammen.</p><p>So existieren auf dem Extension Board 2 Hauptversorgungsleitungen:</p><ul>
+<li>+5V: von der Batterieversorgung (die widerum auch die Ladespannung beziehen kann)<ul>
+<li>Verbraucher sind: <ul>
+<li>3x OneWire Bus -&gt; Temperatur Sensoren</li><li>ADS1115 -&gt; Power monitoring</li><li>RTC Modul -&gt; Uhrzeitversorgung</li><li>4-port LevelChanger -&gt; für ADS1115</li></ul>
+</li></ul>
+</li><li>3.3V: erzeugt auf dem ESP32 DevKitC Board. (Der Wandler unterstützt max. 1A Last)<ul>
+<li>Verbraucher sind:<ul>
+<li>ESP32 Wroom/Wrover-B + DevKitC Board Elemente</li><li>HX711 + Bosche Weight Cell</li><li>Micro SDCard Modul</li><li>LoRa Bee Client</li><li>ePaper Display</li><li>Monitor-LED</li></ul>
+</li></ul>
+</li></ul><p>Manche Module benötigen aber auch 5V, wodurch als Gesamt-Extension BOX Versorgungsspannung 5V gewählt wurde.<br>Diese 5V können über verschiedene Wege bereitgestellt werden:</p><p><img src="images_v2/BeeIoT_Client_Powerplan.jpg"></p><p>Ohne weitere Optimierungen und ohne Sleepmode verbraucht der akt. Aufbau ca. 200mA im aktiven Zustand.</p><h3 id="externer-usb-port"><a name="externer-usb-port" href="#externer-usb-port"></a>Externer USB Port</h3><p>Der direkteste und einfachste Weg ( wie auch zu testzwecken bei Arduinos üblich) ist natürlich direkt über einen externen USB Port als Ladeanschluss (max 1A möglich).</p><p><strong>Vorteil:</strong> Einfach und günstig über ein USB Ladegerät bereitzustellen.<br><strong>Nachteil:</strong> Die Reichweite ist zur Vermeidung von Stör-/Strahlungseinflüssen auf wenige Meter beschränkt.<br>–&gt; Es erfordert einen wetterfesten Netzanschluss „in der Nähe“ (ev. ideal für die Heimgartenlösung).</p><p>In diesem Projekt wird ein exter USB Port als Lade- und Maintenance Port verwendet:</p><ul>
+<li>Die 5V Leitung geht als Charge input an das Batteriemodul.</li><li>Die Datenleitungen gehen aber direkt an den internen USB port des ESP32 devKitC Boards, welches wiederum seine stablisierten 5V vom Ausgang der Batterieversorgung erhält.</li></ul><p>Hierfür habe ich steck-/lötbare Micro USB Buchsen verwendet und die zuleitungen wie oben beschrieben gesplittet.<br><img src="images_v2/MicroUSB.jpg"></p><p>Hierüber ist damit weiterhin ein problemloser offline Betrieb mit Datenzugriff zum FW upload auf den ESP32 möglich.</p><h3 id="batterie/akku"><a name="batterie/akku" href="#batterie/akku"></a>Batterie/Akku</h3><p>Als ladbare Batterie kämen in Frage ein</p><ul>
+<li>Gel/Blei Akku<ul>
+<li>Positiv:     günstig im Einkauf</li><li>Negativ:    hohes Gewicht und Volumen</li></ul>
+</li><li>Lithium-Fe Akku<ul>
+<li>Positiv:     Hohe Energiedichte -&gt; geringes Volumen und Gewicht</li><li>Positiv:    lange Haltbarkeit der Ladung</li><li>Negativ:    sensibel bei niedrigen Temperaturen</li><li>Negativ:    hoher Preis</li></ul>
+</li></ul><p>Natürlich wäre eine extern geladene Lithium Batterie wie z.B.<br>    Lithium Akku 12-7.5 12,8V 7,5Ah 96Wh LiFePO4 Lithium-Eisenphosphat für 100€<br>über einen StepDown Wandler auf 5V der einfachste Weg eine konstante Spannungsversorgug sicherzustellen. Ist von 12V kommen aber mit größeren Wandlungs-Verlusten behaftet, und aufgrund von Gewicht und Abmaßen recht unhandlich.</p><p>Eleganter geht es mit einem Akkupack, welches in die Waage eingebaut werden kann und gleich ein Lade/Entlade Management Modu mit sich bringt. Viele dieser Varianten unterstützen aber nur Be- oder Entladung, gekoppelt mit einem weiteren Steckzyklus bei der Umschaltung.</p><p>Es gibt aber auch sogenannte <strong>“Passthru”</strong>-Regler die gleichzeitg Laden und Entladen beherrschen.<br>Ein günstiger Vertreter ist: <strong><a href="https://www.amazon.de/dp/B07FZ27Z77/ref=pe_3044161_185740101_TE_item">POWERADD Pilot Pro4 Powerbank</a></strong> mit den Eigenschaften:</p><ul>
+<li>mit 30.000mAh Kapazität</li><li>3 USB Output(5V/2,1A)</li><li>2x USB 2A-Charge Input (parallel)</li><li>mit Lade-/Entladeintelligenz kompatibel zu  iPhone XR/XS/X / 8 / 8Plus / 7 Samsung Galaxy usw.</li><li>Preis: 25,99€</li></ul><p>Dummerweise ist die interne Lade/Entladeintelligenz auch hinderlich, wenn sie der Meinung ist, ein ESP32 im Sleep Mode wäre “nicht vorhanden”. Denn dann wird der Ausgang einfach abgeschaltet. Genauere Messungen ergaben aber, dass der Ausgang nicht vollständig abgeschaltet wurde, sondern nur der StepUp Regler umgangen wurde. Es lagen dann am Ausgang die direkte Batteriespannung zw. 3.2 - 4.2V an.<br>Daher habe ich mich entschlossen die Charge Funktion zu erhalten, die Ausgangskontrolle aber einfach zu umgehen und die internen Anschlüsse direkt anzuzapfen:<br><img src="images_v2/BeeIoT_PowerBank.jpg"></p><ul>
+<li>rot -&gt; USB output (mit temp. Abschaltung)</li><li>grün -&gt; Charge Input (+3-5V)</li><li>weiss -&gt; Akku + Anschluss direkt (3.2 - 4.2V)</li><li>schwarz -&gt; Masse / Akku - Anschluss</li></ul><p>Dadurch haben wir innerhalb der Extension Box alle Optionen diese Powerbank zu integrieren:</p><ul>
+<li>Die ext. USB +5V Leitung an den Charge input</li><li>Der USB-Out Ausgang wird über einen nun externen StepUp Boost Regler von Sodial (4,35€) geführt<br><img src="images_v2/LinearBooster_LM2577.jpg"></li></ul><p>Der Linearregler: LM2577  liefert einstellbar saubere 5V und regelt definiert auf 0V runter, wenn die IN-Spannug auch gen 0V geht (Ein-/Ausschaltverhalten). Überschreitet der EIngang allerdings den eingestellten AUsgangswert von 5V, steigt auch der Ausgang mit an ! In unserem Fall aber ken problem, weil der LiFe Akku kaum mehr als 4.2V liefern könnte.<br>Weitere Eigenschaften des LM2577:</p><ul>
+<li>Eingangsspannung: DC 3-34V, Eingangsstrom: 3A (max.)</li><li>Ausgangsspannung: DC 4-35V (stufenlos einstellbar), Ausgangsstrom: 2,5 A (max.)</li></ul><p>Ein ähnliches Exemplar nur ohne LED ANzeige:<br><strong>ANGEEK DC-DC Boost Buck Adjustable Step Up Step Down Automatic Converter XL6009 Module</strong> 6,99€<br>aber mit einem BuckBoost Converter XL6009, regelte am Ausgang plötzlich auf ca. 15V hoch, wenn die Eingangsspannung unterhalb 3.2V ging. Erst weit unter 2V ging die Ausgangsspannug auch gegen 0V.<br>Diese Episode hätte den ESP32 in die ewigen Jagdgründe geschossen.<br>So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anzeige und Linearregler.</p><p>Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.<br>Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define BATTERY_MAX_LEVEL        4150 // mV
+#define BATTERY_MIN_LEVEL        3200 // mV
+#define BATTERY_SHUTDOWN_LEVEL   3100 // mV
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MAX_LEVEL        4150 <span class="hljs-comment">// mV</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MIN_LEVEL        3200 <span class="hljs-comment">// mV</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_SHUTDOWN_LEVEL   3100 <span class="hljs-comment">// mV</span></span>
+</code></pre><p>An dieser Stelle hilft es die Energie-Rechnung aus Kapitel:  <strong><a href="#die-mcu-arduino-ESP32-platform">Die MCU Arduino/ESP32 Platform</a></strong> nochmal nachzurechnen:</p><ul>
+<li>Anteil Aktivphase: 10 Sek./10Minuten: 1/60</li><li>auf 6 Monate entspricht das (6x30x24)h/60 = 72h = 3Tage Aktivphase</li><li>=&gt; 4320-3 Tage Passivphase = 4317 Tage</li><li>Stromverbrauch Passivphase: 4317 x 1mAh = 4317mAh von nun <strong>30.000mAh</strong> </li><li>Möglicher <strong>Stromverbrauch Aktivphase</strong>: (30.000mAh - 4317mAh)/72h = 5683mAh / 72h = <strong>~365mA</strong></li></ul><p>Pro Tag kämen wir auf einen Gesamtverbrauchsmix:</p><ul>
+<li>Aktivphase : 24 x 6 x 10Sekunden = 24 Minuten -&gt; 80mAh</li><li>Passivphase: 24 x 60 - 24Minuten = 1416 Minuten -&gt; 59mAh<br>in Summe also 139mAh/Tag ergibt bei 30.000mAh Akku Kapazität = <strong>215 Tage Laufzeit</strong>.</li></ul><p>Und das ohne jede Ladung. Ergänzen wir das ganze noch mit einem 5V PV Modul am ext. USB port …</p><h3 id="power-monitoring"><a name="power-monitoring" href="#power-monitoring"></a>Power Monitoring</h3><p>Um die oben genannten Lade-/Entladezyklen verfolgen zu können, habe ich einen 4-port AD Wandler ADS1115 spendiert der über einen 3.3V &lt;-&gt; 5V levelchanger ebenfalls am I2C Port des ESP32 hängt.<br><img src="images_v2/ADS1115.jpg"></p><p>Falls eingestellte Schwellwerte erreicht werden, wird die Alertleitung als Interrupt genutzt.<br>Dies ist z.B. der fall wenn der BATTERY_MIN_LEVEL an der Akku+ Line erreicht wird,<br>dann muss die Stockwaage abgeschaltet werden (bzw. Dauersleepmode) um den Lithium-Akku zu schützen.</p><p>Für die eigene Versorgungsspannung Vcc= 5V des Converters habe ich 5V gewählt um ein größeres messbares Spannungsfenster an den AnalogPorts verfügbar zu haben: 0V – 4,096V -&gt; 1mV / Step .<br>Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenleitung auf 5V Pegel umgesetzt.<br>Über 2x 3.3kOhm Widerstände werden am ADS1115 AnalogPort 3 ein Spannungsteiler zur Messung der (eigenen) 5V Spannungsversorgung ermöglicht. Ähnlich müsste man bei größeren Spannungsquellen verfahren die &gt;4V liegen.</p><p>Durch die Verschaltung des ADDR = 0 Anschlusses erhalten wir die I2C Adresse 0x48. Somit kein Konflikt mit dem RTC Modul zu befürchten.<br>Hier die Definitionen des ADS im Sketch:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;Adafruit_ADS1015.h&amp;gt;    // support for ADS1015/1115
+
+// ADS1115 + RTC DS3231 - I2C Port
+#define ADS_ALERT   27    // arbitrary selection of ALERT line
+#define ADS_SDA     SDA    // def: SDA=21
+#define ADS_SCL     SCl    // def. SCL=22
+// ADS1115 I2C Port Address
+#define ADS_ADDR            0x48   // I2C_ADDRESS    0x48 -&amp;gt; ADDR line =&amp;gt; Gnd
+// ADS device instance
+Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> &lt;Adafruit_ADS1015.h&gt;    <span class="hljs-comment">// support for ADS1015/1115</span></span>
+
+<span class="hljs-comment">// ADS1115 + RTC DS3231 - I2C Port</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> ADS_ALERT   27    <span class="hljs-comment">// arbitrary selection of ALERT line</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> ADS_SDA     SDA    <span class="hljs-comment">// def: SDA=21</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> ADS_SCL     SCl    <span class="hljs-comment">// def. SCL=22</span></span>
+<span class="hljs-comment">// ADS1115 I2C Port Address</span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> ADS_ADDR            0x48   <span class="hljs-comment">// I2C_ADDRESS    0x48 -&gt; ADDR line =&gt; Gnd</span></span>
+<span class="hljs-comment">// ADS device instance</span>
+<span class="hljs-function">Adafruit_ADS1115 <span class="hljs-title">ads</span><span class="hljs-params">(ADS_ADDR)</span></span>;    <span class="hljs-comment">// Use this for the 16-bit version</span>
+</code></pre><p>Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsfähigen I2C Interfaces des ADC1115 sehr einfach geworden:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>    adcdata = ads.readADC_SingleEnded(channel);    //channel = 0..3
+    // ADC internal Reference: +/- 6.144V 
+    // ADS1015: 11bit ADC -&amp;gt; 6144/2048  = 3 mV / bit
+    // ADS1115: 15bit ADC -&amp;gt; 6144/32768 = 0.1875 mV / bit
+    data = (int16_t)((float)adcdata * 0.1875);    // multiply by 1bit-sample in mV
+</code></pre>">    adcdata = ads.readADC_SingleEnded(channel);    <span class="hljs-comment">//channel = 0..3</span>
+    <span class="hljs-comment">// ADC internal Reference: +/- 6.144V </span>
+    <span class="hljs-comment">// ADS1015: 11bit ADC -&gt; 6144/2048  = 3 mV / bit</span>
+    <span class="hljs-comment">// ADS1115: 15bit ADC -&gt; 6144/32768 = 0.1875 mV / bit</span>
+    data = (<span class="hljs-keyword">int16_t</span>)((<span class="hljs-keyword">float</span>)adcdata * <span class="hljs-number">0.1875</span>);    <span class="hljs-comment">// multiply by 1bit-sample in mV</span>
+</code></pre><h3 id="pv-solar-modul"><a name="pv-solar-modul" href="#pv-solar-modul"></a>PV Solar-Modul</h3><p>Die oben errechneten 215 tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.<br>Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:</p><p><img src="images_v2/SolarPanel_RAVPower.jpg"><br><strong>Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)</strong></p><p>Die Besonderheit liegt in der hohen Dynamik der Energieversorgung durch wechselnde Sonneneinstrahlung, weswegen ein nachgeschalteter interner Laderegler via Batterie die Energie puffert und in die gewünschte Zielspannung von 5V umsetzt.<br>Auch hier ist das Angebots-Spektrum sehr groß, von einem 180W Panel 1,8m x 0,8m Größe bis hin zu einem 40W Faltpanel, teilweise gleich mit Micro USB Kabel Anschlüssen.</p><p>Auch hier müssen wir eine Lösung finden, die im Schnitt 5V liefert und dies mit ausreichender Leistung. Solche Module sind häufig im Campingbereich zu finden, als Kompromiss zw. Mobilität und Leistung.</p><p>In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.<br>Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.</p><p>Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet.<br>Den Rest erledigt die Akku-interne Ladekontrolle, solange das Panel 5V liefern kann. Und das ist dank eines PV-nternen step Reglers recht lange der Fall.<br>Bei einem trüben aber freundlichen Märztag war eine PV Modul interne interne PV-Modul-Spannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…</p><p>Langzeittest besonders bzgl. Wetterfestigkeit stehen aber noch aus.</p><h3 id="alternativer-batterie-laderegler"><a name="alternativer-batterie-laderegler" href="#alternativer-batterie-laderegler"></a>Alternativer Batterie Laderegler</h3><p>Neben dem günstigen obe beschriebenen PV Modul mit integriertem 5V Ausgangsregler via USB Stecker, sind aber noch leistungsfähigere Module denkbar, die aber auch leistungsfähigere Laderegler für z.B 12V Akkus benötigen.</p><p>Die effiziente Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.</p><p>Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen <strong>PV Solar Panel MPPT Laderegler von Sunix</strong> gestartet: </p><p><img src="images_v2/SolarCharger.jpg"></p><p><strong>Modell: SU-SU702  (CMTD 2420) / 10A mit den Maßen: 14,4 x 8,3 x 4,1 cm für 13,99€</strong></p><p>Er hat die interessante Zusatzfunktion neben jeder Eingangsspannung bis 70V und der Batterieausgangsspannung zw. 12-14.3V auch 2 Standard USB Ports anzubieten mit geregelten 5V.<br>Diese würden direkt für den Betrieb der ESP32 Stockwaage herhalten können.</p><p>Die Kennwerte dieses Moduls sind:</p><blockquote>
+<p>Nennspannung : 12V / 24V (Auto-Switch)<br>Max. Lade / Entlade-Strom : 10A<br>Max. Solar-Panel Eingangs-Spannung : =50V<br>Stop-Ladespannung : 14.7V / 29.4V<br>Nieder-Voltage-Wiederherstellung : 12,2 V / 24.4V<br>Nieder- Spannungsschutz : 10.5V / 21.0V<br>USB-Ausgangs-Spannung / Strom : 5V 2A<br>Kein- Lade-Verlust : =10mA<br>Temperatur Kompensation : -3mV / Cell / ° C<br>Betriebs-Temperatur : -20 ° C ~ 60 ° C</p>
+</blockquote><p>Mit folgenden Schutzmassnahmen:</p><ol>
+<li>Überlastschutz</li><li>Kurzschlussschutz</li><li>Blitzschutz</li><li>Unterspannungsschutz</li><li>Überladeschutz</li><li>Verpolschutz</li></ol><p>Mit diesem Laderegler ist es möglich die Batterie-Beladung durch unterschiedliche Stromquellen über Dioden zusammengeführt zu konfigurieren, während ein Verbraucher parallel versorgt wird (können viel Batteriepacks nicht: nur Laden oder nur Liefern)=&gt; PassThru Mode.</p><p>Über 2x BY500 Dioden lassen sich weitere Stromlieferanten am Eingang einpflegen.</p><p>Bei dem angedachten Verbrauchspegel des ESP32 Moduls ist dieser Ansatz aber ein Overkill, da alleine der Eigenverbrauch höher liegt, als der, des zu versorgenden Verbrauchers.</p><h2 id="der-aufbau"><a name="der-aufbau" href="#der-aufbau"></a>Der Aufbau</h2><p>Die Anforderungsliste liest sich gut:</p><ul>
+<li>Das Aussengehäuse besteht aus wasserfesten 10mm MBF Platten sowie einer Kantholz Auflage-Konstruktion</li><li>Die MCU Extension Box (Compute Node Modul) ist in ein wasserdichtes Gehäuse der Schutzklasse IP67 eingebaut</li><li>Lade-Kabelanbindung mit Nagetierschutz (Spiralmantelung)</li><li>Messbereich: 0..100kg mit +/- 60 Gramm Genauigkeit und extrem geringer Temperaturdrift</li><li>Start der Messung und Übertragung automatisch bei jedem Re-/Start</li><li>Alle Kabel werden an das Gerät durch wasserdichte Kabelverschraubungen angeschlossen.</li><li>Alle am backpanel angeschlossenen Sensoren sind auch wasserdicht, Schutzklasse IP-66 oder IP-67.</li><li>Der Gehäuseaufbau erlaubt das einfache Anpassen der Auflagefläche durch massgerechte Unterlegplatten für jede Beutengröße verwendet werden (default: Zander-Maß).</li></ul><h3 id="stückliste"><a name="stückliste" href="#stückliste"></a>Stückliste</h3><table>
+<thead>
+<tr>
+<th>Index</th>
+<th>Stück</th>
+<th>Bezeichnung</th>
+<th>Hersteller</th>
+<th>Bezugsquelle</th>
+<th>Preis</th>
+<th>Kommentar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>Plattformwägezelle H40A-C3-0100</td>
+<td>Bosche</td>
+<td><a href="http://www.bosche.eu">http://www.bosche.eu</a></td>
+<td>58€</td>
+<td>H30A v H40A 100kg</td>
+</tr>
+<tr>
+<td>2a</td>
+<td>1</td>
+<td>ESP32-DevKitC v4</td>
+<td>OSS</td>
+<td>Amazon</td>
+<td>20€</td>
+<td>(WROOMER32 oder WOVER32)</td>
+</tr>
+<tr>
+<td>2b</td>
+<td>1x</td>
+<td>SD HC Karte 2GB</td>
+<td></td>
+<td></td>
+<td>Amazon</td>
+<td>5€</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1x</td>
+<td>HX711 24 Bit A/D Wandler</td>
+<td></td>
+<td>Amazon</td>
+<td>10€</td>
+<td>mit grüner Lackschicht!</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2x</td>
+<td>Montageplatte für Wägezelle ALU 200 x 200 x 10mm</td>
+<td>Schlosserei</td>
+<td></td>
+<td>200€</td>
+<td>Keine Beschichtung</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2x</td>
+<td>4-kant Unterlageholz</td>
+<td>Baumarkt</td>
+<td></td>
+<td>10€</td>
+<td>20x40x500mm</td>
+</tr>
+<tr>
+<td>6</td>
+<td>1x</td>
+<td>IP67 Kunststoff-Montagebox</td>
+<td>Maße 70x80x160mm</td>
+<td></td>
+<td>Amazon</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>3x</td>
+<td>Temperatursensor DS18S20</td>
+<td>Dallas</td>
+<td>Amazon</td>
+<td>7,5€</td>
+<td>Mit 1,1m Kabel</td>
+</tr>
+<tr>
+<td>8</td>
+<td>1x</td>
+<td>MSP Siebholzplatten 520x410x10mm</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td>20€</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>1x</td>
+<td>MSP Siebholzplatten 490x380x10mm</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td>20€</td>
+<td></td>
+</tr>
+<tr>
+<td>11</td>
+<td>2x</td>
+<td>520x70x10mm</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td></td>
+<td>5€</td>
+</tr>
+<tr>
+<td>12</td>
+<td>2x</td>
+<td>390x70x10mm</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td></td>
+<td>5€</td>
+</tr>
+<tr>
+<td>13</td>
+<td>16x</td>
+<td>M12 30mm Senkkopfschrauben</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td>16€</td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td>18x</td>
+<td>4x50mm Senkkopfschrauben</td>
+<td>Baumarkt</td>
+<td>Baumarkt</td>
+<td>10€</td>
+<td>Verbindung der MSP Platten+Leim</td>
+</tr>
+<tr>
+<td>15</td>
+<td>1x</td>
+<td>POE Einspeiser &amp; Wandler 1Gb/s &amp; POE 48V-&gt;5V</td>
+<td></td>
+<td>Amazon</td>
+<td>15€</td>
+<td>1Gb/s &amp; Mini-USB</td>
+</tr>
+<tr>
+<td>16</td>
+<td>div.</td>
+<td>Litze D:1mm ca. 3m</td>
+<td></td>
+<td>Amazon/Conrads</td>
+<td>10€</td>
+<td>Sensorverdrahtung</td>
+</tr>
+<tr>
+<td>17</td>
+<td>1x</td>
+<td>Alu/Kunststoff-Platte 120x60x1,5mm</td>
+<td></td>
+<td>Amazon</td>
+<td>8€</td>
+<td>Anschlusspanel</td>
+</tr>
+<tr>
+<td>18</td>
+<td>1</td>
+<td>5-pol wetterfeste Durchführungs Rundstecker &amp; Buchse</td>
+<td></td>
+<td>Amazon</td>
+<td>5€</td>
+<td>Für ext. OneWire Sensoren</td>
+</tr>
+<tr>
+<td>19</td>
+<td>1</td>
+<td>Epoxid Rundlochplatine Euro-Format(einseitig)</td>
+<td></td>
+<td>Conrads/Amazon</td>
+<td>5€</td>
+<td>ESP32 + GPIO Sensorverstärker (HX711 und OneWire Bus)</td>
+</tr>
+<tr>
+<td>20</td>
+<td>1</td>
+<td>Sub-D 25-pol. Stecker &amp; Buchse</td>
+<td></td>
+<td>Conrads/Amazon</td>
+<td>5€</td>
+<td>Zum Durchführen der HX711 und OneWire Bus-signale am K.Stoff-Gehäuse</td>
+</tr>
+<tr>
+<td>21</td>
+<td>1x</td>
+<td>4-channel Level Converter für 3V &lt;-&gt; 5V Pegel,  bidirektional</td>
+<td></td>
+<td>Amazon</td>
+<td>4€</td>
+<td></td>
+</tr>
+<tr>
+<td>22</td>
+<td>1x</td>
+<td>A/D Converter ADS1115S</td>
+<td></td>
+<td>Voelkner</td>
+<td>5€</td>
+<td>4-fach 16Bit A/D Wandler mit I2C API zur Versorgungs-Spannungsmessung</td>
+</tr>
+<tr>
+<td>23</td>
+<td>1x</td>
+<td>Micro USB Buchse</td>
+<td></td>
+<td>Amazon</td>
+<td>8,50€</td>
+<td>Zur USB-A Port Durchführung am Aussenpanel</td>
+</tr>
+<tr>
+<td>24</td>
+<td>2x</td>
+<td>10-polige Steckerleiste</td>
+<td>Printmontage</td>
+<td>Amazon</td>
+<td>1,50€</td>
+<td>Stecker für die ADS1115S + HX711 Ports</td>
+</tr>
+<tr>
+<td>25</td>
+<td>2x</td>
+<td>8-polige Steckerleiste Printmontage</td>
+<td></td>
+<td>Amazon</td>
+<td>1,50€</td>
+<td>Stecker für das ePaper 2in7 API + OW/LED Leitungen</td>
+</tr>
+<tr>
+<td>26</td>
+<td>2x</td>
+<td>3.3kOhm Metallfilm Widerstand 1/4W</td>
+<td></td>
+<td>Voelkner</td>
+<td>0,10€</td>
+<td>Als Spannungsteiler am Analogport 3 des ADS1115S</td>
+</tr>
+<tr>
+<td></td>
+<td>Optional:</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>27</td>
+<td>1x</td>
+<td>ePaper Display 2in7 von WaveShare 264x176 pixel 3.3V</td>
+<td></td>
+<td>Amazon</td>
+<td>25€</td>
+<td>Extrem stromarmes S/W Display 2,7 Zoll mit SPI Interface</td>
+</tr>
+<tr>
+<td>28</td>
+<td>1</td>
+<td>RJ45 1Gb/s wetterfeste Durchführungsbuchse</td>
+<td></td>
+<td>Amazon</td>
+<td>10€</td>
+<td>Für LAN &amp; POE Anschluss</td>
+</tr>
+<tr>
+<td>29</td>
+<td>1</td>
+<td>LAN Kabel Cat6 Outdoor 10-30m</td>
+<td></td>
+<td>Amazon</td>
+<td>20-40€</td>
+<td>Länge nach Erreichbarkeit des Switch</td>
+</tr>
+</tbody>
+</table><h3 id="das-aussengehäuse"><a name="das-aussengehäuse" href="#das-aussengehäuse"></a>Das Aussengehäuse</h3><p>Das Aussengehäuse bestehend aus MBF Platten besteht aus einer Coverhülle und einer Bodenplatte.<br>Auf die Bodenplatte ist die Waagrzellenkonstruktion verschraubt. Die Coverhülle, welche von oben mit dem Wäägemodul verschraubt ist, schwebt quasi frei darüber und ermöglicht so die Gewichtskraft auf die Wäägezelle zu übertragen.<br><img src="images_v2/BoxOutsideView.jpg"></p><p>Hier sieht man schematisch im Querschnitt die Auflagekonstruktion der Wägezelle.</p><p><img src="images_v2/BoxSideView.jpg"></p><p>Der damit verbundene Deckel + Compute Node + Power Module schwebt über dem Bodenelement und liegt samt komplettem Beutengewicht ausschliesslich auf den etwa 16cm2 Fläche der verschraubten Wägezelle auf. Dies erreicht man über 6-8mm starke Zwischenbleche jeweils an der oberen und unteren Verschraubung der Wägezelle, die je mit 4x M10 Senkkopf-Schrauben fixiert ist.</p><p>Steht die i.d.R. 50-70kg schwere Beute auf der Waage schwankt sie recht steif über der Bodenplatte. Dies ist ein Zeichen dafür, dass das Waagzellen Element aktiv die Kraft aufnimmt und nirgends aufliegt.</p><p>In der Rückwand ist das Anschlusspanel + ePaper Display Panel eingearbeitet und sowie die notwendigen Aussenanschlüsse.</p><h4 id="die-bosche-wägezelle"><a name="die-bosche-wägezelle" href="#die-bosche-wägezelle"></a>Die Bosche Wägezelle</h4><p>(Einbau als Single-point Wägezelle)<br>Die Wägezellen von Bosche für Plattformwaagen gibt es in 4- oder 6-pin Ausführung.<br>Beide sind funktionell gleichwertig:</p><p><img src="images_v2/BoscheCell4.jpg"> <img src="images_v2/BoscheCell6.jpg"></p><p>Hier kommt die übliche Wheatstone-Brücke zum Einsatz, die die beste Temperatur-Kompensation bei hoher Messgenauigkeit bietet. Die Temperaturkalibrierung an den Dehnmesstreifen wurde werksseitig schon vorgenommen. Ggfs. bei Temperaturen kleiner -5Grad kann noch eine rechnerische Kompensation softwareseitig überlagert werden und sinnvoll sein.</p><p>Der Einbau gestaltet sich sehr einfach. Einzig die Fixierung der jeweils 4 Schrauben pro Auflagefläche muss sehr stabil und genau erfolgen. Hier setzt der Hebel des gesamten Beutengewichts samt Waagedeckel an.</p><p>Dazu die Auszugsbilder aus der mechanischen Applikations-Beschreibung:</p><p><img src="images_v2/BoscheApplication.jpg"></p><p>sowie die einfache Konstruktion, wie sie hier zum Einsatz kommt:</p><p><img src="images_v2/WeightCell.jpg"></p><p>Die obere und untere Platte zur Kraftübertragung auf die Wägezelle sollte mind. 6-8mm betragen und idealerweise aus Edelstahl. Aus Kostengründen geht aber auch Aluminium. Dann aber besser mit 10mm Stärke. Die Plattenmaße betragen bei mir 18 x 18cm (darf aber auch größer sein).</p><p>Die Distanzscheiben habe ich mit je 4mm gewählt und bestehen aus separaten kleinen Aluscheiben mit dem Maßen 6x6cm inkl. den benötigten 4 Bohrungen für die M12 Schrauben. Ohne die Abstandsscheiben kann die Wägezelle durch das Gewicht nicht verformt werden !<br>Die Bohrungen in der Platte sollten 1mm größer ausfallen als die Schraubenstärke und nach „aussen“ konisch durch einen Phasenschneider erweitert werden. Dadurch kann man die als Senkschrauben ausgelegten 2x4 M6-M8 Schrauben bündig abschliessen. Dies ist nötig um die Gehäuse-Deckel/Boden bündig auf die Platten zur bessern Kraftübertragung anzubringen.</p><p>Die Überlastsicherung besteht aus einer M6 - M8 Gewindebohrung an der untern (oder oberen Platte) und einer Schraube, über die der Arbeitsbereich der Wägezelle eingestellt werden kann. Bei einer 100kg Wäge-Zelle erzeugt man ein Testgewicht von 110kg und man dreht die Schraube solange ein bis sie leicht an der Wägezelle aufstehen. Dadurch wird einer zerstörenden Verformung des Zellenkörpers vorgebeugt (z.B. wenn man sich auf der Beute abstützt bei aufliegendem vollen Honigraum).<br>An einer Seite schaut das 4/6 adrige Kabel heraus, welches zum A/D Wandler HX711 der Compute-Einheit führt.</p><p>Zuletzt wird die Platte durch weitere Gewindebohrungen mit kurzen M12 Schrauben mit dem Gehäusedeckel-/Boden verschraubt.</p><p>Hier nochmal das Lagebild der Wägezelleneinheit mittig zum Gehäusedeckel:</p><p><img src="images_v2/Box_WeightCell.jpg"></p><h4 id="das-anschluss-panel"><a name="das-anschluss-panel" href="#das-anschluss-panel"></a>Das Anschluss Panel</h4><p>Das Gehäuse Panel ist der einzige Anschlussbereich nach Aussen. Daher werden dort wasserfeste Stecker-Kombinationen eingesetzt:</p><ul>
+<li>Micro-USB Buchsen-Anschluss zur Akku ladung + ESP32 FW-Upload</li><li>5 pol. externer OneWire Sensor Connector für den Bienenstock Temp.Sensor</li><li>LEDs für Monitor &amp; Status</li><li>Optional: LAN Anschluss (1GB/s mit POE 48V)</li><li>Power Switch: EIn finaler Power Switch , wollte man die Stockwaage einige Zeit ungenutzt einlagern. Ansonsten bleibt die Akku-Regelung dauerhaft in Betrieb und leert die Battery.</li><li>…Platz für weitere Optionen…</li></ul><p>Als Träger dient eine korrosionsbeständige eloxierte ALU Platte (1mm). An dieser lassen sich die Buchsenlöcher gezielt herausarbeiten; sie trägt aber nicht so stark auf wie eine Holzplatte und kann daher in einen Rahmen mit ausgefrästem Grat eingesetzt werden.</p><p>Es sind 2 LEDs eingebaut, die Betriebszustände der Stromversorgung und die Betriebsaktivität anzigen können. mangels freier GPIO leitungen ist aktuell nur die rote LED angeschlossen.</p><p>Die Aussenansicht des Backpanels + ePaper Panel:<br><img src="images_v2/BackConnectors.jpg"></p><p>Die Innenansichten der Anschlussstecker und der MCU Extension-Box:<br><img src="images_v2/BoxInsideOvw.jpg"></p><h5 id="one-wire-sensoren"><a name="one-wire-sensoren" href="#one-wire-sensoren"></a>One Wire Sensoren</h5><p>One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse-GND, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.</p><p>Durch das OneWire Bus-Protokoll können somit leicht mehrere Sensoren unterschiedlichster Art/Funktion hintereinander, an demselben Anschluss verbunden werden. Bei den ESP32 GPIO Ports sind allerdings nur max. 8 Sensoren in Verbindung mit 3.3V Vcc in Kombination mit abgeschirmtem Telefonleitungen zu empfehlen.<br>Jeder Sensor hat dabei zur Erkennung eine einzigartige 64 Bit unique ID. Verwendbar sind die Sensoren an Spannungen mit 3-5V. Wir verwenden hier 5V.</p><p>Der ESP32 erlaubt mit seinem GPIO Matrix Konzept jeden beliebigen IO-Port zum OneWire Bus-Port zu erklären. Der OneWire Driver wendet das OW-Protokoll, wie vom Hersteller „Dallas“ spezifiziert, dann auf diesen Port an.<br>Die Störanfälligkeit der Messwerte ist gering, dank digitaler Übertragung. Die Datenleitung benötigt dazu allerdings einen Pullup von 4.7k Ohm einmalig (!) von der Daten- auf die 3.3V Leitung (unabhängig von der gewählten Versorgungs-Spannung!).</p><p>Neben den 2 internen Temperatursensoren habe ich über einen 7-poligen Stecker die OW-Busleitungen nach Außen zugänglich gemacht, um weitere externe Sensoren zu ermöglichen.</p><h5 id="der-ds18b20-ow-temperatur-sensor"><a name="der-ds18b20-ow-temperatur-sensor" href="#der-ds18b20-ow-temperatur-sensor"></a>Der DS18B20 OW-Temperatur-Sensor</h5><p>Der DS18B20 OneWire Sensor ist besonders praktisch für das Messen von Temperaturen in Wasser oder feuchten Umgebungen dank wasserdichtem 1,10m langem Kabel und der vergossenen 3 cm langen Metall-Messsonde.<br>Der Temperaturbereich reicht von -55 bis 100 Grad.</p><p>Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit von -10°C bis +85°C) dank einem internem vorkalibriertem 12Bit A/D Wandler und ist somit für unsere Messungen mehr als hinreichend.<br>Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.</p><p><strong>Verfügbare Ausführungen:</strong></p><ul>
+<li>DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang </li><li><p>Kabellänge von etwa 90-110cm lang mit Durchmesser 4mm, unkonfektioniert</p>
+<p>  <strong>Sensor-Anschluss mit 4-adrigem Kabel:</strong></p>
+</li></ul><ol>
+<li>Rot:         3-5 V Anschluss, </li><li>Schwarz:    Masse </li><li>Weiß:    1-Wire serielles Datenprotokoll </li><li><p>Die äußere Kupferader wird an die Drahtabschirmung mit dem Stecker/Gehäuse verlötet.</p>
+<p> <strong>Sensor-Anschluss mit 3-adrigem Kabel: </strong></p>
+</li><li>Rot:        3-5 V Spannung </li><li>Blau / Schwarz: wird mit Masse verbunden </li><li>Gelb / Weiß:    1-Wire Datenleitung</li></ol><p>Weitere Links:</p><ul>
+<li><a href="http://www.milesburton.com/?title=Dallas_Temperature_Control_Library" title="Dallas TempControl Lib">Dallas Temperature Control Library</a></li><li><a href="http://www.pjrc.com/teensy/td_libs_OneWire.html" title="OneWire Lib">OneWire Library</a></li></ul><p>Obwohl die Versorgungsspannung für 1-Wire-Devices normalerweise 5 V beträgt, ist beim ESP32 die verringerte Spannung von 3,3 V nötig, weil dessen GPIO-Ports nur 3,3 V vertragen und durch höhere Spannungen zerstört werden.<br>Nachfolgende Bilder zeigen die verschiedenen Anschlussmöglichkeiten. Dabei sind die dargestellten Chipformen in unserem Fall in einer Metallhülse vergossen.</p><p><img src="images_v2/DS1820pins.jpg"> <img src="images_v2/DS1820pins2.jpg"></p><p>(Wie erwähnt: der Pullup Widerstand wird nur einmal intern angeschlossen.)</p><h3 id="compute-node-box"><a name="compute-node-box" href="#compute-node-box"></a>Compute Node Box</h3><p>Das Herzstück des Computnodes ist im BeeIoT-Client Modell der <strong>ESP32-DevKitC</strong>.</p><p>Dieser sowie alle weiteren empfindlichen elektronischen Module wurden in eine IP67 dichte Box eingebaut. Das beugt Kondenswasserschäden vor. Widererwartens habe ich auch bei höchsten Aussentemperaturen kein Temperaturproblem am ESP32 gehabt. Dies kommt wohl durch die Isolationswirkung der massiven aufstehenden Beute von Oben:</p><p><img src="images_v2/ESP32_Controlbox.jpg"></p><p>Die MCU sowie alle Sensormodule sind auf einer Lochrasterplatine untergebracht:<br>Der HX711 A/D Wandler für das Wägezellenmodul, dem Level Converter &amp; ADS1115S, sowie diverser Widerstände und Kondensatoren zur Leitungspufferung. (Details siehe Schaltplan).<br>Hier der vollständige Ausbau inkl. aller Module (auch dem LoRa Bee in rot):</p><p><img src="images_v2/BeeIoT_BoardLayout2.jpg"></p><p>Über den 25 pol. Sub_D Stecker (links) wird u.a. auch die Akku-Out Zuleitung in die Box geführt, wo sie von dem StepUp Regler (Mit LED Anzeige) auf 5V gewandelt wird.<br>Von rechts oben führt ein Mini-USB Stecker die externe USB Verbindung in die Box mit dem datenanteil direkt an den ESP32. Von der Lochraster-Platine wiederum führen mehrere Steckervarianten die Sensorleitungen zu dem extern 25-pol. Sub-D Stecker. Hierfür gibt es sicher noch elegantere Steckverbinder Lösungen ev. incl. Abschirmung. Dieser Aufbau erwies sich aber als erstaunlich wenig störanfällig, trotz Ausseneinsatz und einer langen (3m) USB Zuleitung für Testzwecke.</p><h3 id="steckverbinder"><a name="steckverbinder" href="#steckverbinder"></a>Steckverbinder</h3><p>Hier nun eine Übersicht aller verwendeten Steckervarianten:</p><ul>
+<li>Links:    Der runde 6-polige One-Wire Extension Stecker mit dem typ. 3 OW Bus Leitungen.</li><li>Mittig:    Der ePaper Stecker direkt an der Panel Rückseite</li><li>Rechts:    Der 25-pol. Sub-D Stecker als Ausgang von der IP67 Computenode-Box</li></ul><p><img src="images_v2/BeeIoT_ExternalConnectors.jpg"></p><p>Hier nun die Steckerbelegungen aller internen Steckverbinder auf der Lochrasterplatine<br><img src="images_v2/BeeIoT_InternalConnectors.jpg"></p><p>Die Adapterplatine mit Komponentenbeschriftung:</p><p><img src="images_v2/MCU_ExtBoard.jpg"></p><h2 id="die-esp32-beeiot-sketch-software"><a name="die-esp32-beeiot-sketch-software" href="#die-esp32-beeiot-sketch-software"></a>Die ESP32 BeeIoT Sketch Software</h2><p>Anders als bei meiner letzten <strong><a href="https://github.com/mchresse/BeeLog">BeeLog Projekt</a></strong> Beschreibung mit Raspberry Pi gibt es bei ESP32 nicht viel vorzubereiten, da wir keine OS Instanz zu konfigurieren haben.<br>Eine schrittweise Einführung und Konfiguration der ESP32 Einheit ab der SD Karten Vorbereitung bis zum prinzipiellen Ablauf der Logger SW ist aber ev. doch sinnvoll.</p><h3 id="esp32-vorbereitungen"><a name="esp32-vorbereitungen" href="#esp32-vorbereitungen"></a>ESP32 Vorbereitungen</h3><p>Wer sich noch nicht so sehr mit dem ESP32 auskennt, dem sei diese Einsteiger Buch <strong><a href="https://www.robolinkmarket.com/datasheet/kolban-ESP32.pdf">Kolbans Bok on ESP32 v2018</a></strong> empfohlen.</p><p>Die Vorzüge des ESP32 DevKit C habe ich eingangs dieser Beschreibung schon diskutiert.<br>Hier nun der vollständige Schaltplan der Konstruktion inkl. GPIO Ports am DevkitC board Connector J8 :</p><p><img src="images_v2/BeeIoT_Schematics.jpg"></p><p>Der Testaufbau erfolgte mit einer Lochrasterplatine + Fädeldraht-Technik.<br><img src="images_v2/MCU_Board_Back.jpg"></p><p>Die interne WiFi Antenne des devKitC Boards hatte innerhalb meines Hauses keine Reichweitenprobleme.<br>Auch für das loRaan Modul wird eine Duck Antenne direkt an die Extension Box geschraubt und bleibt damit noch innerhalb der Waagenbox. Sollten sich hier reichweitenproblme anmelden, ist es leicht möglich eine Antenne mit längerem Kabel auserhalb zu platzieren.</p><p>Da der ESP32 keine USB Port Erweiterungen ermöglicht bleibt der ext. USB Stecker rein für die Ladespannung oder FW Update reserviert.</p><p>Hier die vollständige DevKitC Sockel-Belegung J8, wie sie für alle Modelle ab v4 gültig ist:</p><p><img src="images_v2/ESP32_DevKit_Pinout.jpg"></p><p>Jeder GPIO Port darf allerdings nur mit <strong>max. 50mA an 3.3V</strong> belastet werden.</p><p>Nach dem vollständigen Aufbau und Fertigstellung der Verdrahtung des Extension Boards samt externer Sensor Zuleitungen bleibt nur noch eine 2-16GB große Micro SD Karte mit FAT32 zu formatieren (Quick Format reicht) und in das MircoSD Kartenmodul zu stecken. Mein Sketch akzeptiert aber auch eine fehlende SD Karte, und setzt die Messung fort.</p><p><strong>Nun kommen wir endlich zur Software Seite:</strong></p><h3 id="esp32-ide"><a name="esp32-ide" href="#esp32-ide"></a>ESP32 IDE</h3><p>Bei Ardunio MCU kompatiblen IDEs fällt einem als erstes das Arduine-IDF ein. Sie bietet das nötigste um einen Sketch auf das Modul zu bringen, aber verwöhnt durch VS oder NetBeans sucht man zur Unterstützung eines effizienten Test/Debugging/Release Cycles aber schnell nach Alternativen.</p><p>Für meine ESP32 Projekte verwende ich aber <strong>PlatformIO</strong>, wo das Library lifecycle management einfacher zu handhaben ist und vom look-and-feel näher an Netbeans ist, welches ich wiederum für die typischen Cross-compilation/debugging sessions mit einem RaspberryPi verwende.<br>Die Standard Online Doku findet sich hier: <strong><a href="https://docs.platformio.org/en/latest/what-is-platformio.html">https://docs.platformio.org/en/latest/what-is-platformio.html</a></strong></p><p>Zur weiteren Beschreibung der Arduino-IDF sei aber noch folgender Link empfohlen:<br><strong><a href="https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions">Windows instructions – ESP32 Board in Arduino IDE</a></strong></p><p>oder den <strong><a href="https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html">ESP-IDF Programming Guide</a></strong></p><p>Vielleicht findt sich ja in nächster Zeit noch eine brauchbare Netbeans Implementierug….</p><h4 id="platformio"><a name="platformio" href="#platformio"></a>PlatformIO</h4><p>Ich verwende statt der Espressif IDF direkt, die darauf aufbauende PlatformIO als Plugin der Microsoft VSCode Umgebung.<br>Netbeans wäre noch eleganter, konnte aber bisher keine verlässliche Plugin Anweisung finden, die auch die UART basierte cross compilation unterstützt.</p><p>Eine Beschreibung der Erstinstallation von VSCode und der Konfiguration des PlatformIO Plugins findet sich hier: <strong><a href="https://docs.platformio.org/en/latest/ide/vscode.html#ide-vscode">PlatformIO IDE for VSCode
+</a></strong><br>Jede Menge weiterer Tutorials finden sich mit den Suchbegriffen “platformio tutorial”.<br>Daher gehe ich im weiteren davon aus, dass die Nutzung von PlatformIO gegeben ist, wobei der Sketch natürlich universell verwendet werden kann, wenn man die IDE library links entsprechend anpasst.</p><p><strong>PlatformIO.ini</strong> ist die zentrale Build Steuerdatei von PlatformIO, wo alle compile und link settings per Projekt geführt werden.<br>Die Definition für das ESP32 DevKitC (esp32dev) in PlatformIO.ini lauten somit:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+; build_flags = 
+build_flags = -DCONFIG_WIFI_SSID=\&quot;MYAP\&quot; -DCONFIG_WIFI_PASSWORD=\&quot;MYPASS\&quot;
+
+; Serial Monitor Options
+monitor_speed = 115200
+monitor_flags =
+    --encoding
+    hexlify
+</code></pre>">[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+; build_flags = 
+build_flags = -DCONFIG_WIFI_SSID=\"MYAP\" -DCONFIG_WIFI_PASSWORD=\"MYPASS\"
+
+; Serial Monitor Options
+monitor_speed = 115200
+monitor_flags =
+    --encoding
+    hexlify
+</code></pre><h3 id="esp32-sensor-libraries-+-build"><a name="esp32-sensor-libraries-+-build" href="#esp32-sensor-libraries-+-build"></a>ESP32 Sensor Libraries + Build</h3><p>Nachdem die IDE eurer Wahl installierte wurde, solltet ihr ein neues Projekt auf Basis der Angaben, wie oben in der platformio.ini vorgesehen, anlegen.<br>In den Projektfolder kann das BeeIoT Projekt von Github ge-cloned werden. Ggfs. müssen die Sourcefiles im Projekt der IDE angemeldet werden. Die generierte platformIO.ini Datei der IDE sollte um die Angaben aus der platformIO.tpl Datei angepasst werden.</p><p>Es empfiehlt sich die Libraries nach dem herunterladen (z.B. von github, oder unterstützt durch die IDE) per ‘lib_deps’ Anweisung zu spezifizieren, da es sonst bei gleichen Header File Namen zu falschen Zuordnungen kommen kann (z.B. bei Lora.h).</p><p>Diese kann man in platformIO.ini per Lib-Namen oder per Lib-ID angeben (eindeutiger):</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>; Library options
+lib_deps =
+    GxEPD               ; #2951 by Jean-Marc Zingg
+    DallasTemperature   ; #54 by Miles Burton
+    RTClib              ; # 83 by Adafruit
+    U8g2                ; 942 by oliver
+    Adafruit GFX Library; #13
+    SdFat               ; #322 by Bill Greiman
+    HX711               ; #1100 by bodge
+    OneWire             ; #1 by Paul Stoffregen
+    Adafruit ADS1X15     ; #342
+    LoRa                ; #1167 by Sandeep Mistry
+
+; Options for further Lora tests
+;    LMIC-Arduino         ; #852 by IBM
+;    RadioHead              ; #124 by Mike McCauley
+;    Heltec ESP32 Dev-Boards ; #6051 by Heltec Automation
+</code></pre>">; Library options
+lib_deps =
+    GxEPD               ; <span class="hljs-preprocessor">#2951 by Jean-Marc Zingg</span>
+    DallasTemperature   ; <span class="hljs-preprocessor">#54 by Miles Burton</span>
+    RTClib              ; <span class="hljs-preprocessor"># 83 by Adafruit</span>
+    U8g2                ; <span class="hljs-number">942</span> by oliver
+    Adafruit GFX Library; <span class="hljs-preprocessor">#13</span>
+    SdFat               ; <span class="hljs-preprocessor">#322 by Bill Greiman</span>
+    HX711               ; <span class="hljs-preprocessor">#1100 by bodge</span>
+    OneWire             ; <span class="hljs-preprocessor">#1 by Paul Stoffregen</span>
+    Adafruit ADS1X15     ; <span class="hljs-preprocessor">#342</span>
+    LoRa                ; <span class="hljs-preprocessor">#1167 by Sandeep Mistry</span>
+
+; Options <span class="hljs-keyword">for</span> further Lora tests
+;    LMIC-Arduino         ; <span class="hljs-preprocessor">#852 by IBM</span>
+;    RadioHead              ; <span class="hljs-preprocessor">#124 by Mike McCauley</span>
+;    Heltec ESP32 Dev-Boards ; <span class="hljs-preprocessor">#6051 by Heltec Automation</span>
+</code></pre><p>Diese Lbraries sollten nach einer Installation z.B. über PlatformIO unter folgendem Pfad mit ‘library Name’_ID aufgeführt sein: C:\Users\”username” \’.platformio’\lib</p><p>Zuletzt müssen eure WLAN credentials in der build_flags Zeile angepasst werden.</p><p>Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern der per upload auf den ESP32 geladen wird.</p><p>Der Dependency Graph könnte wie folgt aussehen:</p><pre><code data-origin="<pre><code>Dependency Graph
+|-- &amp;lt;GxEPD&amp;gt; 3.0.9
+|   |-- &amp;lt;Adafruit GFX Library&amp;gt; 1.6.1
+|   |   |-- &amp;lt;SPI&amp;gt; 1.0
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;DallasTemperature&amp;gt; 3.8.0
+|   |-- &amp;lt;OneWire&amp;gt; 2.3.5
+|-- &amp;lt;RTClib&amp;gt; 1.3.3
+|   |-- &amp;lt;Wire&amp;gt; 1.0.1
+|-- &amp;lt;U8g2&amp;gt; 2.27.2
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|   |-- &amp;lt;Wire&amp;gt; 1.0.1
+|-- &amp;lt;Adafruit GFX Library&amp;gt; 1.6.1
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;SdFat&amp;gt; 1.1.0
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;HX711&amp;gt; 0.7.1
+|-- &amp;lt;LoRa&amp;gt; 0.7.0
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;OneWire&amp;gt; 2.3.5
+|-- &amp;lt;Adafruit ADS1X15&amp;gt; 1.0.1
+|   |-- &amp;lt;Wire&amp;gt; 1.0.1
+|-- &amp;lt;FS&amp;gt; 1.0
+|-- &amp;lt;SD(esp32)&amp;gt; 1.0.5
+|   |-- &amp;lt;FS&amp;gt; 1.0
+|   |-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;SPI&amp;gt; 1.0
+|-- &amp;lt;WiFi&amp;gt; 1.0
+|-- &amp;lt;Wire&amp;gt; 1.0.1
+|-- &amp;lt;Preferences&amp;gt; 1.0
+|-- &amp;lt;ESPmDNS&amp;gt; 1.0
+|   |-- &amp;lt;WiFi&amp;gt; 1.0
+|-- &amp;lt;NTPClient&amp;gt; 3.1.0
+|-- &amp;lt;WebServer&amp;gt; 1.0
+|   |-- &amp;lt;WiFi&amp;gt; 1.0
+|   |-- &amp;lt;FS&amp;gt; 1.0
+</code></pre>">Dependency Graph
+|-- &lt;GxEPD&gt; 3.0.9
+|   |-- &lt;Adafruit GFX Library&gt; 1.6.1
+|   |   |-- &lt;SPI&gt; 1.0
+|   |-- &lt;SPI&gt; 1.0
+|-- &lt;DallasTemperature&gt; 3.8.0
+|   |-- &lt;OneWire&gt; 2.3.5
+|-- &lt;RTClib&gt; 1.3.3
+|   |-- &lt;Wire&gt; 1.0.1
+|-- &lt;U8g2&gt; 2.27.2
+|   |-- &lt;SPI&gt; 1.0
+|   |-- &lt;Wire&gt; 1.0.1
+|-- &lt;Adafruit GFX Library&gt; 1.6.1
+|   |-- &lt;SPI&gt; 1.0
+|-- &lt;SdFat&gt; 1.1.0
+|   |-- &lt;SPI&gt; 1.0
+|-- &lt;HX711&gt; 0.7.1
+|-- &lt;LoRa&gt; 0.7.0
+|   |-- &lt;SPI&gt; 1.0
+|-- &lt;OneWire&gt; 2.3.5
+|-- &lt;Adafruit ADS1X15&gt; 1.0.1
+|   |-- &lt;Wire&gt; 1.0.1
+|-- &lt;FS&gt; 1.0
+|-- &lt;SD(esp32)&gt; 1.0.5
+|   |-- &lt;FS&gt; 1.0
+|   |-- &lt;SPI&gt; 1.0
+|-- &lt;SPI&gt; 1.0
+|-- &lt;WiFi&gt; 1.0
+|-- &lt;Wire&gt; 1.0.1
+|-- &lt;Preferences&gt; 1.0
+|-- &lt;ESPmDNS&gt; 1.0
+|   |-- &lt;WiFi&gt; 1.0
+|-- &lt;NTPClient&gt; 3.1.0
+|-- &lt;WebServer&gt; 1.0
+|   |-- &lt;WiFi&gt; 1.0
+|   |-- &lt;FS&gt; 1.0
+</code></pre><h3 id="die-programm-struktur"><a name="die-programm-struktur" href="#die-programm-struktur"></a>Die Programm Struktur</h3><p>Um sich in den Source schneller zurecht zu finden, hier in paar Übersichten:</p><p>Die Client HW Modul Struktur in SW Module übertragen:<br><img src="images_v2/SWModuleSheet.jpg"></p><p>Die dazugehörige Klassen-Struktur:<br><img src="images_v2/SWClassView.jpg"></p><p>Zuletzt der Funktions-Programmflussplan der Loop() Schleife:<br><img src="images_v2/SWMainFlow.jpg"></p><h4 id="setup-phase"><a name="setup-phase" href="#setup-phase"></a>Setup Phase</h4><p>Mögliche Debugmeldungen habe ich über ein simples Macro parametrisiert:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define    BHLOG(m)    if(lflags &amp;amp; m)    // macro for Log evaluation
+uint16_t    lflags;      // BeeIoT log flag field; for flags enter beeiot.h
+
+void setup(){
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
+lflags = LOGBH + LOGLORA + LOGLAN;
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span>    BHLOG(m)    <span class="hljs-keyword">if</span>(lflags &amp; m)    <span class="hljs-comment">// macro for Log evaluation</span></span>
+<span class="hljs-keyword">uint16_t</span>    lflags;      <span class="hljs-comment">// BeeIoT log flag field; for flags enter beeiot.h</span>
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">setup</span><span class="hljs-params">()</span></span>{
+<span class="hljs-comment">// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;</span>
+lflags = LOGBH + LOGLORA + LOGLAN;
+</code></pre><p>Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.</p><p>Mit den obigen 3 Schalter: LOGBH + LOGLORA + LOGLAN<br>könnte der Konsol-Output wie folgt aussehen:</p><pre><code data-origin="<pre><code>&amp;gt;*******************************&amp;lt;
+&amp;gt; BeeIoT - BeeHive Weight Scale &amp;lt;
+&amp;gt;       by R.Esser 10/2019      &amp;lt;
+&amp;gt;*******************************&amp;lt;
+LogLevel: 273
+Main: Start Sensor Setup ...
+  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+  Setup: Init runtime config settings
+  Setup: Init RTC Module DS3231
+  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: STart RTC Test Output ...
+2019/12/13 (Friday) 15:15:52
+ since midnight 1/1/1970 = 1576250152s = 18243d
+ now + 7d + 30s: 2019/12/21 3:45:58
+
+  Setup: SPI Devices ...
+  Setup: HX711 Weight Cell
+  Setup: ADS11x5
+  Setup: Wifi in Station Mode
+  Setup: WIFI port in station mode
+  Wifi: Scan started...done
+  Wifi: networks found: 3
+        1: MyNet (-45)*
+        2: YOURNet (-45)*
+        3: WLAN-Foreign (-91)*
+  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  WIFI: MDNS-Responder gestartet.
+  Setup: Init NTP Client
+Friday, December 13 2019 15:15:56
+  Setup: Get new Date &amp;amp; Time:
+  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
+  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP: BHDB updated by RTC time
+  Setup: SD Card
+  Setup: LoRa SPI device &amp;amp; Base layer
+    Setup: Start Lora SPI Init
+    LoRa: init succeeded.
+  Setup: ePaper + show start frame
+  Setup: OneWire Bus setup
+  Setup: Setup done
+</code></pre>">&gt;*******************************&lt;
+&gt; BeeIoT - BeeHive Weight Scale &lt;
+&gt;       by R.Esser 10/2019      &lt;
+&gt;*******************************&lt;
+LogLevel: 273
+Main: Start Sensor Setup ...
+  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+  Setup: Init runtime config settings
+  Setup: Init RTC Module DS3231
+  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: STart RTC Test Output ...
+2019/12/13 (Friday) 15:15:52
+ since midnight 1/1/1970 = 1576250152s = 18243d
+ now + 7d + 30s: 2019/12/21 3:45:58
+
+  Setup: SPI Devices ...
+  Setup: HX711 Weight Cell
+  Setup: ADS11x5
+  Setup: Wifi in Station Mode
+  Setup: WIFI port in station mode
+  Wifi: Scan started...done
+  Wifi: networks found: 3
+        1: MyNet (-45)*
+        2: YOURNet (-45)*
+        3: WLAN-Foreign (-91)*
+  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  WIFI: MDNS-Responder gestartet.
+  Setup: Init NTP Client
+Friday, December 13 2019 15:15:56
+  Setup: Get new Date &amp; Time:
+  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
+  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP: BHDB updated by RTC time
+  Setup: SD Card
+  Setup: LoRa SPI device &amp; Base layer
+    Setup: Start Lora SPI Init
+    LoRa: init succeeded.
+  Setup: ePaper + show start frame
+  Setup: OneWire Bus setup
+  Setup: Setup done
+</code></pre><p>Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wi si voneinander abhängig sind und wo möglich nach protokoll Klassen sortiert.<br>So liegen die SPI devices und I2C devices je intereinander, weil sie teilweise diesselbe Vorbereitung benötigen.<br>Optional resourcen (WiFi + NTP alsauch das ePaper enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Widereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.</p><p>Die Logik der Setup-Bereiche:</p><ol>
+<li>Initiaisierung des Log Flag fields</li><li>Preset des Monitoring LED IO ports auf Output mode =&gt; sonst sieht man nichts…</li><li>Aktivierung des Seriellen Ports für Debugmeldungen</li><li>Reentry detection aus dem Sleep Mode oder nach Stromausfall (not supported yet)<br> a. -&gt; Widerherstellung der Runtime Parameter aus dem residenten Bereich (RTC-EEPROM, oder ESP32-preferences-Area)<br> b. Check Grund des WakeUp Calls -&gt; ggfs. Massnahme7Aktion starten (not supported yet)</li><li>Hole interne unique BoardID aus der ESP32 Fuse-Area</li><li>Init_Cfg() Initiaisierung aller Strukturen zur Sensordatenbehandlung (interne Mini-DB: bhdb)</li><li>Init RTC Module</li><li>Init SPI port</li><li>Init HX711 ADC for Weight cell access</li><li>Init ADS1115 for Battery monitoring</li><li>Discover WiFi and NTP client service<br>a. Wenn NTP verfügbar -&gt; read new time =&gt; init RTC Modul<br>b. If no NTP: Read time from RTC Module only<br>c. Start Web-HTTP service to offer config page for firsttime init settings -&gt; wait till done </li><li>Init SD Card access -&gt; create new logfile if not detected</li><li>Init Lora Module for sending -&gt; join to gateway (if any in range)</li><li>Init ePaper Moduel -&gt; Show startframe of BeeIoT</li><li>init OneWire Bus -&gt; detect expected 3 temperatur sensors</li></ol><p>Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.<br>ToDo: =&gt; Ein Fehler im Programm oder in der Library ?</p><p>Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der Pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist es wiederum  effektiver als LoRaWan.</p><blockquote>
+<p>Hinweis:<br>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das Programm “mitten drin” neugestartet, aber eine WiFi Connection schlägt dann meist fehl. In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel…</p>
+</blockquote><h3 id="loop-phase"><a name="loop-phase" href="#loop-phase"></a>Loop Phase</h3><p>Wie bei Arduino’s üblich, wird nach dem Ende der Setupphase automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:</p><p>Am Serial Monitor zeigt sie sich so:</p><pre><code data-origin="<pre><code>&amp;gt;&amp;gt;****************************************&amp;lt;
+&amp;gt; Main: Start BeeIoT Weight Scale
+&amp;gt; Loop: 0  (Laps: 0)
+&amp;gt;****************************************&amp;lt;
+  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+  NTP: BHDB updated by RTC time
+  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+    LoRa[0x77]: Sent #0:&amp;lt;0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+&amp;gt; LoRaWAN package to 0x88 - 75 bytes -&amp;gt; done
+  MAIN: Enter Sleep/Wait Mode for 360 sec.
+</code></pre>">&gt;&gt;****************************************&lt;
+&gt; Main: Start BeeIoT Weight Scale
+&gt; Loop: 0  (Laps: 0)
+&gt;****************************************&lt;
+  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+  NTP: BHDB updated by RTC time
+  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+    LoRa[0x77]: Sent #0:&lt;0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
+&gt; LoRaWAN package to 0x88 - 75 bytes -&gt; done
+  MAIN: Enter Sleep/Wait Mode for 360 sec.
+</code></pre><p>Die Logik-Ablauf für die loop() Routine:</p><ol>
+<li>Get round robin index of new sensor data objekt for (BHDB-Idx)</li><li>Check: Any Web request reached -&gt; take special action (not supported yet</li><li>read out time &amp; date from  RTC Module</li><li>Read new sensor data<br> a. HX711: Weigtcell value -&gt; send message if neg. weight jump within 30 min. -&gt; swarm alarm<br> b. OW-Bus: all temperature sensors<br> c. ADS1115: Power Source values -&gt; ToDo: shutdown if Battery is empty</li><li>Log Sensor Data to SDCard</li><li>Log Sensor Data via LoRa WAN / WiFi</li><li>Update epaper Display by new Sensor + Power data</li><li>Start DeepSleep mode (or just delay loop with blinking LED for test purpose) for 10Min.<br>10 back to loop()</li></ol><h3 id="kalibrierung-der-waage"><a name="kalibrierung-der-waage" href="#kalibrierung-der-waage"></a>Kalibrierung der Waage</h3><p>Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0 kg Bezug  nicht passend ist.</p><p>Im Kapitel: <strong><a href="#ad-wandler-hx711">AD Wandler HX711</a></strong><br>haben wir folgende Richtwerte errechnet:</p><ul>
+<li>Der ADC HX711 liefert den Wert: <strong>44</strong>/Gramm.</li><li>Als 1Kg-Scale-Divider sollte man mit dem Wert: <strong>44000/kg</strong> starten.</li></ul><p>Nun gilt es noch den scale_Offset Wert zu ermitteln, wie in der header datei HX711Scale.h definiert.</p><p>Dazu dient folgende Vorgehensweise:</p><ol>
+<li>In der Datei: HX711Scale.h den Wert scale_Offset rücksetzen: <strong>#define scale_Offset 0</strong></li><li>In Setup() Routine des main.cpp das LogFlag: um LOGHX711 ergänzen, und das Programm neu bauen und starten</li><li>Ohne jedes Gewicht auf der Waage misst HX711 nun via serial Monitor den adäquaten Wert für das aktuelle Stockwaagen-Deckelgewicht (z.B. 243000 entspricht bei 44000/kg =&gt; 5.5kg).<br>-&gt; HX711: Weight(raw) : 24300 - Weight(unit): 5.523 kg</li><li>In der Datei: HX711Scale.h den Wert scale_Offset nun mit diesem ersten Raw-Wert setzen.</li><li>Programm neu bauen und starten</li><li>Jetzt sollten ca. 0.000kg angezeigt werden und im ser.Monitor der Offsetwert ausgegeben werden<br>Ideal: HX711: Weight(raw) : 0 - Weight(unit): -0.000 kg</li><li>Nun ein bekanntes hohes (&gt;50kg) Referenzgewicht auf die Waage stellen.</li><li>Den HX711-Messwert im ser. Monitor durch das bekannte Gewicht teilen. Das Ergebnis sollte in der Nähe von 44000 liegen, was dem rechnerischen kg Wert entspricht.</li><li>Diesen “neuen” Wert in HX711Scale als scale_DIVIDER Wert (statt 44000) festlegen</li><li>In der setup() Routine das LogFlag wieder rücksetzen, Programm neu bauen und starten</li></ol><p>Nun sollte ohne jedes Gewicht weiterhin 0,0kg angezeigt werden, und das rerenzgewicht mit dem richtigen kg-Wert.<br>Die Waage ist nun kalibriert und einsatzbereit</p><p>Als Refernzgewicht eignet sich auch ein gut bekanntes eigenes Körpergewicht:<br>-&gt; Aufsteigen, und Deltawert durch bekanntes Körpergewicht als REFKG angeben.</p><p><strong>Vorteil</strong>: Der Messfehler ist um die Anzahl Kg des Körpergewichts kleiner als nur bei einem kleinen Refernzgewicht.</p><p>Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.</p><p>Soweit der Aufbau der Binenstockwaage. Wenn euch noch weitere Angaben für einen erfolgreichen Aufbau fehlen, lasst es mich wissen. Ansonsten viel Spass dabei…</p><h1 id="hier-noch-ien-paar-addendums:"><a name="hier-noch-ien-paar-addendums:" href="#hier-noch-ien-paar-addendums:"></a>Hier noch ien paar Addendums:</h1><h3 id="optional:-webui-daten-service"><a name="optional:-webui-daten-service" href="#optional:-webui-daten-service"></a>Optional: WebUI Daten Service</h3><p>Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.<br>Dort werden sie über die Zeit in einer CSV Datei zeilenweise aufgesammelt und es entsteht der Bedarf, diese als Funktions-Diagramme darzustellen.<br>Will man also diese Messergebnisse als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:</p><p>Apache 2 Webserver installieren:</p><ol>
+<li>sudo apt-get update</li><li>sudo apt-get install apache2</li><li>Test: <a href="http://localhost:80">http://localhost:80</a></li><li>WebHome: /var/www/html     (Apache 2 default)</li><li>Server Configuration: /etc/apache2/ports.conf</li></ol><p>ToDo: “Hier folgt nun die Beschreibung der Webpage Datei: index.html zur darstellung der Datendiagramme mittels Dygraph-library”</p><p>Beipiel:  <strong><a href="http://randolphesser.de/imkerei/index.html">http://randolphesser.de/imkerei/index.html</a></strong><br>=&gt; Menü: Bienenstockwaage </p><h2 id="webui-todo---liste"><a name="webui-todo---liste" href="#webui-todo---liste"></a>WebUI ToDo - Liste</h2><h3 id="ideen-liste"><a name="ideen-liste" href="#ideen-liste"></a>Ideen-Liste</h3><p>für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umgesetzt):</p><ul>
+<li><mark>Header</mark><ul>
+<li>Standortangaben zur Beute: -&gt; Headline<ul>
+<li><mark>Bild</mark></li><li>Standortname Strasse, PLZ, Wegbeschreibung</li><li><mark>Inhaber/Imkerangaben</mark> + Adresse</li><li>Waagen Unique ID</li></ul>
+</li><li><mark>Startkonfiguration der Beute zu Messbeginn</mark></li><li>Wann letztes Daten-update: Datum &amp; Uhrzeit</li><li>Besuchszähler: siehe auch <a href="http://www.andyhoppe.com/">www.andyhoppe.com</a></li></ul>
+</li><li><mark>5-Tages Wettervorhersage pro Standort</mark><ul>
+<li><a href="http://wetterstationen.meteomedia.de/?station=109680&amp;wahl=vorhersage"><strong><mark>Holzkirchen Wetterstation</mark></strong></a></li><li>DWD joomla plugin -&gt; ftp update</li><li><mark>Varroawetter-Link: Bsp.:</mark><ul>
+<li><a href="http://www.bienenkunde.rlp.de/Internet/global/inetcntr.nsf/dlr_web_full.xsp?src=UK532RPP90&amp;p1=title%3DOtterfing%7E%7Eurl%3D%2FInternet%2FAM%2FNotesBAM.nsf%2FABC_Imker_RLP%2F26E7CFEF10EF5FD5C12574E40023B052%3FOpenDocument&amp;p3=D2KEU5C709&amp;p4=XF10F330RV"><mark><strong>Otterfing</strong></mark></a></li></ul>
+</li></ul>
+</li><li><mark>Tages Min/Max Werte: mit Uhrzeit</mark><ul>
+<li><mark>Gewicht absolut</mark></li><li><mark>Gewicht Tagesdelta</mark></li><li><mark>Temp. Min/Max</mark></li></ul>
+</li><li><mark>Aktuelle Moment-Werte (aktualisierbar)</mark><ul>
+<li><mark>Aussen-Temperatur</mark></li><li><mark>Luftfeuchte</mark></li><li><mark>Beutentemperatur</mark></li><li><mark>Gesamt-Gewicht</mark></li></ul>
+</li><li>Messwerte Diagramm (auf Lora-Gateway RPi)<ul>
+<li>Mit Tag Nacht Schattierung</li><li>2-Tagesfenster:<ul>
+<li><mark>Gewicht, Beutentemp. + Aussentemperatur + Luftfeuchte</mark></li></ul>
+</li><li><mark>Auswertung mit Monatsfenster (zoombar per button)</mark><ul>
+<li><mark>Temperaturfenster Min/Max pro Tag</mark></li><li><mark>Gewichtsdelta / Tag</mark></li><li>Trendkurve für Gew. + Temp.</li><li><mark>Oder Zeitfenster der Ausgabe einstellbar</mark></li><li><mark>Aktionsnachricht an Messpunkt einblenden</mark></li></ul>
+</li><li><mark>Gewichtsverlauf vertikal (- links &lt;-&gt; rechts +)</mark><ul>
+<li><mark>Horizontal scrollbar an rechter/linker Seite mit Datum &amp; Uhrzeit</mark></li></ul>
+</li></ul>
+</li><li>Arbeitspage für Völkerdurchsicht<ul>
+<li>Historie der zuletzt durchgeführten Arbeiten -&gt; E-Stockbuch ?</li><li>Notizenfenster für aktuell geplante Arbeit<ul>
+<li>Bausteine als Listbox</li></ul>
+</li><li>Als elektronisches Stockbuch exportierbar/druckbar</li><li>Jahresstockbuch über alle Völker -&gt; scrollbar</li><li>Tablet-tauglich</li></ul>
+</li><li><mark>Konfiguration von Waagen Betriebsparameter -&gt; config.ini File</mark><ul>
+<li><mark>Rekalibrierungsfunktion von Waage und Temp-Sensoren (online ?)</mark></li></ul>
+</li><li><mark>Export/Importfunktion</mark><ul>
+<li><mark>aller Mess-/Log Daten</mark></li><li><mark>Konfigurationseinstellungen</mark></li><li><mark>Auto mirroring aller Daten auf remote server + backupPfad</mark></li></ul>
+</li><li>Alarm-/Diebstahlfunktion<ul>
+<li>GPS Sensordaten</li><li>Kombiniert mit Gewichtssprüngen</li><li><mark>Batterie-/PowerSource Alarm</mark></li><li>Schwarmalarm ?</li><li>-&gt; email / SMS ?</li></ul>
+</li><li>Thermobild Analyse -&gt; kein Öffnen nötig<ul>
+<li>Best. Volksstärke</li><li>Sitz</li><li>Temperaturzustand</li></ul>
+</li><li>BeeCounter ?</li><li><mark>7.2Ah Blei Gel Akku (Panasonic)</mark></li></ul><h2 id="todo:-optional-hw-module"><a name="todo:-optional-hw-module" href="#todo:-optional-hw-module"></a>ToDo: Optional HW Module</h2><p>Wettervorhersage tool: <code>sudo apt-get install weather-util</code><br>Flughafen München „Franz Josef Strauß“ (IATA-Code: MUC, ICAO-Code: EDDM)<br>Test with <code>Weather eddm</code></p><p>Daten-Transfer und Web Anbindung per GSM Module</p><p>Bienen-Stock Aussen-Kamera mit IR: Zur Kontrolle des Volkssitz im Winter</p><p>Weitere interessante Messwerte</p><ul>
+<li>Luftfeuchtigkeit (Grundkonfiguration)</li><li><mark>Außentemperatur (Grundkonfiguration)</mark></li><li><mark>Temperatur innerhalb der Bienenstöcke</mark></li><li>Niederschlagsmenge</li><li>Luftdruck</li><li>Windstärke</li><li>Einbruchalarm</li><li>==Spannungsüberwachung der eingebauten 3.7V Batterie</li><li><mark>Spannungsüberwachung der externen 12V Batterie</mark></li></ul><p>Farbig markierte Vorschläge sind in der aktuellen Programmversion v2.0 bereits enthalten.</p><h3 id="nutzung-einer-sim-karte"><a name="nutzung-einer-sim-karte" href="#nutzung-einer-sim-karte"></a>Nutzung einer SIM-Karte</h3><p>Aus: <a href="http://www.imker-stockwaage.de/hardware/simkarte"><strong>Imker-Stockwaage.de</strong></a><br>Siehe auch unter: <em><a href="http://www.kasmocom.de">http://www.kasmocom.de</a></em><br>    und suchen dort unter: <a href="http://www.kasmocom.de/?p=2137"><strong>M2M PrePaid-SIM</strong></a><br>Ansonsten kann jede Prepaid-SIM verwendet werden.<br>Es gibt auch kostenlose SIM´s mit kostenlosem Datenvolumen.<br>Für die BeeIoT Lösung ist eine NB-LTE(IoT)SIM nötig.</p><h2 id="quellen/links"><a name="quellen/links" href="#quellen/links"></a>Quellen/Links</h2><h3 id="marktübersicht-professioneller-bienenstockwaagen"><a name="marktübersicht-professioneller-bienenstockwaagen" href="#marktübersicht-professioneller-bienenstockwaagen"></a>Marktübersicht professioneller Bienenstockwaagen</h3><p>Professionelle Anbieter digitaler Bienenstockwaagen in der EU:</p><ul>
+<li>BeeWatch (Biene &amp; Natur GmbH)</li><li>BeeWise (aus Frankreich, Hersteller nicht erkenntlich)</li><li>Capaz Bienenwaage (CAPAZ GmbH)</li><li>Funk Bienenstockwaage (WE GRO Engineering)</li><li>GSM-Monitor der Bienenstöcke (Vorlon Technology ltd.)</li><li>Kaptármérleg (auf Ungarisch)</li><li>Livelco (Livelco sp. z o.o.)</li><li>Optilog-b (Borntraeger GmbH)</li><li>Penso Bienenstockwägesystem (Emsystech Engineering)</li><li>SMS Cebelar (aktuell nur auf Slowenisch; verwendet die JShip-Plattform und ist daher nur für den Einsatz in geschützten Umgebungen zu empfehlen)</li><li>Wolf Waagen (Wilhelm Wolf e.K.)</li><li>XLOG bee (Micro El)</li></ul><p>Weitere Bienenstockwaage-Projekte im Eigenbau (Hobby- und Open Source-Projekte):</p><ul>
+<li>Beelogger (Arduino)</li><li>Fighting with Technology: Beehive scale build details (auf Englisch; Arduino)</li><li>Hackerbee.com (auf Englisch, work in progress)</li><li>Imker-stockwaage.de (Arduino)</li><li>Mois-Blog Bienenwaage (Arduino)</li><li>OpenBeeLab (auf Französisch)<br>.<br>.</li></ul><p>Das war es soweit erstmal von meiner Seite.</p><p>Viel Spass damit und einen Imkerlichen Gruss<br>wünscht Euch </p><p>Randolph Esser<br>(mail(a)RandolphEsser.de)</p><p><a href="http://www.RandolphEsser.de/Imkerei"><strong>www.RandolphEsser.de</strong></a><br>==&gt; Imkerei</p>
+
+<footer style="position:fixed; font-size:.8em; text-align:right; bottom:0px; margin-left:-25px; height:20px; width:100%;">generated by <a href="http://pad.haroopress.com" target="_blank">haroopad</a></footer>
+</body>
+</html>

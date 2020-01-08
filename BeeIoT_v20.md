@@ -665,25 +665,45 @@ Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot
 Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns "weiter arbeiten/schlafen", liegt der Stromverbrauch aber nahezu bei 0mA.
 
 #### LoRa WAN Support
-Für die remote Connection ohne "stromfressenden" WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen topologie Reichweiten bis zu 8km ermöglichen.
+Für die remote Connection ohne "stromfressenden" WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen Topologie Reichweiten bis zu 8km ermöglichen.
 
-Das LoRa Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.
+Das LoRa-WAN Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.
 
-Das verbaute Funkmodul bietet erstmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das **[LoRaWAN Protokoll](https://lora-alliance.org/about-lorawan)** leisten die dazugehörigen Bibliotheken.
-Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombinirt mit SSH enthalten.
-Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbidnung hat um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.
+Das verbaute Funkmodul bietet erst einmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das **[LoRaWAN Protokoll](https://lora-alliance.org/about-lorawan)** leisten die dazugehörigen Bibliotheken (z.B. die OSS Lib: LMIC von IBM -> search in GitHub).
+Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombiniert mit SSH enthalten.
+Es zeigten sich bei der Migration der LMIC Lib Instablitäten des LoRa Modes -> es wurden immer wieder FSK Mode IRQs empfangen, was die LoRa Statusführung durcheinander bringt.
+Auch ist das von IBM gewählte OS layer Model nicht so handsam wie erwartet.
+In Summe stellte die LMIC-Lib für den ESP32 in Kombination mit den übrigen Aktionen zur Sensorbehandlung zumindest auf Node/Cient Seite einen ziemlichen overhead dar, der aber leider nötig ist um das vollständige LoRa-WAN Protokoll nach Spezifikation zu erfüllen (Band-Hopping, Encryption, OTAA joining usw.).
+Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbindung hat, um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.
+Da ein GW ggfs. mit mehreren Clients quasi-gleichzeitig zu tun hat, ist die LMIC STack implementierung optimal. Der OS Layer nimmt einem hier das Queueing hereinkommender Pakete sowie die protokollgerechte Quittierung und Bandmanagement vollständig ab.
+Ein weiterer interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:
+https://wiki.opennet-initiative.de/wiki/LoRaSensor .
 
-Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!).
-Ein interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:
-https://wiki.opennet-initiative.de/wiki/LoRaSensor
+Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!):
+Soll heisen auf basis des RADIO layers von LMIC habe ich ein eigenes "schmalspur" WAN Protokoll entworfen (BeeIoT-WAN) welches die Paket Kommunikation auf den rudimentären Austausch von Sensordaten mit einfacher Quittierung (zunächst ohne Multi-Bandmanagement oder Encryption) "optimiert".
+Auf dieser Basis habe ich die ESP32 Client- und RaspberryPi GW-seitigen Module entworfen.
+Kerneigenschaften der Module:
+- Erkennung durch Sender/Empfänger-IDs im "BeeIoT-WAN"-eigenen Header (nur 5 Bytes)
+- CRC basierte Datenprüfung
+- automatische Quittierung und resend/retry Kommunikation als Flow Control
 
+Was noch fehlt:
+- Collison detection (aber ggfs. durch die CRC Prüfung und ResendAnforderung abgedeckt)
+- Encryption auf AES Basis (abgeleitet von der LMIC AES Lib)
+- Multi Band management (heute wird nur 1 band gewählt, das aber nur alle 10-15 Minuten benutzt)
+- Duty Time recognition
 
-Hauptanbieter des LoRa-MAC Layer Moduls ist die Firma Semtech, die auch die **[LoRaWAN Spezifikation v1.0.3](https://lora-alliance.org/resource-hub/lorawanr-specification-v103)** als Member der "LoRA Alliance" mitherausgegeben hat. 
-Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats & Shields entworfen. 
+Hauptanbieter des LoRa-MAC Layer HW Moduls ist die Firma Semtech, die auch die **[LoRaWAN Spezifikation v1.0.3](https://lora-alliance.org/resource-hub/lorawanr-specification-v103)** als Member der "LoRA Alliance" mit herausgegeben hat.
+Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats & Shields entworfen.
 Der kleinste Vertreter davon (ohne GPS Modul) ist das "Dragino Lora-Bee Modul" **[(Wiki)](http://wiki.dragino.com/index.php?title=Lora_BEE)**, welches via SPI angeschlossen wird.
-Darauf befindet sich ein RFII95-98W mit SPI Interface.
-Zusätzlich gibt es noch eine Reset leitung (RST) und 6 universelle IO Leitungen für weitere Funktionen DIO0..DIO5. DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei Events wie z.B. eingetroffene Pakete usw. Für den STd. LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber nicht benötigt.
-Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen gemapped, und DIO2 auf eine Reda Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.
+
+Darauf befindet sich ein RFII95-98W mit SPI Interface. Dieses Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllen densleben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.
+
+Die Verdrahtung ist recht einfach:
+Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion, eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5. 
+DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei RX/TX-Events. Für den Standard LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt (solange man beim LoRa-Mode bleibt; Für den FSK Mode werden häufig auch DIO0-2 genutzt).
+Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren. 
+Alle 3 Leitungen werden aber nur im Input Mode betrieben (zur Signalisierung des Semtech Modul Status).
 
 <img src="./images_v2/Dragino_Lora_Bee.jpg"> <img src="./images_v2/Dragino_Lora_Bee_Cabling.jpg">
 
@@ -729,21 +749,22 @@ Die aktuell verwendeten GPIO Port Definitionen:
 #define BEE_DIO2	34		// unused by BEE_Lora;  connected to EPD K3 -> but is a RD only GPIO !
 ```
 Die Rolle des Client Node MAC layers ist in dieser **[Backend Specification](https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10)** festgehalten
-Aktuell gehen meine Tests in Richtung des LMIC LoRaWAN SW Stack Implementierung von IBM.
-GitHub -> "lmic_pi".
+Aktuell gehen meine Tests, wie oben bereits erwähnt, in Richtung der LMIC LoRaWAN SW Stack Implementierung von IBM. Der MAC Layer ist durch die Implementierungen in hal.c + Radio.c enthalten.
+(siehe GitHub -> "lmic_pi"). Dieses habe ich als Basis für den GW seitigen BeeIot-WAN Aufbau auf Basis RPi verwendet.
+Alternative sei auch noch die "RadioHead" Implementierng genannt (s. GitHub).
 
-Für MAC Layer Testzwecke habe ich im Sketch aktuell nur die Lora-Library von Sandeep (GitHub) in Verwendung. Bevor keine stabile MAC Layer Kommunikation betseht braucht man über eine WAN Kommunikation 'noch' nicht zu kümmern.
+Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend. Über eine vollständige WAN Kommunikation kümmere ich mich später...
 
-Da ich ein eigens LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses nodes: Activation-by-Personalization (ABP) und als eindeutige LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-"DevAddr" zur Node-Protokoll ID gebildet werden.
+Da ich ein eigens "BeeIoT-"LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses ESpP32 Nodes: Activation-by-Personalization (ABP) und als eindeutige statisceh LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-"DevAddr" zur Node-Protokoll ID (DevID) gebildet werden.
 Eine Anbindung an das allseits beliebte offene TT-Netzwerk schränkt die Nutzung durch limitierte Anzahl Daten und Paket/Zeitraum zu sehr ein.
-Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.)
+Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.) Für solch intensiven Datenaustausch ist aber Multiband management mit Duty Time Control nötig, weil sonst das einzelne Band zu sehr vereinnahmt wird.
 
 ### NarrowBand-IoT
-NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten ANteil und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer TG soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.
+NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.
 
 Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.
 
-Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.
+Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.
 
 Das von mir bestellte Modul: 
 Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
@@ -755,11 +776,11 @@ Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
 
 => Link zum **[SIM7000E-HAT Wiki](https://www.waveshare.com/wiki/SIM7000E_NB-IoT_HAT?Amazon)**
 
-Verwendet folgende ESP32 Anschluss pins:
+Verwendet folgende ESP32 Anschluss pins (falls verfügbar)
 + TXD0: Optional
 + RXD0: Optional
 
-=> bis jetzt nicht implementiert !
+=>In V2.0 aber nicht implementiert !
 
 ### RTC Uhrzeit-Modul
 Für eine gutes Monitoring und auch für die LoRaWAn Kommunikation ist stets die genaue Uhrzeit zur Synchronisation der Datenpakete nötig.
@@ -769,15 +790,15 @@ Für eine genaue Uhrzeit kommen 2 Quellen in Frage:
 - via localem RTC Module
 
 Beide sind im Sketch implementiert und redundant zueinander verschaltet:
-Betshet keine WiFi Verbindung wird das RTC Modul direkt befragt. betshet eine WiFi Verbindung wird Kontakt zu einem NTP Server aufgenommen und das klokale RTC Modul neu mit der NTP Zeit synchronisiert.
-darüber halten wir stets eine hinreichend genaue Uhrzeit vor.
+Besteht keine WiFi Verbindung wird das RTC Modul direkt befragt. Ansonsten wird via WiFi Verbindung Kontakt zu einem NTP Server aufgenommen und das lokale RTC Modul neu mit der NTP Zeit synchronisiert.
+Darüber erhalten wir stets eine hinreichend genaue Uhrzeit vor.
 
 <img src="./images_v2/RTC_DS3231.jpg">
 
-Dieses RTC Modul mit DS3231 chip enthält neben einem sehr genauen uhrzeitmodul auch ein internes EEPROM zur residenten Ablage von Betriebsdaten im Sleep Mode. Dies ist eine zusätzliche Alternative zur ESP NVRAM area oder gar der SDCard. Weitere test müssen noch heruasarbeiten welcher Weg den geringeren Stromverbrauch bei hinreichender Speichergröße für die Sleep Mode Housekeeping Daten darstellt. Auch ist die Häufigkeit der Widerbeschreibbarkeit ein Thema, da der Sleep Mode alle 10-Minuten gestartet wird.
+Dieses RTC Modul mit DS3231 chip enthält neben einem sehr genauen Uhrzeitmodul auch ein internes EEPROM zur residenten Ablage von Betriebsdaten im Sleep Mode. Dies ist eine zusätzliche Alternative zur ESP NVRAM area oder gar der SDCard. Weitere Test müssen aber noch herausarbeiten, welcher Weg den geringeren Stromverbrauch bei hinreichender Speichergröße für die Sleep Mode Housekeeping Daten darstellt. Auch ist die Häufigkeit der Widerbeschreibbarkeit ein Thema, da der Sleep Mode alle 10-Minuten gestartet wird.
 
 Dieses EEPROM 2432 ist mit einer eigenen Stromversorgung über ein 3V onboard Lithium-Akku (LIR-2032/3.6V)gepuffert.
-Alternativ kann der Li-Akku auch durch eine normale 3V Li Zelle (CR2032 oder CR2016) ersetzt werden, dann aber mit endlicher Laufzeit. Eine "LostPower()" Funktion erlaubt einen Batterie-Stromausfall zu erkennnen und nachträglich abzufragen um dann ggfs. die Uhrzeit neu zu stellen.
+Alternativ kann der Li-Akku auch durch eine normale 3V Li Zelle (CR2032 oder CR2016) ersetzt werden, dann aber mit endlicher Laufzeit. Eine "LostPower()" Funktion erlaubt einen Batterie-Stromausfall zu erkennnen und nachträglich abzufragen, um dann ggfs. die Uhrzeit neu zu stellen.
 
 In rot umrandet eingezeichnet sind die, von mir vorgenommenen und **[allseits empfohlenen Änderungen](https://thecavepearlproject.org/2014/05/21/using-a-cheap-3-ds3231-rtc-at24c32-eeprom-from-ebay/)** um den Stromverbrauch weiter zu reduzieren:
 - Als Massnahme zur Stromreduktion:
@@ -791,7 +812,7 @@ In rot umrandet eingezeichnet sind die, von mir vorgenommenen und **[allseits em
 
 Das ergibt folgendes Mapping im I2C Adressraum des ESP32 Treibers:
 <img src="./images_v2/I2C_AddressScan.jpg">
-Hinter der ADresse 0x48 verbirgt sich das ADS1115 Modul.
+Hinter der Adresse 0x48 verbirgt sich das ADS1115 Modul.
 
 Das I2C API wird am ESP32 über 2 frei definierte GPIO Leitungen realisiert:
 ```cpp
@@ -806,9 +827,9 @@ RTC_DS3231 rtc;     // Create RTC Instance
 ```
 Die RTClib unterstützt die RTC Typen:	RTC_DS1307, RTC_DS3231, RTC_PCF8523
 
-Die rtc.begin() Funktion stützt sich auf die default I2C GPIO Einstellungen der Wire Lib ab, wie über die IDE im Rahmen der Standard Wire-Library (Wire.h) definiert, verwendet.
+Die rtc.begin() Funktion stützt sich auf die default I2C GPIO Einstellungen der Wire Lib ab, wie sie über die IDE im Rahmen der Standard Wire-Library (Wire.h) definiert, verwendet werden.
 
-Über das RTC Modul kann man sehr elegant auch zu Testzwecken weitere I2C Module anschliessen (unten im Bild), da die I2C Leitungen durchgeschleift wurden. Die benötigten Pullup Widerstände für SDA udn SCL Leitung befinden sich zur Entlastung der ESP32 Ausgangstreiber ebenfalls onboard, sichtbar durch 2 SMD chips mit dem Aufdruck 472.
+Über das RTC Modul kann man sehr elegant zu Testzwecken weitere I2C Module anschliessen (unten im Bild), da die I2C Leitungen durchgeschleift wurden. Die benötigten Pullup Widerstände für SDA udn SCL Leitung befinden sich zur Entlastung der ESP32 Ausgangstreiber ebenfalls onboard, sichtbar durch 2 SMD chips mit dem Aufdruck 472 (verbrauchen aber ca. 4 mAh !).
 
 Als weiteres Feature führt dieses RTC Modul einen internen Chip-Temperatursensor, den man elegant auslesen kann. In diesem Fall verwende ich ihn zum Monitoring der Extension BOX internen Temperatur, um einem ev. Hitzetod der Elektronik an heissen Sommertagen vorzubeugen.
 
@@ -1406,7 +1427,7 @@ lflags = LOGBH + LOGLORA + LOGLAN;
 Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.
 
 Mit den obigen 3 Schalter: LOGBH + LOGLORA + LOGLAN
-könnte der Kosnol-Output wie folgt aussehen:
+könnte der Konsol-Output wie folgt aussehen:
 ```
 >*******************************<
 > BeeIoT - BeeHive Weight Scale <
@@ -1478,13 +1499,13 @@ Die Logik der Setup-Bereiche:
 Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.
 ToDo: => Ein Fehler im Programm oder in der Library ?
 
-Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist das effektiver als LoRaWan.
+Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der Pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist es wiederum  effektiver als LoRaWan.
 
 >Hinweis:
->Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das programm mitten drinn neugestartet, aber eine WiFi Connection schlägt meist fehl. Hier ist Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel...
+>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das Programm "mitten drin" neugestartet, aber eine WiFi Connection schlägt dann meist fehl. In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel...
 
 ### Loop Phase
-Nach dem Ende der Setupphase wird automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:
+Wie bei Arduino's üblich, wird nach dem Ende der Setupphase automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:
 
 Am Serial Monitor zeigt sie sich so:
 ```
@@ -1500,7 +1521,7 @@ Am Serial Monitor zeigt sie sich so:
   MAIN: Enter Sleep/Wait Mode for 360 sec.
 ```
 
-Auch hier die Logikreihenfolge für die loop() Routine:
+Die Logik-Ablauf für die loop() Routine:
 1. Get round robin index of new sensor data objekt for (BHDB-Idx)
 2. Check: Any Web request reached -> take special action (not supported yet
 3. read out time & date from  RTC Module
@@ -1517,7 +1538,7 @@ Auch hier die Logikreihenfolge für die loop() Routine:
 
 
 ### Kalibrierung der Waage
-Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0kg Bezug  nicht passend ist. 
+Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0 kg Bezug  nicht passend ist.
 
 Im Kapitel: **[AD Wandler HX711](#ad-wandler-hx711)**
 haben wir folgende Richtwerte errechnet:
@@ -1550,6 +1571,12 @@ Als Refernzgewicht eignet sich auch ein gut bekanntes eigenes Körpergewicht:
 
 Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.
 
+
+
+Soweit der Aufbau der Binenstockwaage. Wenn euch noch weitere Angaben für einen erfolgreichen Aufbau fehlen, lasst es mich wissen. Ansonsten viel Spass dabei...
+
+Hier noch ien paar Addendums:
+==============================
 
 ### Optional: WebUI Daten Service
 Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.
@@ -1695,9 +1722,10 @@ Weitere Bienenstockwaage-Projekte im Eigenbau (Hobby- und Open Source-Projekte):
 Das war es soweit erstmal von meiner Seite.
 
 Viel Spass damit und einen Imkerlichen Gruss
-wünscht euch 
+wünscht Euch 
 
 Randolph Esser
+(mail(a)RandolphEsser.de)
 
 
 [**www.RandolphEsser.de**](http://www.RandolphEsser.de/Imkerei)
