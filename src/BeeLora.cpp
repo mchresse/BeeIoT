@@ -1,11 +1,23 @@
 //*******************************************************************
-// LoRa Core layer - Support routines
+// BeeLoRa.cpp
+// from Project: https://github.com/mchresse/BeeIoT
+//
+// Description:
+// LoRa MAC layer - Support routines for BeeIoT-WAN Protocol
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// See LICENSE file in the project root for full license information:
+// https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
 //*******************************************************************
 // LoRa local Libraries
 //*******************************************************************
+// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
 #include <Arduino.h>
 #include <stdio.h>

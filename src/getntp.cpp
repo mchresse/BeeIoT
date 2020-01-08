@@ -1,7 +1,23 @@
 //*******************************************************************
+// getntp.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
 // NTP - Time Support routines
 // Contains main setup() and helper() routines for NTP
 // Requires WIFI connected !
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+//
+// This Module contains code derived from
+// - Espressif Wifi.h library example code
 //*******************************************************************
 
 #include <Arduino.h>

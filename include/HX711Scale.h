@@ -1,7 +1,18 @@
-//***************************************************
+//*******************************************************************
+// HX711Scale.h  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
 // HX711 connect weight scale parameter file
-//***************************************************
-
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
 
 
 // Bosche H40A with 2mV/V sensibility

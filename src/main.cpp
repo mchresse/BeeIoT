@@ -1,67 +1,88 @@
 //*******************************************************************
-// BeeIoT - Main Header file
+// BeeIoT - Main Header file  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
 // Contains main setup() and loop() routines for esspressif32 platforms.
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
-
+//
+// This Module contains code derived from
+// - The "espressif/arduino-esp32/preferences" library, 
+//   distributed under the Apache License, Version 2.0
+// - MQTT Library distributed under the MIT-License: 
+//   https://opensource.org/licenses/mit-license.php
+// - 
+//
+//
 //*******************************************************************
 // BeeIoT Local Libraries
 //*******************************************************************
+// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
 #include <Arduino.h>
 #include <stdio.h>
 #include <iostream>
 #include <string>
-#include <esp_log.h>
-#include "sdkconfig.h"
-#include <Preferences.h>
+// #include <esp_log.h> 
+// from Espressif Systems IDF: https://github.com/espressif/esp-idf/tree/71b4768df8091a6e6d6ad3b5c2f09a058f271348/components/log
+
+#include "sdkconfig.h"   // generated from Arduino IDE
+#include <Preferences.h> // from espressif-esp32 library @ GitHub
 // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
 
 // Libraries for SD card at ESP32_
 // ...has support for FAT32 support with long filenames
-#include <SPI.h>
-#include "FS.h"
-#include "SD.h"
+#include <SPI.h>        // from Arduino IDE
+#include <FS.h>         // from Arduino IDE
+#include <SD.h>         // from Arduino IDE
 #include "sdcard.h"
-#include <LoRa.h>
+#include <LoRa.h>       // Lora Lib from SanDeep (https://github.com/sandeepmistry/arduino-LoRa)
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-#include <GxEPD.h>
+#include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
 #include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
-#include "BitmapWaveShare.h"
+#include "BitmapWaveShare.h"            // from WaveShare -> FreeWare
 
-// FreeFonts from Adafruit_GFX
-#include <Fonts/FreeMonoBold9pt7b.h>
+// FreeFonts from Adafruit_GFX          // from adafruit / Adafruit-GFX-Library  (BSD license)
+#include <Fonts/FreeMonoBold9pt7b.h>    
 #include <Fonts/FreeMonoBold12pt7b.h>
 //#include <Fonts/FreeMonoBold18pt7b.h>
 //#include <Fonts/FreeMonoBold24pt7b.h>
 //#include <Fonts/FreeSansBold24pt7b.h>
 
 // DS18B20 libraries
-#include <OneWire.h>
-#include <DallasTemperature.h>
+#include <OneWire.h>            // from PaulStoffregen/OneWire library @ GitHub
+#include <DallasTemperature.h>  // LGPL v2.1
 #include "owbus.h"
 
 // ADS1115 I2C Library
-#include <driver/i2c.h>
+#include <driver/i2c.h>         // from esp-idf/components/driver/I2C.h library @ GitHub
 
 // Libraries for WIFI & to get time from NTP Server
-#include <WiFi.h>
-#include <wificfg.h>
-#include "RTClib.h"
+#include <WiFi.h>               // from espressif-esp32 library @ GitHub
+#include "wificfg.h"            // local
+#include "RTClib.h"             // from by JeeLabs adafruit /RTClib library @ GitHub
 
 // include TCP Client library
-#include <TCPClient.h>
+#include "TCPClient.h"          // local
 
 // include MQTT Client library
-#include <MQTTClient.h>
+#include <MQTTClient.h>         // local
 
 // Library fo HX711 Access
-#include <HX711.h>
-#include "HX711Scale.h"
+#include <HX711.h>              // HX711 library for Arduino (https://github.com/bogde/HX711)
+#include "HX711Scale.h"         // local
 
-#include "beelora.h"
-#include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
+#include "beelora.h"            // local
+#include "beeiot.h"             // local: provides all GPIO PIN configurations of all sensor Ports !
 
 //************************************
 // Global data object declarations
@@ -148,7 +169,7 @@ lflags = LOGBH + LOGLORA;
   Serial.println();
   Serial.println(">*******************************<");
   Serial.println("> BeeIoT - BeeHive Weight Scale <");
-  Serial.println(">       by R.Esser 10/2019      <");
+  Serial.println(">       by R.Esser (c) 10/2019  <");
   Serial.println(">*******************************<");
   if(lflags > 0)
     Serial.printf ("LogLevel: %i\n", lflags);
@@ -179,9 +200,8 @@ lflags = LOGBH + LOGLORA;
   BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231");
   if (setup_rtc() != 0){
     BHLOG(LOGBH) Serial.println("  Setup: RTC setup failed");
-    // enter here exit code, if needed
-    // isrtc should be -1 here;
-    // hopefully NTP can help out later on
+    // enter exit code here, if needed (monitoring is hard without correct timestamp)
+    // isrtc should be -1 here; hopefully NTP can help out later on
   }else{
     BHLOG(LOGLAN) rtc_test();
   }
@@ -238,21 +258,21 @@ lflags = LOGBH + LOGLORA;
   BHLOG(LOGBH) Serial.println("  Setup: SD Card");
   if (setup_sd() != 0){
     BHLOG(LOGBH) Serial.println("  Setup: SD Card Setup failed");
-    // enter here exit code, if needed
+    // enter exit code here, if needed
   }
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: LoRa SPI device & Base layer");
   if (setup_LoRa() != 0){
     BHLOG(LOGBH) Serial.println("  Setup: LoRa Base layer setup failed");
-    // enter here exit code, if needed
+    // enter exit code here, if needed
   }
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
   if (setup_owbus() == 0){
     BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
-    // enter here exit code, if needed
+    // enter exit code here, if needed
   }
   GetOWsensor(0); // read temperature the first time
 
@@ -262,7 +282,7 @@ lflags = LOGBH + LOGLORA;
 
   if (setup_epd() != 0){
     BHLOG(LOGBH)Serial.println("  Setup: ePaper Test failed");
-    // enter here exit code, if needed
+    // enter exit code here, if needed
   }
 
 //***************************************************************
@@ -368,7 +388,7 @@ float x;              // Volt calculation buffer
 #endif // ADS_CONFIG
 
 //***************************************************************
-  SDlogdata();      // save all collected sensor data to SD or send by LoRa
+  Logdata();      // save all collected sensor data to SD or send by LoRa
 
 //***************************************************************
 #ifdef EPD_CONFIG
@@ -399,18 +419,18 @@ float x;              // Volt calculation buffer
 
 
 //*******************************************************************
-// SDlogdata()
+// Logdata()
 // Append current sensor data set to SD card -> logdata file
 // and send it via LoRaWAN
 //*******************************************************************
-String dataMessage; // Global data objects
-
-// Write the sensor readings on the SD card
-void SDlogdata(void) {
+void Logdata(void) {
 uint16_t sample;
 int i;
+String dataMessage; // Global data objects
+
   sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
+// Create tatus Report based on the sensor readings
   dataMessage =  
               String(bhdb.date) + " " + 
               String(bhdb.time) + "," + 
@@ -430,17 +450,18 @@ int i;
   Serial.printf("  Loop[%i]: ", sample);
   Serial.print(dataMessage);
 
+  // Write the sensor readings on the SD card
   if(issdcard ==0){
     appendFile(SD, SDLOGPATH, dataMessage.c_str());
   }else{
-    BHLOG(LOGSD) Serial.println("  SDLog: No SDCard, no local Logfile...");
+    BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
 
-  // but may be via LoRa ...
+  // Send Sensor report via BeeIoT-LoRa ...
   if(islora==0){  // do we have an active connection (are we joined ?)
     LoRaLog(CMD_LOGSTATUS, dataMessage);
   }else{
-    BHLOG(LOGLORA) Serial.println("  SDLog: No LoRa, no Logfile on air ...");
+    BHLOG(LOGLORA) Serial.println("  Log: No LoRa, no Report on air ...");
   }
 
   return;

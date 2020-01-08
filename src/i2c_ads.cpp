@@ -1,7 +1,24 @@
 //*******************************************************************
-// I2c-ADS11x5 - Support routines
-// Contains main setup() and loop() routines for I2C sensosrs.
+// i2c_ads.cpp  
+// from Project https://github.com/mchresse/BeeIoT
 //
+// Description:
+// Contains main setup() and loop() routines for I2C sensosrs.
+// 
+//-------------------------------------------------------------------
+// Copyright (c) 10/2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+//
+// This Module contains code derived from
+// - HX711 library example code
+//*******************************************************************
+//
+//   BeeIoT I2C-address mapping for ADS11x5 & RTC Module:
 //      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
 // 00:          -- -- -- -- -- -- -- -- -- -- -- -- --
 // 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --

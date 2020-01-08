@@ -1,16 +1,29 @@
 //*******************************************************************
+// SDaccess.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
 // SD-Access - Support routines
-// https://github.com/espressif/arduino-esp32/blob/master/libraries/SD/examples/SD_Test/SD_Test.ino
-// provides basic helper functions for SD Card file system management
-//  listDir()
-//  createDir()
-//  removeDir()
-//  readFile()
-//  writeFile()
-//  appendFile()
-//  renameFile()
-//  deleteFile()
-//  testFile()
+//
+//-------------------------------------------------------------------
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+// This Module contains code derived from
+// - SD.h library example code:
+//   https://github.com/espressif/arduino-esp32/blob/master/libraries/SD/examples/SD_Test/SD_Test.ino
+//   provides basic helper functions for SD Card file system management
+//    listDir()
+//    createDir()
+//    removeDir()
+//    readFile()
+//    writeFile()
+//    appendFile()
+//    renameFile()
+//    deleteFile()
+//    testFile()
 //*******************************************************************
 
 #include <Arduino.h>

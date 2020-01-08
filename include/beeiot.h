@@ -1,8 +1,21 @@
 //*******************************************************************
-// CONFIG.INI - BeeIoT - Main Configuration file
+// beeiot.h  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// BeeIoT - Main Configuration file
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
+
 /* Map of used ESP32-DevKit-C PIN Configuration:
-* For Default board settings see also 
+*  For Default board settings see also 
 *    C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
 *================================================================
 |Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
@@ -245,7 +258,7 @@ void    i2c_scan    (void);
 int16_t ads_read	(int channel);
 
 // in main.cpp
-void	SDlogdata   (void);
+void	Logdata     (void);
 void	mydelay		(int32_t tval);
 
 // in multiSPI.cpp

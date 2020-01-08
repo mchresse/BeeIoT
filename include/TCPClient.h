@@ -1,9 +1,22 @@
 
+//*******************************************************************
+// TCPClient.h  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// Provides prototypes for a TCP Client session class
+//
+//----------------------------------------------------------
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
 #ifndef TCPClient_h
 #define TCPClient_h
 
 #include <Arduino.h>
-
 #include <WiFi.h>
 
 
@@ -33,9 +46,6 @@ class TCPClient
 		// data contains the bytes to be sent out, len is the number of bytes to be sent out
 		// returns 1 when ok, 0 when error
 		int Send(byte data[], int len);
-
-
-
 };
 
 #endif

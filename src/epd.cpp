@@ -1,6 +1,23 @@
 //*******************************************************************
-// ePaper Libraries
+// epd.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// ePaper Library functions based on GxEPD library
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
+//
+// This Module contains code derived from
+// - GxEPD library example code
+//*******************************************************************
+
 #include <Arduino.h>
 #include <SPI.h>
 // for defaut ESP32 SPI pin definitions see e.g.:

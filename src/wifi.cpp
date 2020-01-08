@@ -1,12 +1,31 @@
 //*******************************************************************
-// Wifi - Support routines
+// wifi.cpp - WiFi and Webservice support routines 
+// from Project: https://github.com/mchresse/BeeIoT
+//
+// Description:
 // Contains main setup() and loop() routines for Wifi connections
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// See LICENSE file in the project root for full license information:
+// https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
+//
+// This code provides incorporated code from 
+// - The "espressif/arduino-esp32/preferences" library, which is 
+//   distributed under the Apache License, Version 2.0
+// - MQTT Library distributed under the MIT-License: 
+//   https://opensource.org/licenses/mit-license.php
+//   
+//*******************************************************************
 
 //*******************************************************************
 // Wifi management Local Libraries
 //*******************************************************************
+// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
 #include <Arduino.h>
 #include <stdio.h>
@@ -15,8 +34,7 @@
 #include <Preferences.h>   // this library is used to get access to Non-volatile storage (NVS) of ESP32
 // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
 
-
-// Libraries to get Wifi acces and time from NTP Server
+// Libraries used to get Wifi access and time from NTP Server
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
@@ -53,6 +71,10 @@ extern String ConfigName[8];     // name of the configuration value
 extern String ConfigValue[8];    // the value itself (String)
 extern int    ConfigStatus[8];   // status of the value    0 = not set    1 = valid   -1 = not valid
 extern int    ConfigType[8];     // type of the value    0 = not set    1 = String (textbox)   2 = Byte (slider)
+
+
+// Code from: MQTT Library distributed under the MIT-License: 
+//   https://opensource.org/licenses/mit-license.php
 
 // construct the object attTCPClient of class TCPClient
 extern TCPClient attTCPClient;

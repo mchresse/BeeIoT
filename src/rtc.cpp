@@ -1,19 +1,27 @@
-/******************************************************************************* 
- * File:   RTC.cpp - Real Time Clock Module based on DS3231
- * Author: Randolph Esser - Copyright 2019
- * Created on 18. November 2019
- * This file is part of the "BeeIoT" program/project.
- *
- * RTC DS3231 Module address: 0x68
- * EEPROM AT24C32 address   : 0x53 (with Jumper on A2) (adjustable 0x50 ... 0x56)
- * More Info: https://arduino-projekte.webnode.at/meine-libraries/rtc-ds3231/
- *
- * Description:
- * RTC Setup() and useful function routines
- *******************************************************************************
- */ 
 //*******************************************************************
-// HX711Scale Local Libraries
+// rtc.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// RTC Setup() and useful function routines
+// RTC DS3231 Module address: 0x68
+// EEPROM AT24C32 address   : 0x53 (with Jumper on A2) (adjustable 0x50 ... 0x56)
+// More Info: https://arduino-projekte.webnode.at/meine-libraries/rtc-ds3231/
+//
+//-------------------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+// This Module contains code derived from
+// - RTClib library example code
+//*******************************************************************
+
+//*******************************************************************
+// BeeIoT Libraries
 //*******************************************************************
 
 #include <Arduino.h>

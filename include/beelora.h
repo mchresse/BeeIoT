@@ -1,6 +1,17 @@
 //*******************************************************************
-// BeeLora.h - BeeIoT - Lora package flow definitions
-// by R. Esser
+// BeeLora.h  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// BeeIoT-WAN - Lora package flow definitions
+//
+//----------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 
 #define BEEIOT_DEVID    0x77
@@ -14,8 +25,8 @@
 #define CMD_NOP			0	// do nothing -> for xfer test purpose
 #define CMD_LOGSTATUS	1	// process Sensor log data set
 #define CMD_SDLOG		2	// one more line of SD card log file
-#define CMD_NOP3		3	// reserved
-#define CMD_NOP4		4	// reserved
+#define CMD_RETRY		3	// Tell target: Package corrupt, do it again
+#define CMD_ACK			4	// Received message complete
 #define CMD_NOP5		5	// reserved
 #define CMD_NOP6		6	// reserved
 #define CMD_NOP7		7	// reserved

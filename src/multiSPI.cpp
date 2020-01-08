@@ -1,11 +1,27 @@
 //*******************************************************************
-// BeeIoT - Main Header file
-// Contains main setup() and loop() routines for esspressif32 platforms.
+// multiSPI.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// Setup of V-SPI Bus for multile clients
+// Majorly defines pinmode of Std. SPI IO lines
+//
+//-------------------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+//
+// This Module contains code derived from
+// - none
 //*******************************************************************
 // For ESP32-DevKitC PIN Configuration look at BeeIoT.h
-
+//
 //*******************************************************************
-// BeeIoT Local Libraries
+// SPI local Libraries
 //*******************************************************************
 
 #include <Arduino.h>

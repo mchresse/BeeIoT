@@ -1,15 +1,28 @@
 //*******************************************************************
-// OneWire bus Device - Support routines
+// owbus.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
 // Contains main setup() and helper() routines for OneWire bus connected
 // devices.
-// See also
-// https://randomnerdtutorials.com/esp32-multiple-ds18b20-temperature-sensors/
+// See also at https://randomnerdtutorials.com/esp32-multiple-ds18b20-temperature-sensors/
+//
+//-------------------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
+// This Module contains code derived from
+// - OWBUS library example code
+//*******************************************************************
 
 //*******************************************************************
 // OWBus Local Libraries
 //*******************************************************************
+// For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
 #include <Arduino.h>
 #include <stdio.h>

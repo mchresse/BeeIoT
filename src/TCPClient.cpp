@@ -1,4 +1,23 @@
-// TCP Library
+//*******************************************************************
+// TCPClient.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// TCP Client session Library
+//
+//-------------------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+// This Module contains code derived from
+// - TCPClient library example code
+//   see also https://www.arduino.cc/en/Reference
+//*******************************************************************
+//
 // as ESP32 Arduino Version
 #include "TCPClient.h"
 
@@ -8,11 +27,7 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 
 
 // Constructor of Class TCPClient   (function name = class name)
-TCPClient::TCPClient()
-{
-	
-}
-
+TCPClient::TCPClient() { }
 
 
 // Closes TCP/IP-connection

@@ -1,10 +1,10 @@
+// MQTT Library function
+// Code based on PubSubClient by Nick O'Leary: http://pubsubclient.knolleary.net/index.html
+// Distributed under MIT-License: https://opensource.org/licenses/mit-license.php
+// For BeeIoT project used 3rd party open source see also Readme_OpenSource.txt
+
 #include <Arduino.h>
 #include <TCPClient.h>
-
-
-// MQTT Library functions based on PubSubClient by Nick O'Leary: http://pubsubclient.knolleary.net/index.html
-// MIT-License: https://opensource.org/licenses/mit-license.php
-
 
 // define class functions and variables
 class MQTTClient

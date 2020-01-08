@@ -1,15 +1,32 @@
+//*******************************************************************
+// MQTTClient.cpp  
+// from Project https://github.com/mchresse/BeeIoT
+//
+// Description:
+// MQTT protocol support routines
+// 
+//-------------------------------------------------------------------
+// Copyright (c) 2019-present, Randolph Esser
+// All rights reserved.
+// This file is distributed under the BSD-3-Clause License
+// The complete license agreement can be obtained at: 
+//     https://github.com/mchresse/BeeIoT/license
+// For used 3rd party open source see also Readme_OpenSource.txt
+//*******************************************************************
+//
+// This Module contains code derived from
+// - The "MQTT Library" functions are based on PubSubClient by 
+//   Nick O'Leary: http://pubsubclient.knolleary.net/index.html
+//   distributed based on MIT-License: https://opensource.org/licenses/mit-license.php
+//*******************************************************************
+
 #include "MQTTClient.h"
 
 extern uint16_t	lflags;      // BeeIoT log flag field
 
-
-
+//-----------------------------------------------------------------------------------
 // Constructor of Class MQTTClient   (function name = class name)
-MQTTClient::MQTTClient()
-{
-	
-}
-
+MQTTClient::MQTTClient() { }
 
 // Send MQTT CONNECT request to MQTT Server via TCP
 // if username == "" then username/password will not be integrated in the request
