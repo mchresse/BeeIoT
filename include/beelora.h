@@ -19,7 +19,9 @@
 
 #define MAX_PAYLOAD_LENGTH  0x80  // max length of LoRa MAC raw package
 #define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
-#define MSGBURSTRETRY	1	// Do it 3 times the same.
+#define MAXRXACKWAIT	10	// # of Wait loops of MSGBURSTWAIT
+#define MSGMAXRETRY		3	// Do it max. n times again
+#define MAXRXPKG		3	// Max. number of parallel processed RX packages
 
 // LoRa "SendMessage()" user command codes
 #define CMD_NOP			0	// do nothing -> for xfer test purpose
@@ -32,20 +34,24 @@
 #define CMD_NOP7		7	// reserved
 
 // LoRa raw data package format (e.g. for casting on received LoRa MAC payload)
+#define BEEIOT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
+#define BEEIOT_DLEN		MAX_PAYLOAD_LENGTH-BEEIOT_HDRLEN
 typedef struct {
-	byte	destID;		// last ID of receiver/target (GW)
-	byte	sendID;		// last ID of BeeIoT Node who has sent the stream
-	byte	index;		// last package index
+	byte	destID;		// ID of receiver/target (GW)
+	byte	sendID;		// ID of BeeIoT Node who has sent the stream
+	byte	index;		// package index
 	byte	cmd;		// command code from Node
-	byte	length;		// length of last status data string
-	char	status[MAX_PAYLOAD_LENGTH-5+1]; // remaining status array
-} beeiotdata_t;
+	byte	length;		// length of following status data string (0 .. MAX_PAYLOAD_LENGTH-5 incl. EOL(0D0A))
+	char	data[BEEIOT_DLEN]; // remaining status array excl. this header bytes above
+} beeiotpkg_t;
 
 typedef struct {
     byte idx;           // index of sent message: 0..255 (round robin)
     byte retries;       // number of initiated retries
 	byte ack;			// ack flag 1 = message received
-    beeiotdata_t * data; // sent message struct
+    beeiotpkg_t * data; // sent message struct
 } beeiotmsg_t;
 
-int LoRaLog(byte cmd, String outgoing);
+int  BeeIoTParse	(beeiotpkg_t * msg);
+int  sendMessage	(beeiotpkg_t * TXData, int sync);
+void onReceive		(int packetSize);

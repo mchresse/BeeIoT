@@ -276,7 +276,6 @@ void showdata		(int sampleID);
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(void);
-int sendMessage	(byte cmd, String outgoing);
-void onReceive		(int packetSize);
+int  LoRaLog		(byte cmd, const char * outgoing, byte outlen, int sync);
 void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h

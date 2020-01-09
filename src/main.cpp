@@ -425,7 +425,6 @@ float x;              // Volt calculation buffer
 //*******************************************************************
 void Logdata(void) {
 uint16_t sample;
-int i;
 String dataMessage; // Global data objects
 
   sample = (bhdb.laps*datasetsize) + bhdb.loopid;
@@ -446,7 +445,7 @@ String dataMessage; // Global data objects
               String(bhdb.dlog[bhdb.loopid].BattLevel)  + "#" +
               String(sample) + " " +
               String(bhdb.dlog[bhdb.loopid].comment) +
-              "\r\n";
+              "\r\n";       // OS common EOL: 0D0A
   Serial.printf("  Loop[%i]: ", sample);
   Serial.print(dataMessage);
 
@@ -459,8 +458,8 @@ String dataMessage; // Global data objects
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora==0){  // do we have an active connection (are we joined ?)
-    LoRaLog(CMD_LOGSTATUS, dataMessage);
-  }else{
+    LoRaLog(CMD_LOGSTATUS, (char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
+    }else{
     BHLOG(LOGLORA) Serial.println("  Log: No LoRa, no Report on air ...");
   }
 
