@@ -198,13 +198,13 @@ typedef struct {				// data elements of one log line entry
 #define LENFDATE 	21
 #define LENDATE		11
 #define LENTIME		9
-#define LENIPADDR	12
+#define LENIPADDR	16
 typedef struct {
 	// save timestamp of last datarow entry:
     char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
-    char	date[LENDATE];  // stamp of the day: 2019\10\28
-    char	time[LENTIME]; // Timestamp: 08:10:15
-    char	ipaddr[LENIPADDR];	// IPv4 Address xx:xx:xx:xx
+    char	date[LENDATE];  	// stamp of the day: 2019\10\28
+    char	time[LENTIME]; 		// Timestamp: 08:10:15
+    char	ipaddr[LENIPADDR];	// IPv4 Address xxx:xxx:xxx:xxx
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
     uint64_t  BoardID;          // unique Identifier of MUC board (6 Byte effective)

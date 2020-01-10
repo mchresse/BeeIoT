@@ -113,10 +113,14 @@ int setup_spi_VSPI() {    // My SPI Constructor
 
      // override the default CS, reset, and IRQ pins (optional)
     LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
-    
+
+    #ifdef EPD_CONFIG
     BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");
     display.init();   // enable diagnostic output on Serial
+    // display class does not provide any feedback if dev. is available
+    // so we assume its there...
     isepd = 0;    
-    
+    #endif
+
     return (isepd + issdcard);   // SPI port is initialized
 } // end of setup_spi_sd_epd()

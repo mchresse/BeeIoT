@@ -27,17 +27,7 @@
 
 #include "beeiot.h"     // provides all GPIO PIN configurations of all sensor Ports !
 
-//***********************************************
-// LoRa MAC Presets
-//***********************************************
-#define LORA_SF   7           // preset spreading factor
-#define LoRaWANSW 0x34	      // LoRa WAN public sync word; def: 0x34
-#define SIGNALBW  125E3       // default Signal bandwidth
-#define LORA_FREQ 8681E5      // Band: 868 MHz
-#define LORA_PWR  14          // Power Level: 14dB
 
-#define CODINGRATE 5
-#define LPREAMBLE  8
 
 //***********************************************
 // Global Sensor Data Objects
@@ -58,7 +48,7 @@ beeiotmsg_t MyMsg;        // Lora message on the air (if MyMsg.data != NULL)
 byte    BeeIotRXFlag =0;            // Semaphor for received message(s) 0 ... MAXRXPKG-1
 byte    RXPkgIsrIdx  =0;            // index on next LoRa Package for ISR callback Write
 byte    RXPkgSrvIdx  =0;            // index on next LoRa Package for Service Routine Read/serve
-beeiotpkg_t MyRXData[MAXRXPKG];    // received message for userland processing
+beeiotpkg_t MyRXData[MAXRXPKG];     // received message for userland processing
 
 //*********************************************************************
 // Setup_LoRa(): init BEE-client object: LoRa
@@ -349,6 +339,7 @@ byte * ptr;
 byte len;
 
   if(BeeIotRXFlag == MAXRXPKG){ // Check RX Semaphor: RX-Queue full ?
+    // same situation as: RXPkgIsrIdx+1 == RXPkgSrvIdx (but hard to check with ring buffer)
     Serial.printf("onReceive: InQueue full (%i items)-> ignored new IRQ with Len 0x%x\n", (byte) BeeIotRXFlag, (byte) packetSize);
     return;     // User service must work harder
   }

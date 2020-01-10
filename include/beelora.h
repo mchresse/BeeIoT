@@ -13,7 +13,22 @@
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
+#ifndef BEELORA_H
+#define BEELORA_H
+//***********************************************
+// LoRa MAC Presets
+//***********************************************
+#define LORA_SF   7           // preset spreading factor
+#define LoRaWANSW 0x34	      // LoRa WAN public sync word; def: 0x34
+#define SIGNALBW  125E3       // default Signal bandwidth
+#define LORA_FREQ 8681E5      // Band: 868 MHz
+#define LORA_PWR  14          // Power Level: 14dB
 
+#define CODINGRATE 5
+#define LPREAMBLE  8
+
+//***********************************************
+// BeeIoT WAN header settings
 #define BEEIOT_DEVID    0x77
 #define BEEIOT_GWID     0x88
 
@@ -55,3 +70,5 @@ typedef struct {
 int  BeeIoTParse	(beeiotpkg_t * msg);
 int  sendMessage	(beeiotpkg_t * TXData, int sync);
 void onReceive		(int packetSize);
+
+#endif /* BEELORA_H */
