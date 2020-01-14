@@ -44,8 +44,6 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 //*******************************************************************
 int setup_sd() {  // My SDCard Constructor
 #ifdef SD_CONFIG
-  BHLOG(LOGSD) Serial.println("  SD: SD Card");
-
   uint8_t cardType = SD.cardType();
   if(cardType == CARD_NONE) {
     issdcard = -2;
@@ -55,35 +53,36 @@ int setup_sd() {  // My SDCard Constructor
   
   BHLOG(LOGSD) Serial.print("  SD: SD Card Type: ");
   if (cardType == CARD_MMC) {
-    BHLOG(LOGSD) Serial.println("MMC");
+    BHLOG(LOGSD) Serial.print("MMC");
   } else if (cardType == CARD_SD) {
-    BHLOG(LOGSD) Serial.println("SDSC");
+    BHLOG(LOGSD) Serial.print("SDSC");
   } else if (cardType == CARD_SDHC) {
-    BHLOG(LOGSD) Serial.println("SDHC");
+    BHLOG(LOGSD) Serial.print("SDHC");
   } else {
-    BHLOG(LOGSD) Serial.println("UNKNOWN");
+    BHLOG(LOGSD) Serial.print("UNKNOWN");
   }
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  BHLOG(LOGSD) Serial.printf("  SD: SD Card Size: %lluMB\n", cardSize);
+  BHLOG(LOGSD) Serial.printf(" - Size: %lluMB\n", cardSize);
   issdcard = 0;   // we have an SDCard
 
+/*
   if(lflags & LOGSD){   // lets get some Debug data from SDCard
     listDir(SD, "/", 3);            // list 3 directory levels from Root
     // readFile(SD, SDLOGPATH); 
     // deleteFile(SD, SDLOGPATH);   // for test purpose only
   }
-
+*/
   // If the SDLOGPATH file doesn't exist
   // Create a new file on the SD card and write the data label header line
   File file = SD.open(SDLOGPATH);
   if(!file) {
-    BHLOG(LOGSD) Serial.printf("  SD: SD:Logfile %s doesn't exist -> Creating new file + header...", SDLOGPATH);
+    BHLOG(LOGSD) Serial.printf("  SD: File %s doesn't exist -> Creating new file + header...", SDLOGPATH);
     writeFile(SD, SDLOGPATH, "Sample-ID, Date, Time, BeeHiveWeight, TempExtern, TempIntern, TempHive, TempRTC, ESP3V, Board5V, BattCharge, BattLoad, BattLevel\r\n");
   } else {
-    BHLOG(LOGSD) Serial.printf("  SD: SD:Logfile: %s not found\n", SDLOGPATH);  
+    BHLOG(LOGSD) Serial.printf("  SD: File %s found\n", SDLOGPATH);  
+    file.close();
   }
-  file.close();
 
 #endif // SD_CONFIG
 

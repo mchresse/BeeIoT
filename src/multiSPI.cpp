@@ -84,23 +84,25 @@ int setup_spi_VSPI() {    // My SPI Constructor
     digitalWrite(BEE_CS, HIGH);
 
 // Setup VSPI BUS
-    pinMode(VSPI_SCK, OUTPUT);
     pinMode(VSPI_MISO, INPUT_PULLUP);
     pinMode(VSPI_MOSI, OUTPUT);
+    pinMode(VSPI_SCK, OUTPUT);
     digitalWrite(VSPI_SCK, HIGH);
     digitalWrite(VSPI_MOSI, HIGH);
 
 // Preset SPI dev: BEE-LoRa Module
     pinMode(BEE_RST, OUTPUT);
+    digitalWrite(BEE_RST, HIGH);
     pinMode(BEE_DIO0, INPUT_PULLUP);
     pinMode(BEE_DIO1, INPUT_PULLUP);
     pinMode(BEE_DIO2, INPUT_PULLUP);
-    digitalWrite(BEE_RST, HIGH);
 //    digitalWrite(BEE_MOSI, HIGH); // done via VSPI_MOSI if the same
+    LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
 
-// Preset SPI dev: BEE-LoRa Module
+// Preset SPI dev: EPD Display Module
     pinMode(EPD_RST, OUTPUT);
     digitalWrite(EPD_RST, HIGH);
+    pinMode(EPD_BUSY, INPUT_PULLUP);
 
     BHLOG(LOGSPI) Serial.print("  MSPI: SPI-Init of SD card...");
     if (!SD.begin(SD_CS)){
@@ -110,9 +112,6 @@ int setup_spi_VSPI() {    // My SPI Constructor
         BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
         issdcard = 0;
     }
-
-     // override the default CS, reset, and IRQ pins (optional)
-    LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
 
     #ifdef EPD_CONFIG
     BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");

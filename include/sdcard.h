@@ -14,8 +14,8 @@
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 
-#define Select    LOW       //  Low CS means that SPI device Selected
-#define DeSelect  HIGH      //  High CS means that SPI device Deselected
+#define Select    LOW       //  Low  CS means that SPI device is Selected
+#define DeSelect  HIGH      //  High CS means that SPI device is Deselected
 
 #define SdFile File
 #define seekSet seek
