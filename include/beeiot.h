@@ -60,7 +60,8 @@
 | 38|   GND|      |          |       |       GND| -              |
 */
 //*******************************************************************
-
+#ifndef BeeIoT_h
+#define BeeIoT_h
 //*******************************************************************
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
@@ -71,7 +72,7 @@
 #define WIFI_CONFIG   0
 #define NTP_CONFIG    0
 #define SD_CONFIG     0
-#define EPD_CONFIG    0
+// #define EPD_CONFIG    0
 #define LORA_CONFIG	  0
 
 // Pin mapping when using SDCARD in SPI mode.
@@ -135,10 +136,10 @@
 #define BEE_DIO1	13		// Bee-Event
 #define BEE_DIO2	34		// unused by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
-#define LOOPTIME    360		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    30		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   3E7		// Mikrosekunden hier 3s
 
-// Definitions of LogLevel masks instead of verbose mode
+// Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
 #define LOGBH		1		// 1:   Behive Setup & Loop program flow control
 #define LOGOW		2		// 2:   1-wire discovery and value read
 #define LOGHX		4		// 4:   HX711 init & get values
@@ -147,9 +148,10 @@
 #define LOGSD		32		// 32:  SD Card & local data handling
 #define LOGADS		64  	// 64:  ADS BMS monitoring routines /w ADS1115S
 #define LOGSPI		128		// 128: SPI Init
-#define LOGLORA		256		// 256: LoRa Init
+#define LOGLORAR	256		// 256: LoRa Init: Radio layer
+#define LOGLORAW	512		// 512: LoRa Init: BeeIoT-WAN
 
-#define	BHLOG(m)	if(lflags & m)	// macro for Log evaluation
+#define	BHLOG(m)	if(lflags & m)	// macro for Log evaluation (type: uint)
 
 #define NETWORKSTATE_LOGGED       1
 #define NETWORKSTATE_NOTLOGGED    0
@@ -279,3 +281,4 @@ int  setup_LoRa		(void);
 int  LoRaLog		(byte cmd, const char * outgoing, byte outlen, int sync);
 void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h
+#endif // BeeIoT_h

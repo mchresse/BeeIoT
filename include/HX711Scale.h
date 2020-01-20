@@ -13,7 +13,8 @@
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-
+#ifndef HX711SCALE_H
+#define HX711SCALE_H
 
 // Bosche H40A with 2mV/V sensibility
 // HX711: Vdd=3.3V, Port A with GAIN:128
@@ -26,4 +27,4 @@
 #define scale_OFFSET 297570   // 297000 = 44000 * 6,748kg (of the cover weight)
 
 
-// end of HX711Scale.h
+#endif // end of HX711Scale.h

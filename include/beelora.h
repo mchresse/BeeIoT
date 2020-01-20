@@ -13,53 +13,60 @@
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
-#ifndef BEELORA_H
-#define BEELORA_H
-//***********************************************
-// LoRa MAC Presets
-//***********************************************
-#define LORA_SF   7           // preset spreading factor
-#define LoRaWANSW 0x34	      // LoRa WAN public sync word; def: 0x34
-#define SIGNALBW  125E3       // default Signal bandwidth
-#define LORA_FREQ 8681E5      // Band: 868 MHz
-#define LORA_PWR  14          // Power Level: 14dB
+#ifndef BEELoRa_H
+#define BEELoRa_H
 
-#define CODINGRATE 5
-#define LPREAMBLE  8
+typedef unsigned char      bit_t;
+typedef unsigned char	   byte;
+typedef unsigned char      u1_t;
+typedef   signed char      s1_t;
+typedef unsigned short     u2_t;
+typedef          short     s2_t;
+typedef unsigned int       u4_t;
+typedef          int       s4_t;
+// typedef unsigned long long u8_t; // already defined in arch.h
+// typedef          long long s8_t;
+typedef unsigned int       uint;
+typedef const char*		   str_t;
+typedef              u1_t* xref2u1_t;
+typedef        const u1_t* xref2cu1_t;
 
-//***********************************************
-// BeeIoT WAN header settings
-#define BEEIOT_DEVID    0x77
-#define BEEIOT_GWID     0x88
+typedef				  u4_t devaddr_t;		// Device address
 
-#define MAX_PAYLOAD_LENGTH  0x80  // max length of LoRa MAC raw package
-#define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
-#define MAXRXACKWAIT	10	// # of Wait loops of MSGBURSTWAIT
-#define MSGMAXRETRY		3	// Do it max. n times again
-#define MAXRXPKG		3	// Max. number of parallel processed RX packages
+// Default frequency plan for EU 868MHz ISM band, based on the Semtech global_conf.json defaults,
+// used in The Things Network on Kerlink and other gateways.
+// Subject to change!
+//
+// Bands:
+//  g1 :   1%  14dBm  
+//  g2 : 0.1%  14dBm  
+//  g3 :  10%  27dBm  
+//                 freq             band     datarates
+enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
+       EU868_F2 = 868300000,      // g1   SF7-12 SF7/250   ditto
+       EU868_F3 = 868500000,      // g1   SF7-12           ditto
+       EU868_F4 = 867100000,      // g2   SF7-12
+       EU868_F5 = 867300000,      // g2   SF7-12
+       EU868_F6 = 868800000,      // g2   FSK
+       EU868_F7 = 867500000,      // g2   SF7-12  
+       EU868_F8 = 867700000,      // g2   SF7-12   
+       EU868_F9 = 867900000,      // g2   SF7-12   
+       EU868_DN = 869525000,      // g3   Downlink
+};
+enum { EU868_FREQ_MIN = 863000000,
+       EU868_FREQ_MAX = 870000000 };
 
-// LoRa "SendMessage()" user command codes
-#define CMD_NOP			0	// do nothing -> for xfer test purpose
-#define CMD_LOGSTATUS	1	// process Sensor log data set
-#define CMD_SDLOG		2	// one more line of SD card log file
-#define CMD_RETRY		3	// Tell target: Package corrupt, do it again
-#define CMD_ACK			4	// Received message complete
-#define CMD_NOP5		5	// reserved
-#define CMD_NOP6		6	// reserved
-#define CMD_NOP7		7	// reserved
+enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
+enum _sf_t { SF7=7, SF8, SF9, SF10, SF11, SF12 };
+enum _bw_t { BW125=0, BW250, BW500, BW10, BW15, BW20, BW31, BW41, BW62, BWrfu };
+enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
+typedef unsigned char cr_t;
+typedef unsigned char sf_t;
+typedef unsigned char bw_t;
+typedef unsigned char dr_t;
 
-// LoRa raw data package format (e.g. for casting on received LoRa MAC payload)
-#define BEEIOT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
-#define BEEIOT_DLEN		MAX_PAYLOAD_LENGTH-BEEIOT_HDRLEN
-typedef struct {
-	byte	destID;		// ID of receiver/target (GW)
-	byte	sendID;		// ID of BeeIoT Node who has sent the stream
-	byte	index;		// package index
-	byte	cmd;		// command code from Node
-	byte	length;		// length of following status data string (0 .. MAX_PAYLOAD_LENGTH-5 incl. EOL(0D0A))
-	char	data[BEEIOT_DLEN]; // remaining status array excl. this header bytes above
-} beeiotpkg_t;
 
+// Queue item for RX packages
 typedef struct {
     byte idx;           // index of sent message: 0..255 (round robin)
     byte retries;       // number of initiated retries
@@ -67,8 +74,6 @@ typedef struct {
     beeiotpkg_t * data; // sent message struct
 } beeiotmsg_t;
 
-int  BeeIoTParse	(beeiotpkg_t * msg);
-int  sendMessage	(beeiotpkg_t * TXData, int sync);
-void onReceive		(int packetSize);
+void configLoraModem (void);
 
 #endif /* BEELORA_H */

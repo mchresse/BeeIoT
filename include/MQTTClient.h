@@ -3,6 +3,9 @@
 // Distributed under MIT-License: https://opensource.org/licenses/mit-license.php
 // For BeeIoT project used 3rd party open source see also Readme_OpenSource.txt
 
+#ifndef MQTTCLIENT_H
+#define MQTTCLIENT_H
+
 #include <Arduino.h>
 #include <TCPClient.h>
 
@@ -67,3 +70,4 @@ class MQTTClient
 
 
 };
+#endif // MQTTCLIENT_H

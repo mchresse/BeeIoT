@@ -29,6 +29,7 @@
 
 #include <Arduino.h>
 #include <stdio.h>
+#include "sys/types.h"
 #include <iostream>
 #include <string>
 // #include <esp_log.h> 
@@ -44,7 +45,6 @@
 #include <FS.h>         // from Arduino IDE
 #include <SD.h>         // from Arduino IDE
 #include "sdcard.h"
-#include <LoRa.h>       // Lora Lib from SanDeep (https://github.com/sandeepmistry/arduino-LoRa)
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
@@ -81,7 +81,9 @@
 #include <HX711.h>              // HX711 library for Arduino (https://github.com/bogde/HX711)
 #include "HX711Scale.h"         // local
 
-#include "beelora.h"            // local
+#include <LoRa.h>       // Lora Lib from SanDeep (https://github.com/sandeepmistry/arduino-LoRa)
+#include "BeeIoTWan.h"
+#include "beelora.h"            // local: Lora Radio settings and BeeIoT WAN protocol definitions
 #include "beeiot.h"             // local: provides all GPIO PIN configurations of all sensor Ports !
 
 //************************************
@@ -98,8 +100,8 @@ uint64_t TIME_TO_SLEEP = 600;
 
 // Central Database of all measured values and runtime parameters
 dataset		bhdb;
-uint16_t	lflags;      // BeeIoT log flag field
-Preferences preferences;   // we must generate this object of the preference library
+unsigned int	lflags;               // BeeIoT log flag field
+Preferences preferences;        // we must generate this object of the preference library
 
 // 8 configuration values max managed by webpage
 #define CONFIGSETS    8
@@ -154,8 +156,8 @@ void CheckWebPage();
 //*******************************************************************
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
-lflags = LOGBH + LOGLORA;
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
+lflags = LOGBH + LOGLORAW;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
@@ -460,7 +462,7 @@ String dataMessage; // Global data objects
   if(islora==0){  // do we have an active connection (are we joined ?)
     LoRaLog(CMD_LOGSTATUS, (char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
     }else{
-    BHLOG(LOGLORA) Serial.println("  Log: No LoRa, no Report on air ...");
+    BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }
 
   return;

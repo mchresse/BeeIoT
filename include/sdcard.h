@@ -13,6 +13,8 @@
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
+#ifndef SDCARD_H
+#define SDCARD_H
 
 #define Select    LOW       //  Low  CS means that SPI device is Selected
 #define DeSelect  HIGH      //  High CS means that SPI device is Deselected
@@ -30,4 +32,4 @@ void renameFile (fs::FS &fs, const char * path1, const char * path2);
 void deleteFile (fs::FS &fs, const char * path);
 void testFileIO (fs::FS &fs, const char * path);
 
-// end of sdcard.h
+#endif // end of sdcard.h

@@ -13,6 +13,8 @@
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
+#ifndef I2C_ADS_H
+#define I2C_ADS_H
 
 // ADS1115 I2C Port
 #define ADS_ADDR            0x48   // SENSOR_ADDRESS	0x48 -> ADDR line => Gnd
@@ -26,5 +28,4 @@
 #define ACK_CHECK_DIS       0x0
 #define NACK_VAL			0x1
 
-
-// end of i2c_ads.h
+#endif // end of i2c_ads.h

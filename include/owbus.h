@@ -14,6 +14,9 @@
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 
+#ifndef OWBUS_H
+#define OWBUS_H
+
 #define OW_DEVICES  3
 #define ONE_WIRE_RETRY	3
 
@@ -24,4 +27,4 @@
 
 #define TEMPERATURE_PRECISION 12
 
-// end of owbus.h
+#endif // end of owbus.h
