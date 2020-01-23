@@ -115,7 +115,7 @@ extern int isntp;               // =0 bhdb has latst timestamp
 extern int isrtc;               // =0 RTC Time discovered
 extern int issdcard;            // =0 SDCard found flag o.k.
 extern int isepd;               // =0 ePaper found
-extern int islora;              // =0 LoRa client is active
+extern int islora;              // =1 LoRa client is active
 
 extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
 extern HX711        scale;      // managed in HX711Scale module
@@ -265,7 +265,7 @@ lflags = LOGBH + LOGLORAW;
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: LoRa SPI device & Base layer");
-  if (setup_LoRa() != 0){
+  if (!setup_LoRa()){
     BHLOG(LOGBH) Serial.println("  Setup: LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
@@ -459,7 +459,7 @@ String dataMessage; // Global data objects
   }
 
   // Send Sensor report via BeeIoT-LoRa ...
-  if(islora==0){  // do we have an active connection (are we joined ?)
+  if(islora){  // do we have an active connection (are we joined ?)
     LoRaLog(CMD_LOGSTATUS, (char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
     }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");

@@ -72,7 +72,7 @@
 #define WIFI_CONFIG   0
 #define NTP_CONFIG    0
 #define SD_CONFIG     0
-// #define EPD_CONFIG    0
+#define EPD_CONFIG    0
 #define LORA_CONFIG	  0
 
 // Pin mapping when using SDCARD in SPI mode.
@@ -136,7 +136,7 @@
 #define BEE_DIO1	13		// Bee-Event
 #define BEE_DIO2	34		// unused by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
-#define LOOPTIME    30		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    600		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   3E7		// Mikrosekunden hier 3s
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
