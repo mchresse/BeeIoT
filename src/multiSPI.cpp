@@ -93,9 +93,9 @@ int setup_spi_VSPI() {    // My SPI Constructor
 // Preset SPI dev: BEE-LoRa Module
     pinMode(BEE_RST, OUTPUT);
     digitalWrite(BEE_RST, HIGH);
-    pinMode(BEE_DIO0, INPUT_PULLUP);
-    pinMode(BEE_DIO1, INPUT_PULLUP);
-    pinMode(BEE_DIO2, INPUT_PULLUP);
+    pinMode(BEE_DIO0, INPUT);
+    pinMode(BEE_DIO1, INPUT);
+    pinMode(BEE_DIO2, INPUT);
 //    digitalWrite(BEE_MOSI, HIGH); // done via VSPI_MOSI if the same
     LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
 

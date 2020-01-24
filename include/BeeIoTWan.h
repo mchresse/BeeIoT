@@ -18,7 +18,7 @@
 #ifndef BEEIOTWAN_H
 #define BEEIOTWAN_H
 
-#define BEEIOTWAN_VERSION	10		// starting with V1.0 
+#define BEEIOTWAN_VERSION	1000		// starting with V1.0.00
 
 //***********************************************
 // LoRa MAC Presets
@@ -83,7 +83,7 @@ typedef unsigned char dr_t;
 #define BEEIOT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
 #define BEEIOT_DLEN		MAX_PAYLOAD_LENGTH-BEEIOT_HDRLEN
 #define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
-#define MAXRXACKWAIT	10	// # of ACK Wait loops x MSGBURSTWAIT
+#define MAXRXACKWAIT	10	// # of Wait loops of MSGBURSTWAIT
 #define MSGMAXRETRY		3	// Do it max. n times again
 #define RXACKGRACETIME  1000 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
 #define WAITRXPKG		5	// # of sec. to wait for add. RX pkg after last ACK
@@ -175,15 +175,17 @@ typedef struct {
 // CONFIG-CMD Pkg:
 #define beeiot_nparam_cfg	1
 typedef struct {
-	byte	gwid;			// LoRa Pkg ID of next serving gateway
-	byte	nodeid;			// LoRa PKG NodeID1..n
+	// device descriptor
+	byte	gwid;			// LoRa Pkg target GWID of serving gateway fo Status reports
+	byte	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
+	byte	version;		// version of used/comitted BeeIoTWAN protocol
+	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
+	byte	verbose;		// =0..0xff verbose flags for debugging
+	// LoRa Modem settings
 	long	lorafreq;		// =EU868_F1..9,DN (EU868_F1: 868.1MHz)
 	sf_t	lorasf;			// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
 	bw_t	lorabw;			// =0..3 RFU Bandwidth 125-500 (0:125kHz)
 	cr_t	loracr;			// =0..3 Coding mode 4/5..4/8 (0:4/5)
-	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
-	byte	verbose;		// =0..0xff verbose flags for debugging
-	byte	version;		// version of used/comitted BeeIoTWAN protocol
 } devcfg_t;
 
 typedef struct {

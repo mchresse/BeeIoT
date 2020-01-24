@@ -157,7 +157,7 @@ void CheckWebPage();
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-lflags = LOGBH + LOGLORAW;
+lflags = LOGBH + LOGLORAW +LOGLORAR;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 

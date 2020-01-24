@@ -76,7 +76,7 @@ void onReceive		(int packetSize);
 // Setup_LoRa(): init BEE-client object: LoRa
 //*********************************************************************
 int setup_LoRa(){
-    BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem: %ld Mhz\n", freq);
+    BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem V%2.1f (%ld Mhz)\n", (float)BEEIOTWAN_VERSION/1000, freq);
     islora = 0;
 
   // Initial Modem & channel setup:
@@ -126,7 +126,7 @@ void configLoraModem(/* ToDo: cfg struct ? */) {
   long sbw = 0;
   byte coding=0;
 
-  BHLOG(LOGLORAR) Serial.printf("  LoRa: Set Modem/Channel-Cfg: %ldMhz, SF=%i, TXPwr:%i", freq, (byte)sf, (byte)pw);
+  BHLOG(LOGLORAR) Serial.printf("  LoRaCfg: Set Modem/Channel-Cfg: %ldMhz, SF=%i, TXPwr:%i", freq, (byte)sf, (byte)pw);
   LoRa.sleep(); // stop modem and clear FIFO
   // set frequency
   LoRa.setFrequency(freq);
@@ -172,9 +172,9 @@ void configLoraModem(/* ToDo: cfg struct ? */) {
   BHLOG(LOGLORAR) Serial.printf(", CR:%i", (byte)coding);
 
   LoRa.setPreambleLength(LPREAMBLE);    // def: 8Byte
-  BHLOG(LOGLORAR) Serial.printf(", LPreamble:%i", LPREAMBLE);
+  BHLOG(LOGLORAR) Serial.printf(", LPreamble:%i\n", LPREAMBLE);
   LoRa.setSyncWord(LoRaWANSW);          // ranges from 0-0xFF, default 0x34, see API docs
-  BHLOG(LOGLORAR) Serial.printf(", SW:0x%02X", LoRaWANSW);
+  BHLOG(LOGLORAR) Serial.printf("    SW:0x%02X", LoRaWANSW);
 
   if(nocrc){
     BHLOG(LOGLORAR) Serial.print(", NoCRC");
@@ -188,7 +188,7 @@ void configLoraModem(/* ToDo: cfg struct ? */) {
     BHLOG(LOGLORAR) Serial.print(", noInvIQ");
     LoRa.disableInvertIQ();             // REG_INVERTIQ  = 0x27, REG_INVERTIQ2 = 0x1D
   }else{
-    BHLOG(LOGLORAR) Serial.print(", InvIQ");
+    BHLOG(LOGLORAR) Serial.print(", InvIQ\n");
     LoRa.enableInvertIQ();              // REG_INVERTIQ(0x33)  = 0x66, REG_INVERTIQ2(0x3B) = 0x19
   }
 
@@ -201,7 +201,7 @@ void configLoraModem(/* ToDo: cfg struct ? */) {
   // Optional: Over Current Protection control -> need here?
   // LoRa.setOCP(?);  // uint8_t 120 or 240 mA
 
-  BHLOG(LOGLORAR) Serial.printf("\n  Lora: StdBy Mode\n");
+  BHLOG(LOGLORAR) Serial.printf("  LoraCfg: StdBy Mode\n");
   LoRa.idle();                          // goto LoRa Standby Mode
 } // end of configLoraModem()
 
@@ -264,23 +264,23 @@ int rc;
   // Lets wait for expected ACK Msg & afterwards check RX Queue for some seconds
   // Activate RX Contiguous flow control
   do{                                 // until BeeIoT Message Queue is empty
-    LoRa.receive();                   // RX Continuous in expl. Header mode          
+    LoRa.receive(0);                   // RX Continuous in expl. Header mode          
     BHLOG(LOGLORAW) Serial.printf("  LoRaLog: wait for incoming ACK in RXCont mode (Retry: #%i):", MyMsg.retries);
     i=0;                              // clear RX-ACK wait loop counter
     while(!MyMsg.ack){                // wait till TX got committed by ACK
+      BHLOG(LOGLORAW) Serial.print(".");
       delay(MSGBURSTWAIT);            // more time for ACK to arrive -> polling rate
-      BHLOG(LOGLORAR) Serial.print(".");
 
       // Check for ACK Wait Timeout
       if(i++ > MAXRXACKWAIT){                 // max # of wait loops reached ? -> yes, ACK timed out
-        BHLOG(LOGLORAW) Serial.printf("timedout\n"); 
+        BHLOG(LOGLORAW) Serial.printf("timed out\n"); 
         // No ACK -> initiate a retry loop
 
         if(MyMsg.retries < MSGMAXRETRY){      // enough Retries ?
           while(!sendMessage(&MyTXData, 0));  // No, send same pkg /w same msgid in sync mode again
           MyMsg.retries++;                    // remember # of retries
-          LoRa.receive();                     // Activate: RX-Continuous in expl. Header mode          
-          BHLOG(LOGLORAW) Serial.printf("  LoRaLog: wait for incoming ACK in RXCont mode (Retries: %i)", MyMsg.retries);
+          LoRa.receive(0);                     // Activate: RX-Continuous in expl. Header mode          
+          BHLOG(LOGLORAW) Serial.printf("  LoRaLog: wait for incoming ACK in RXCont mode (Retry: #%i)", MyMsg.retries);
           i=0;  // reset ACK wait loop for next try
 
         }else{  // Max. # of Retries reached -> give up
@@ -304,20 +304,20 @@ int rc;
     // right after an ACK its time to check for add. RX packages for a while
     MyMsg.ack=0;  // reset ACK & Retry flags again
     MyMsg.retries=0;
-    LoRa.receive();                     // Activate: RX-Continuous in expl. Header mode          
+    LoRa.receive(0);                     // Activate: RX-Continuous in expl. Header mode          
 
     i=0;
-    BHLOG(LOGLORAR) Serial.printf("\n  LoRaLog: wait for add. RX Pkg. in RXCont mode:");
-    while (!BeeIotRXFlag & (i<WAITRXPKG)){  // till RX pkg arrived or max. wait time is over
-      delay(1000);            // count wait time in seconds -> frequency to check RXQueue
-      BHLOG(LOGLORAR) Serial.print("o");
+    BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX Pkg. in RXCont mode:");
+    while (!BeeIotRXFlag & (i<WAITRXPKG*2)){  // till RX pkg arrived or max. wait time is over
+      BHLOG(LOGLORAW) Serial.print("o");
+      delay(500);            // count wait time in msec. -> frequency to check RXQueue
       i++;
     } 
 
     // reached TO condition ?
     if(i>=WAITRXPKG){ // Yes, no more RX pkg received -> we are done
       // nothing else to do: ACK was solved by ISR completely (no RX Queue handling needed)
-      BHLOG(LOGLORAR) Serial.println(" None.");
+      BHLOG(LOGLORAW) Serial.println(" None.\n");
       // RX Queue should still be empty: validate it:
       if(!BeeIotRXFlag & (RXPkgSrvIdx != RXPkgIsrIdx)){ // RX Queue validation check: realy empty ?
         Serial.printf("  LoRaLog: This case should never happen 1: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0\n",RXPkgSrvIdx, RXPkgIsrIdx);
@@ -492,7 +492,7 @@ int sendMessage(beeiotpkg_t * TXData, int async) {
 //  packetSize  length of recognized RX package user payload in FIFO
 //******************************************************************************
 void onReceive(int packetSize) {
-// at that point all IRQ flags are cleared, CRC check done, Header Mode processed and
+// at that point all IRQ flags are comitted, CRC check done, Header Mode processed and
 // FIFO ptr (REG_FIFO_ADDR_PTR) was reset to package start
 // simply use LoRa.read() to read out the FIFO
 beeiotpkg_t * msg;
@@ -567,6 +567,7 @@ byte * ptr;
   Serial.flush(); // print ISR notes in real time
   return;
 } // end of RX ISR process
+
 
 
 
