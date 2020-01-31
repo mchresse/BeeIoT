@@ -45,7 +45,22 @@ typedef struct {
     beeiotpkg_t * pkg;  // real TX pkg struct
 } beeiotmsg_t;
 
+enum {     // Status of BeeIoT WAN protocol flow (provided islora>0)
+        BIOT_NONE,      // if(islora) -> Modem detected but not joined yet
+        BIOT_JOIN,      // About to discover a GW and negot. new channel cfg.
+        BIOT_IDLE,      // Modem detected and joined -> channel preconfigured & active => goto BeeIoTSleep() ?
+        BIOT_TX,        // in TX transmition -> poll by LoRa.isTransmitting()
+        BIOT_RX,        // in RX Mode -> waiting for incomming Messages
+        BIOT_SLEEP      // Modem still in power safe status -> start BeeIoTWakeUp()
+};
 
 void configLoraModem (void);
+int BeeIoTParseCfg(beeiot_cfg_t * pcfg);
+int BeeIoTJoin(void);
+int BeeIoTWakeUp(void);
+void BeeIoTSleep(void);
+void Printhex(unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
+void Printbit(unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);
+
 
 #endif /* BEELORA_H */

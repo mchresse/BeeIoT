@@ -90,6 +90,9 @@
 // Global data object declarations
 //************************************
 
+#define LOOPTIME    60		// [sec] Loop wait time: 60 for 1 Minute
+#define SLEEPTIME   3E7		// Mikrosekunden hier 3s
+
 // Save reading number on RTC memory
 // RTC_DATA_ATTR int loopID = 0;           // generic loop counter
 
@@ -290,6 +293,9 @@ lflags = LOGBH + LOGLORAW +LOGLORAR;
 //***************************************************************
   BHLOG(LOGBH) Serial.println("Setup Phase done");
   Serial.println(" ");
+
+// while(1);  // for test purpose
+
 } // end of BeeIoT setup()
 
 

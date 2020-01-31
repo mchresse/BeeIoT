@@ -45,10 +45,32 @@ enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
 enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK=0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
 enum _bw_t { BW125=0, BW250, BW500, BWrfu, BW10, BW15, BW20, BW31, BW41, BW62};
+enum _dr_eu868_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
+
+typedef unsigned int  devaddr_t;		// Node dynmic Device address (given by GW)
 typedef unsigned char cr_t;
 typedef unsigned char sf_t;
 typedef unsigned char bw_t;
 typedef unsigned char dr_t;
+
+// Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
+typedef unsigned short rps_t;			
+inline sf_t  getSf   (rps_t params)            { return   (sf_t)(params &  0x7); }
+inline rps_t setSf   (rps_t params, sf_t sf)   { return (rps_t)((params & ~0x7) | sf); }
+inline bw_t  getBw   (rps_t params)            { return  (bw_t)((params >> 3) & 0x3); }
+inline rps_t setBw   (rps_t params, bw_t cr)   { return (rps_t)((params & ~0x18) | (cr<<3)); }
+inline cr_t  getCr   (rps_t params)            { return  (cr_t)((params >> 5) & 0x3); }
+inline rps_t setCr   (rps_t params, cr_t cr)   { return (rps_t)((params & ~0x60) | (cr<<5)); }
+inline int   getNocrc(rps_t params)            { return        ((params >> 7) & 0x1); }
+inline rps_t setNocrc(rps_t params, int nocrc) { return (rps_t)((params & ~0x80) | (nocrc<<7)); }
+inline int   getIh   (rps_t params)            { return        ((params >> 8) & 0xFF); }
+inline rps_t setIh   (rps_t params, int ih)    { return (rps_t)((params & ~0xFF00) | (ih<<8)); }
+inline rps_t makeRps (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
+    	return sf | (bw<<3) | (cr<<5) | (nocrc?(1<<7):0) | ((ih&0xFF)<<8);
+	}
+#define MAKERPS(sf,bw,cr,ih,nocrc) ((rps_t)((sf) | ((bw)<<3) | ((cr)<<5) | ((nocrc)?(1<<7):0) | ((ih&0xFF)<<8)))
+#define RPSTMPL	"SFxBWxxxCRxIHxNOCRCx"	// string base alternative to rps_t
+#define RPSTMPLLEN 20	// is 20 byte long -> used for biot_cfg_t ?
 
 // Define LoRa Runtime parameters
 #define SPREADING	SF7		// Set spreading factor (1:SF7 - 6:SF12)
@@ -69,7 +91,7 @@ typedef unsigned char dr_t;
 #define MAX_PAYLOAD_LENGTH 0x80 // length of LoRa Pkg in IHDMODE=0: BEEIOT_HDRLEN..0xFF 
 
 // Gateway identifier (for destID/sendID)
-#define GWID1		0x99	// Transfer ID of this gateway (main sessions & join)
+#define GWID1		0x99	// Transfer ID of this gateway (default for joining & main RX/TX session)
 #define GWID2		0x98	// Transfer ID of this gateway (backup srv., SDLog, FW upd.)
 
 // Node identifier (for destID/sendID)
@@ -82,9 +104,9 @@ typedef unsigned char dr_t;
 // BeeIoTWan Pkg Header and Flow control definitions
 #define BEEIOT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
 #define BEEIOT_DLEN		MAX_PAYLOAD_LENGTH-BEEIOT_HDRLEN
-#define	MSGBURSTWAIT	500	// repeat each 0.5 seconds the message 
-#define MAXRXACKWAIT	10	// # of Wait loops of MSGBURSTWAIT
-#define MSGMAXRETRY		3	// Do it max. n times again
+#define	MSGBURSTWAIT	500	// scan each 0.5 seconds the message status in a waitloop
+#define MAXRXACKWAIT	6	// # of Wait loops of MSGBURSTWAIT
+#define MSGMAXRETRY		5	// Do it max. n times again
 #define RXACKGRACETIME  1000 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
 #define WAITRXPKG		5	// # of sec. to wait for add. RX pkg after last ACK
 
@@ -158,16 +180,38 @@ typedef struct { // generic BeeIoT Package format
 //***************************
 // JOIN-CMD Pkg:
 #define beeiot_nparam_join	1
+enum {
+    // Join Request frame format
+    OFF_JR_HDR      = 0,
+    OFF_JR_ARTEUI   = 1,
+    OFF_JR_DEVEUI   = 9,
+    OFF_JR_DEVNONCE = 17,
+    OFF_JR_MIC      = 19,
+    LEN_JR          = 23
+};
+enum {
+    // Join Accept frame format
+    OFF_JA_HDR      = 0,
+    OFF_JA_ARTNONCE = 1,
+    OFF_JA_NETID    = 4,
+    OFF_JA_DEVADDR  = 7,
+    OFF_JA_RFU      = 11,
+    OFF_JA_DLSET    = 11,
+    OFF_JA_RXDLY    = 12,
+    OFF_CFLIST      = 13,
+    LEN_JA          = 17,
+    LEN_JAEXT       = 17+16
+};
 typedef struct {
 	byte	version;	// supported version of BeeIoTWAN protocol 
 	byte	devuid[4];	// could be e.g. node board ID (as int)
-}nodedescr_t;
+}joinpar_t;
 
 typedef struct {
 	beeiot_header_t hd;	// BeeIoT common Header
 	union{
 		char		djoin[BEEIOT_DLEN]; // remaining status array
-		nodedescr_t info;
+		joinpar_t info;
 	};
 } beeiot_join_t;
 
@@ -192,7 +236,7 @@ typedef struct {
 	beeiot_header_t hd;		// BeeIoT common Header
 	union{
 		byte	 dcfg[BEEIOT_DLEN];	// declare max length of payload
-		devcfg_t pcfg;		// node config params (must be smaller than BEEIOT_DLEN!)
+		devcfg_t cfg;		// node config params (must be smaller than BEEIOT_DLEN!)
 	};
 } beeiot_cfg_t;
 
@@ -222,6 +266,18 @@ typedef struct {
 //***************************
 // ACK & RETRY & NOP - CMD Pkg:
 // use always std. header type: "beeiot_header_t" only with length=0
+
+enum {
+    // Beacon frame format EU SF9
+    OFF_BCN_NETID    = 0,         
+    OFF_BCN_TIME     = 3,
+    OFF_BCN_CRC1     = 7,
+    OFF_BCN_INFO     = 8,
+    OFF_BCN_LAT      = 9,
+    OFF_BCN_LON      = 12,
+    OFF_BCN_CRC2     = 15,
+    LEN_BCN          = 17
+};
 
 //******************************************************************
 // For GW: TTN connectivity (optional)
