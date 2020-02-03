@@ -72,7 +72,7 @@
 #define WIFI_CONFIG   0
 #define NTP_CONFIG    0
 #define SD_CONFIG     0
-//#define EPD_CONFIG    0
+#define EPD_CONFIG    0
 #define LORA_CONFIG	  0
 
 // Pin mapping when using SDCARD in SPI mode.
@@ -166,9 +166,9 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4200 // mV 
+    #define BATTERY_MAX_LEVEL        4130 // mV 
     #define BATTERY_MIN_LEVEL        3300 // mV
-    #define BATTERY_SHUTDOWN_LEVEL   3200 // mV
+    #define BATTERY_SHUTDOWN_LEVEL   3300 // mV
 #endif
 
 

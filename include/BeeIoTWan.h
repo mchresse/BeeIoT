@@ -18,7 +18,7 @@
 #ifndef BEEIOTWAN_H
 #define BEEIOTWAN_H
 
-#define BEEIOTWAN_VERSION	1000		// starting with V1.0.00
+#define BIoT_VERSION	1000		// 2By: starting with V1.0.00
 
 //***********************************************
 // LoRa MAC Presets
@@ -79,16 +79,12 @@ inline rps_t makeRps (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
 #define SIGNALBW	BW125	// Bandwidth (0: 125kHz)
 #define CODING		CR_4_5	// Coding Rate 4/5
 #define LoRaWANSW	0x12	// public sync word: Other WAN:0x12, LoRa-WAN:0x34
-#define LPREAMBLE   8		// 8 Bytes
+#define LPREAMBLE   12		// 6-65535 Byte (def:12)
 #define IHDMODE     0		// =1 Implcite header Mode, =0 Explicite Header Mode
 #define IHEADERLEN	0		// if IH-MODE=1 => Lenght of header in Bytes 
 #define NOCRC		0		// =1 NOCRC; =0 CRC check
 #define RX_TOUT_LSB	0x05	// RX_TOut_LSB = 5 x Tsymbol
 #define NORXIQINV	1		// =1 No Invert IQ at RX/TX
-
-// Basically expected to be defined in lora radio layer header file,
-// but we need it common for both sides
-#define MAX_PAYLOAD_LENGTH 0x80 // length of LoRa Pkg in IHDMODE=0: BEEIOT_HDRLEN..0xFF 
 
 // Gateway identifier (for destID/sendID)
 #define GWID1		0x99	// Transfer ID of this gateway (default for joining & main RX/TX session)
@@ -101,14 +97,20 @@ inline rps_t makeRps (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
 #define NODEID4		0x84	// Transfer ID of LoRa Client 4
 #define NODEID5		0x85	// Transfer ID of LoRa Client 5
 
+// Basically expected to be defined in lora radio layer header file,
+// but we need it common for both sides
+#define MAX_PAYLOAD_LENGTH 0x80 // length of LoRa Pkg in IHDMODE=0: BEEIOT_HDRLEN..0xFF 
+
 // BeeIoTWan Pkg Header and Flow control definitions
-#define BEEIOT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
-#define BEEIOT_DLEN		MAX_PAYLOAD_LENGTH-BEEIOT_HDRLEN
-#define	MSGBURSTWAIT	500	// scan each 0.5 seconds the message status in a waitloop
-#define MAXRXACKWAIT	6	// # of Wait loops of MSGBURSTWAIT
+#define BIoT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
+#define BIoT_DLEN		MAX_PAYLOAD_LENGTH-BIoT_HDRLEN
+#define BIoT_MICLEN     4	// length of NsMIC field
+#define BIoT_FRAMELEN	BIoT_DLEN-BIoT_MICLEN	// length of BIoT App-Frame (encoded by AppKey) - MIC
+#define	MSGRESWAIT		500	// scan each 0.5 seconds the message status in a waitloop
+#define MAXRXACKWAIT	6	// # of Wait loops of MSGRESWAIT
 #define MSGMAXRETRY		5	// Do it max. n times again
 #define RXACKGRACETIME  1000 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
-#define WAITRXPKG		5	// # of sec. to wait for add. RX pkg after last ACK
+#define WAITRX1PKG		5	// # of sec. to wait for add. RX pkg after last ACK
 
 //*******************************************************************
 // BeeIoT-WAN command package types
@@ -124,7 +126,7 @@ enum {
 	CMD_RES6,		// reserved 
 	CMD_RES7,		// reserved
 	CMD_RES8,		// reserved
-	CMD_RES9,		// reserved 
+	CMD_TIME,		// Request curr. time values from partner side 
 	CMD_NOP			// do nothing -> for xfer test purpose
 };
 // define BeeIoT Protocol Status/Action strings
@@ -139,7 +141,7 @@ static const char * beeiot_ActString[] = {
 	[CMD_RES6]		= "NOP6", 
 	[CMD_RES7]		= "NOP7",
 	[CMD_RES8]		= "NOP8", 
-	[CMD_RES9]		= "NOP9",
+	[CMD_TIME]		= "GETTIME",
 	[CMD_NOP]		= "NOP"
 };
 
@@ -154,43 +156,42 @@ typedef unsigned short  u2_t;	// a 16 bit word = 2x byte
 #endif
 
 //***************************************************************
-// BeeIoT-WAN common package header format (e.g. for casting on received LoRa MAC payloads)
-// BeeIoT LoRa Package == User-Payload[MAX_PAYLOAD_LENGTH] 
+// BeeIoT CMD Packet & Frame Declarations
+//***************************************************************
+// BeeIoT-WAN generic packet format
+// (e.g. used for casting on received LoRa MAC payloads by ISR for first header checks)
+// BeeIoT LoRa Packet  		  == beeiot_header_t + data[BIoT_DLEN]
+// BeeIoT LoRa Package transfer length => BIoT_HDRLEN + BIoT_FRAMELEN + BIoT_MICLEN 
+// BIoT_MICLEN assures integrity of the packet range: 0..(BIoT_HDRLEN + BIoT_FRAMELEN)
 typedef struct {
 	byte	destID;		// ID of receiver
 	byte	sendID;		// ID of BeeIoT Node sending a package
 	byte	index;		// package index (0..0xFF)
 	byte	cmd;		// command code from Node
-	byte	dlen;		// length of following user data
+	byte	frmlen;		// length of following Frame Payload: BIoT_FRAMELEN (excl. MIC)
 } beeiot_header_t;
 
 typedef struct { // generic BeeIoT Package format
-// ToDO: exchange header params by beiot_header_t (but also in the code)
-//	beeiot_header_t hd;	// BeeIoT common Header
-// char				data[BEEIOT_DLEN]; // remaining status array
-
-	byte	destID;		// ID of receiver
-	byte	sendID;		// ID of BeeIoT Node sending a package
-	byte	index;		// package index (0..0xFF)
-	byte	cmd;		// command code from Node
-	byte	length;		// length of last status data string
-	char	data[BEEIOT_DLEN]; // remaining status array
+	beeiot_header_t hd;	// BeeIoT common Header
+	char	data[BIoT_DLEN]; // remaining payload including MIC (last 4 byte)
+						// byte	BIoT_NsMIC[4] pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
+						// cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
+						// MIC = cmac[0..3]
 } beeiotpkg_t;
 
 //***************************
 // JOIN-CMD Pkg:
 #define beeiot_nparam_join	1
-enum {
-    // Join Request frame format
-    OFF_JR_HDR      = 0,
-    OFF_JR_ARTEUI   = 1,
-    OFF_JR_DEVEUI   = 9,
-    OFF_JR_DEVNONCE = 17,
-    OFF_JR_MIC      = 19,
-    LEN_JR          = 23
+enum { // Join Request frame format
+    OFF_JR_JOINEUI  = 0,
+    OFF_JR_DEVEUI   = 8,
+    OFF_JR_FRMID 	= 16,
+	OFF_JR_VERMAJ	= 18,
+	OFF_JR_VERMIN	= 19,
+    OFF_JR_MIC      = 20,
 };
 enum {
-    // Join Accept frame format
+    // Join Accept frame format: CONFIG
     OFF_JA_HDR      = 0,
     OFF_JA_ARTNONCE = 1,
     OFF_JA_NETID    = 4,
@@ -203,24 +204,29 @@ enum {
     LEN_JAEXT       = 17+16
 };
 typedef struct {
-	byte	version;	// supported version of BeeIoTWAN protocol 
-	byte	devuid[4];	// could be e.g. node board ID (as int)
+	byte	joinEUI[8];	// ==AppEUI to address the right App service behind GW+NWserver
+	byte	devEUI[8];	// could be e.g. 0xFFFE + node board ID (extended from 6 -> 8Byte)
+	byte	frmid[2];	// Frame idx of next app session (typ.= 1); 1. join was done with frmid=0 !
+	byte	vmajor;		// supported version of BeeIoTWAN protocol MSB: Major
+	byte 	vminor;		// LSB: Minor
 }joinpar_t;
 
 typedef struct {
-	beeiot_header_t hd;	// BeeIoT common Header
-	union{
-		char		djoin[BEEIOT_DLEN]; // remaining status array
-		joinpar_t info;
-	};
+	beeiot_header_t hd;		// BeeIoT common Pkg Header
+	joinpar_t		info; 	// Join request parameters
+	byte			mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
+							// cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
+							// MIC = cmac[0..3]
 } beeiot_join_t;
 
 //***************************
 // CONFIG-CMD Pkg:
+// TX GW side: NWserver delivers new cfg. settings -> hdr.length = sizeof(devcfg_t);
+// TX Node side: node requests new config settings from NWserver; -> hdr.length = 0
 #define beeiot_nparam_cfg	1
 typedef struct {
 	// device descriptor
-	byte	gwid;			// LoRa Pkg target GWID of serving gateway fo Status reports
+	byte	gwid;			// LoRa Pkg target GWID of serving gateway for Status reports
 	byte	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
 	byte	version;		// version of used/comitted BeeIoTWAN protocol
 	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
@@ -230,34 +236,38 @@ typedef struct {
 	sf_t	lorasf;			// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
 	bw_t	lorabw;			// =0..3 RFU Bandwidth 125-500 (0:125kHz)
 	cr_t	loracr;			// =0..3 Coding mode 4/5..4/8 (0:4/5)
+
 } devcfg_t;
 
 typedef struct {
-	beeiot_header_t hd;		// BeeIoT common Header
-	union{
-		byte	 dcfg[BEEIOT_DLEN];	// declare max length of payload
-		devcfg_t cfg;		// node config params (must be smaller than BEEIOT_DLEN!)
-	};
+	beeiot_header_t hd;		// BeeIoT common Pkg Header
+	devcfg_t cfg;			// node config params (must be smaller than BEEIOT_DLEN!)
+	byte	mic[BIoT_MICLEN]; // pkg integrity code for complete 'beeiot_cfg_t' (except MIC itself)
+							// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
+							// MIC = cmacS[0..3]
 } beeiot_cfg_t;
 
 
 //***************************
 // STATUS-CMD Pkg:
 typedef struct {
-	beeiot_header_t hd;	// BeeIoT common Header
-	char	dstat[BEEIOT_DLEN]; // remaining status array
+	beeiot_header_t hd;			// BeeIoT common Header
+	char	dstat[BIoT_FRAMELEN]; 	// remaining status array
 } beeiot_status_t;
-#define BEEIOT_STATUSCNT 14	// number of status parameters to be parsed from user payload
+#define BEEIOT_STATUSCNT 14		// number of status parameters to be parsed from user payload
 
 //***************************
 // SDLOG-CMD Pkg:
 // xfer of large bin files with max. raw size: 255 * (BEEIOT_DLEN-2)
 // e.g. 65535 * (0x80-5-2) = 7.929.735 Byte = 7743kB max value
 typedef struct {
-	beeiot_header_t hd;	// BeeIoT common Header
-	byte	sdseq_msb;			// MSB: data package sequence number: 0-65535 * (BEEIOT_DLEN-1)
+	beeiot_header_t hd;			// BeeIoT common Pkg Header
+	byte	sdseq_msb;			// MSB: data package sequence number: 0-65535 * (BIoT_FRAMELEN-2)
 	byte	sdseq_lsb;			// LSB data pkg. sequ. number
-	char	dsd[BEEIOT_DLEN-2];	// raw SD data per sequ. pkg
+	char	dsd[BIoT_FRAMELEN-2];	// raw SD data per sequ. pkg - len of 2 By. sdseq counter
+	byte	mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_status_t' (except MIC itself)
+								// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
+								// MIC = cmacS[0..3]
 } beeiot_sd_t;
 #define BEEIOT_SDNPAR	1	// one big binary data package
 #define BEEIOT_MAXDSD		BEEIOT_DLEN-1	// length of raw data 
@@ -279,14 +289,39 @@ enum {
     LEN_BCN          = 17
 };
 
-//******************************************************************
-// For GW: TTN connectivity (optional)
-//******************************************************************
-// TTN Connection: TTN servers
-// TODO: use host names and dns
-#define TTNSERVER1  "54.72.145.119"   // The Things Network: croft.thethings.girovito.nl
-#define TTNSERVER1b "54.229.214.112"  // The Things Network: croft.thethings.girovito.nl
-#define TTNSERVER2  "192.168.1.10"    // local
-#define TTNPORT		1700              // The port on which to send data
 
+//*****************************************************************************
+// ChannelTable[]:
+enum { MAX_CHANNELS = 16 };      //!< Max supported channels
+enum { MAX_BANDS    =  3 };
+typedef struct {
+unsigned int frq;
+bw_t	band;
+dr_t	drmap;
+sf_t	sf;
+cr_t 	cr;
+byte	pwr;
+byte	dc;		// duty cycle quote
+}channeltable_t;
+/*
+channeltable_t	txchntab[MAX_CHANNELS] ={		// ChannelIdx:
+//	Frequ.		BW		DR	 SFx	CR	  Pwr  DC
+	EU868_F1, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 0 For Join default: SF7 ... SF10
+	EU868_F1, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 1 	dito
+	EU868_F1, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 2 	dito
+	EU868_F2, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 3
+	EU868_F2, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 4
+	EU868_F2, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 5
+	EU868_F3, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 6
+	EU868_F3, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 7
+	EU868_F3, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 8
+	EU868_F4, BW125, DR_SF7, SF7, CR_4_5, 14,   1,	// 9
+	EU868_F4, BW250, DR_SF7, SF7, CR_4_5, 14,   1,	// 10
+	EU868_F4, BW500, DR_SF7, SF7, CR_4_5, 14,   1,	// 11
+	EU868_F5, BW125, DR_SF7, SF7, CR_4_5, 14,   1,	// 12
+	EU868_F5, BW250, DR_SF7, SF7, CR_4_5, 14,   1,	// 13
+	EU868_F5, BW500, DR_SF7, SF7, CR_4_5, 14,   1,	// 14
+	EU868_DN, BW125, DR_SF7, SF7, CR_4_5, 27, 100	// 15 For Downlink
+};
+*/
 #endif /* BEEIOTWAN_H */

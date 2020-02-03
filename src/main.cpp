@@ -90,7 +90,7 @@
 // Global data object declarations
 //************************************
 
-#define LOOPTIME    60		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    600		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   3E7		// Mikrosekunden hier 3s
 
 // Save reading number on RTC memory
