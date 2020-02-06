@@ -18,59 +18,25 @@
 #ifndef BEEIOTWAN_H
 #define BEEIOTWAN_H
 
-#define BIoT_VERSION	1000		// 2By: starting with V1.0.00
+// Format: V.maj.min.minsub		starting with V1.0.00
+#define BIoT_VMAJOR		1
+#define BIoT_VMINOR		0
+#define BIoT_VMINSUB 	0		// internal only not reported to GW
 
 //***********************************************
 // LoRa MAC Presets
 //***********************************************
-// Default frequency plan for EU 868MHz ISM band, based on the Semtech global_conf.json defaults,
-// used in The Things Network on Kerlink and other gateways.
-//
-enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
-// Bands:	g1 :   1%  14dBm  
-//			g2 : 0.1%  14dBm  
-//			g3 :  10%  27dBm  
-//                 freq             band     datarates
-enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
-       EU868_F2 = 868300000,      // g1   SF7-12 SF7/250   ditto
-       EU868_F3 = 868500000,      // g1   SF7-12           ditto
-       EU868_F4 = 867100000,      // g2   SF7-12
-       EU868_F5 = 867300000,      // g2   SF7-12
-       EU868_F6 = 868800000,      // g2   FSK
-       EU868_F7 = 867500000,      // g2   SF7-12  
-       EU868_F8 = 867700000,      // g2   SF7-12   
-       EU868_F9 = 867900000,      // g2   SF7-12   
-       EU868_DN = 869525000,      // g3   Downlink
-};
+#define BIoT_EUID 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
+
 enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK=0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
 enum _bw_t { BW125=0, BW250, BW500, BWrfu, BW10, BW15, BW20, BW31, BW41, BW62};
-enum _dr_eu868_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
 
 typedef unsigned int  devaddr_t;		// Node dynmic Device address (given by GW)
 typedef unsigned char cr_t;
 typedef unsigned char sf_t;
 typedef unsigned char bw_t;
-typedef unsigned char dr_t;
 
-// Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-typedef unsigned short rps_t;			
-inline sf_t  getSf   (rps_t params)            { return   (sf_t)(params &  0x7); }
-inline rps_t setSf   (rps_t params, sf_t sf)   { return (rps_t)((params & ~0x7) | sf); }
-inline bw_t  getBw   (rps_t params)            { return  (bw_t)((params >> 3) & 0x3); }
-inline rps_t setBw   (rps_t params, bw_t cr)   { return (rps_t)((params & ~0x18) | (cr<<3)); }
-inline cr_t  getCr   (rps_t params)            { return  (cr_t)((params >> 5) & 0x3); }
-inline rps_t setCr   (rps_t params, cr_t cr)   { return (rps_t)((params & ~0x60) | (cr<<5)); }
-inline int   getNocrc(rps_t params)            { return        ((params >> 7) & 0x1); }
-inline rps_t setNocrc(rps_t params, int nocrc) { return (rps_t)((params & ~0x80) | (nocrc<<7)); }
-inline int   getIh   (rps_t params)            { return        ((params >> 8) & 0xFF); }
-inline rps_t setIh   (rps_t params, int ih)    { return (rps_t)((params & ~0xFF00) | (ih<<8)); }
-inline rps_t makeRps (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
-    	return sf | (bw<<3) | (cr<<5) | (nocrc?(1<<7):0) | ((ih&0xFF)<<8);
-	}
-#define MAKERPS(sf,bw,cr,ih,nocrc) ((rps_t)((sf) | ((bw)<<3) | ((cr)<<5) | ((nocrc)?(1<<7):0) | ((ih&0xFF)<<8)))
-#define RPSTMPL	"SFxBWxxxCRxIHxNOCRCx"	// string base alternative to rps_t
-#define RPSTMPLLEN 20	// is 20 byte long -> used for biot_cfg_t ?
 
 // Define LoRa Runtime parameters
 #define SPREADING	SF7		// Set spreading factor (1:SF7 - 6:SF12)
@@ -129,9 +95,12 @@ enum {
 	CMD_TIME,		// Request curr. time values from partner side 
 	CMD_NOP			// do nothing -> for xfer test purpose
 };
+#ifndef BEEIOT_ACTSTRINGS
+extern const char * beeiot_ActString[];
+#else
 // define BeeIoT Protocol Status/Action strings
 // for enum def. -> see beelora.h
-static const char * beeiot_ActString[] = {
+const char * beeiot_ActString[] = {
 	[CMD_JOIN]		= "JOIN",
 	[CMD_LOGSTATUS]	= "LOGSTATUS",
 	[CMD_GETSDLOG]	= "GETSDLOG",
@@ -144,6 +113,7 @@ static const char * beeiot_ActString[] = {
 	[CMD_TIME]		= "GETTIME",
 	[CMD_NOP]		= "NOP"
 };
+#endif
 
 #ifndef bool
 typedef bool boolean;			// C++ type: boolan
@@ -228,7 +198,8 @@ typedef struct {
 	// device descriptor
 	byte	gwid;			// LoRa Pkg target GWID of serving gateway for Status reports
 	byte	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
-	byte	version;		// version of used/comitted BeeIoTWAN protocol
+	byte	vmajor;			// major version of used/comitted BeeIoTWAN protocol
+	byte	vminor;			// minor version of used/comitted BeeIoTWAN protocol
 	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
 	byte	verbose;		// =0..0xff verbose flags for debugging
 	// LoRa Modem settings
@@ -295,33 +266,60 @@ enum {
 enum { MAX_CHANNELS = 16 };      //!< Max supported channels
 enum { MAX_BANDS    =  3 };
 typedef struct {
-unsigned int frq;
-bw_t	band;
-dr_t	drmap;
-sf_t	sf;
-cr_t 	cr;
-byte	pwr;
-byte	dc;		// duty cycle quote
+unsigned int frq;	// Frequence EU86x
+bw_t	band;		// Bandwidth BWxxx
+sf_t	sfbegin;	// Spreading Start SFx
+sf_t	sfend;		// Spreading End   SFy
+cr_t 	cr;			// Coding Rate CR_4_x
+byte	pwr;		// TX Power level: typ. 14
+byte	dc;			// duty cycle quote: 1:0,1%, 10:1%, 100:10%
 }channeltable_t;
-/*
-channeltable_t	txchntab[MAX_CHANNELS] ={		// ChannelIdx:
-//	Frequ.		BW		DR	 SFx	CR	  Pwr  DC
-	EU868_F1, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 0 For Join default: SF7 ... SF10
-	EU868_F1, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 1 	dito
-	EU868_F1, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 2 	dito
-	EU868_F2, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 3
-	EU868_F2, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 4
-	EU868_F2, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 5
-	EU868_F3, BW125, DR_SF7, SF7, CR_4_5, 14,  10,	// 6
-	EU868_F3, BW250, DR_SF7, SF7, CR_4_5, 14,  10,	// 7
-	EU868_F3, BW500, DR_SF7, SF7, CR_4_5, 14,  10,	// 8
-	EU868_F4, BW125, DR_SF7, SF7, CR_4_5, 14,   1,	// 9
-	EU868_F4, BW250, DR_SF7, SF7, CR_4_5, 14,   1,	// 10
-	EU868_F4, BW500, DR_SF7, SF7, CR_4_5, 14,   1,	// 11
-	EU868_F5, BW125, DR_SF7, SF7, CR_4_5, 14,   1,	// 12
-	EU868_F5, BW250, DR_SF7, SF7, CR_4_5, 14,   1,	// 13
-	EU868_F5, BW500, DR_SF7, SF7, CR_4_5, 14,   1,	// 14
-	EU868_DN, BW125, DR_SF7, SF7, CR_4_5, 27, 100	// 15 For Downlink
+
+// Default frequency plan for EU 868MHz ISM band, based on the Semtech global_conf.json defaults,
+// used in The Things Network and other gateways:
+//                frequence        band   datarates
+enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
+       EU868_F2 = 868300000,      // g1   SF7-12 SF7/250   ditto
+       EU868_F3 = 868500000,      // g1   SF7-12           ditto
+       EU868_F4 = 867100000,      // g2   SF7-12
+       EU868_F5 = 867300000,      // g2   SF7-12
+       EU868_F6 = 868800000,      // g2   FSK
+       EU868_F7 = 867500000,      // g2   SF7-12  
+       EU868_F8 = 867700000,      // g2   SF7-12   
+       EU868_F9 = 867900000,      // g2   SF7-12   
+       EU868_F10= 867900000,      // g2   SF7-12   
+       EU868_DN = 869525000,      // g3   Downlink
 };
-*/
+enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
+// Bands:	g1 :   1%  14dBm  
+//			g2 : 0.1%  14dBm  
+//			g3 :  10%  27dBm  
+// Derived from Semtech techn.Note TN1300.01 "How to qualify a LoRaWAN Device in Europe":
+// Initialization of BIoT Channelconfig table:
+
+#ifndef CHANNELTAB_EXPORT		// define this switch where txchntab should be instaciated
+extern channeltable_t	txchntab[];	// ChannelIdx:
+#else
+channeltable_t	txchntab[MAX_CHANNELS] ={		// ChannelIdx:
+//Frequ.	BW	 SF-Range	CR	   TxPwr  DC
+EU868_F1, BW125, SF7, SF12, CR_4_5, 14,  10,	// 0 EC-Band 48: Mandatory JOIN channel, SF7 ... SF12
+EU868_F2, BW125, SF7, SF12, CR_4_5, 14,  10,	// 1 EC-Band 48: Mandatory JOIN channel, SF7 ... SF12
+EU868_F2, BW250, SF7, SF7,  CR_4_5, 14,  10,	// 2 EC-Band 48: LoRa MAC Std. Channel
+EU868_F3, BW125, SF7, SF12, CR_4_5, 14,  10,	// 3 EC-Band 48: Mandatory JOIN channel, SF7 ... SF12
+EU868_F4, BW125, SF7, SF12, CR_4_5, 14,   1,	// 4 EC-Band 47: Lower duty cycle
+EU868_F5, BW125, SF7, SF12, CR_4_5, 14,   1,	// 5 EC-Band 47:	dito
+EU868_F7, BW125, SF7, SF12, CR_4_5, 14,   1,	// 6 EC-Band 47:	dito
+EU868_F8, BW125, SF7, SF12, CR_4_5, 14,   1,	// 7 EC-Band 47:	dito
+EU868_F9, BW125, SF7, SF12, CR_4_5, 14,   1,	// 8 EC-Band 47:	dito
+0,0,0,0,0,0,0,									// 9  reserved
+0,0,0,0,0,0,0,									// 10 reserved
+0,0,0,0,0,0,0,									// 11 reserved
+0,0,0,0,0,0,0,									// 12 reserved
+0,0,0,0,0,0,0,									// 13 reserved
+0,0,0,0,0,0,0,									// 14 reserved
+EU868_DN, BW125, SF9, SF9,  CR_4_5, 27, 100,	// 15 EC-Band 54: GW Downlink at RX1 & RX2 -> BIoT: RX1 only
+}; 			// FSK Mode is not used by BIoT
+#endif
+
+
 #endif /* BEEIOTWAN_H */

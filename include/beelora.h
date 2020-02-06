@@ -16,6 +16,7 @@
 #ifndef BEELoRa_H
 #define BEELoRa_H
 
+
 typedef unsigned char      bit_t;
 typedef unsigned char	   byte;
 typedef unsigned char      u1_t;
@@ -54,13 +55,12 @@ enum {     // Status of BeeIoT WAN protocol flow (provided islora>0)
         BIOT_SLEEP      // Modem still in power safe status -> start BeeIoTWakeUp()
 };
 
-void configLoraModem (void);
-int BeeIoTParseCfg(beeiot_cfg_t * pcfg);
-int BeeIoTJoin(void);
-int BeeIoTWakeUp(void);
-void BeeIoTSleep(void);
-void Printhex(unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
-void Printbit(unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);
 
+// BeeLoRa.cpp functions
+int  setup_LoRa		(void);
+int  LoRaLog		(const char * outgoing, byte outlen, int sync);
+void hexdump		(unsigned char * msg, int len);
+void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
+void Printbit       (unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);
 
 #endif /* BEELORA_H */

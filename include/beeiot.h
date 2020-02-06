@@ -60,8 +60,12 @@
 | 38|   GND|      |          |       |       GND| -              |
 */
 //*******************************************************************
-#ifndef BeeIoT_h
-#define BeeIoT_h
+#ifndef BEEIOT_h
+#define BEEIOT_h
+
+#include <stdlib.h>
+#include <stdint.h>
+
 //*******************************************************************
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
@@ -168,14 +172,13 @@
 #ifndef BATTERY_MAX_LEVEL
     #define BATTERY_MAX_LEVEL        4130 // mV 
     #define BATTERY_MIN_LEVEL        3300 // mV
-    #define BATTERY_SHUTDOWN_LEVEL   3300 // mV
+    #define BATTERY_SHUTDOWN_LEVEL   3290 // mV
 #endif
 
 
 //*******************************************************************
 // Global data declarations
 //*******************************************************************
-
 #define DROWNOTELEN	129
 #define LENTMSTAMP	20
 typedef struct {				// data elements of one log line entry
@@ -207,7 +210,7 @@ typedef struct {
     char	ipaddr[LENIPADDR];	// IPv4 Address xxx:xxx:xxx:xxx
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
-    uint64_t  BoardID;          // unique Identifier of MUC board (6 Byte effective)
+    uint64_t  BoardID;          // unique Identifier of MUC board (6(of8) Byte effective)
 	datrow	dlog[datasetsize];	// all sensor logs till upload to server
 } dataset;
 
@@ -274,9 +277,5 @@ void drawBitmaps_200x200();
 void drawBitmaps_other(void);
 void showdata		(int sampleID);
 
-// BeeLoRa.cpp functions
-int  setup_LoRa		(void);
-int  LoRaLog		(byte cmd, const char * outgoing, byte outlen, int sync);
-void hexdump		(unsigned char * msg, int len);
 // end of BeeIoT.h
 #endif // BeeIoT_h

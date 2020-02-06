@@ -160,7 +160,7 @@ void CheckWebPage();
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-lflags = LOGBH + LOGLORAW +LOGLORAR;
+lflags = LOGBH + LOGLORAW ;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
@@ -202,15 +202,18 @@ lflags = LOGBH + LOGLORAW +LOGLORAR;
   InitConfig();
   
 //***************************************************************
-  BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231");
+  BHLOG(LOGBH) Serial.print("  Setup: Init RTC Module DS3231 ");
   if (setup_rtc() != 0){
-    BHLOG(LOGBH) Serial.println("  Setup: RTC setup failed");
+    BHLOG(LOGBH) Serial.printf("\n  Setup: RTC setup failed\n");
     // enter exit code here, if needed (monitoring is hard without correct timestamp)
     // isrtc should be -1 here; hopefully NTP can help out later on
   }else{
     BHLOG(LOGLAN) rtc_test();
+    getRTCtime();
+    Serial.println(bhdb.formattedDate);
   }
-  
+
+
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices ...");
   if (setup_spi_VSPI() != 0){ 
@@ -278,9 +281,9 @@ lflags = LOGBH + LOGLORAW +LOGLORAR;
   if (setup_owbus() == 0){
     BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
     // enter exit code here, if needed
+  }else{
+    GetOWsensor(0); // read temperature the first time
   }
-  GetOWsensor(0); // read temperature the first time
-
 //***************************************************************
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
   // isepd=-1; // Disable EPD for test purpose only
@@ -466,7 +469,7 @@ String dataMessage; // Global data objects
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (are we joined ?)
-    LoRaLog(CMD_LOGSTATUS, (char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
+    LoRaLog((char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
     }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }

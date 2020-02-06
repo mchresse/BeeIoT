@@ -26,12 +26,13 @@
 
 #include <Arduino.h>
 #include <stdio.h>
+#include <stdint.h>
+
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include <SPI.h>
 
 #include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
-
 
 // Libraries for SD card at ESP32_
 // ...has support for FAT32 support with long filenames
@@ -74,6 +75,8 @@ int issdcard =-1;       // =0 SDCard found
 //*******************************************************************
 int setup_spi_VSPI() {    // My SPI Constructor
     BHLOG(LOGSPI) Serial.println("  MSPI: VSPI port for 3 devices");
+    isepd = -1;
+    issdcard = -1;
 
 // First disabe all SPI devices CS line to avoid collisions
     pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
@@ -103,15 +106,16 @@ int setup_spi_VSPI() {    // My SPI Constructor
     pinMode(EPD_RST, OUTPUT);
     digitalWrite(EPD_RST, HIGH);
     pinMode(EPD_BUSY, INPUT_PULLUP);
-
+ 
+    #ifdef SD_CONFIG
     BHLOG(LOGSPI) Serial.print("  MSPI: SPI-Init of SD card...");
     if (!SD.begin(SD_CS)){
-        issdcard = -1;
         BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
     } else {
         BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
         issdcard = 0;
     }
+    #endif
 
     #ifdef EPD_CONFIG
     BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");
