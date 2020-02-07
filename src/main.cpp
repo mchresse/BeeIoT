@@ -138,7 +138,7 @@ extern byte   RouterNetworkDeviceState;
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;        // last send time
-int LoRa_interval = 2000;     // interval between sends
+int  report_interval = LOOPTIME; // interval between BIoT Reports
 char LoRaBuffer[256];         // buffer for LoRa Packages
 extern byte msgCount;
 
@@ -160,7 +160,7 @@ void CheckWebPage();
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-lflags = LOGBH + LOGLORAW ;
+lflags = LOGBH + LOGLORAW +LOGLORAR;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
@@ -275,6 +275,7 @@ lflags = LOGBH + LOGLORAW ;
     BHLOG(LOGBH) Serial.println("  Setup: LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
+
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
@@ -417,12 +418,12 @@ float x;              // Volt calculation buffer
   }
 
 //***************************************************************
-  BHLOG(LOGBH) Serial.printf("  Loop: Enter Sleep/Wait Mode for %i sec.\n", LOOPTIME);
+  BHLOG(LOGBH) Serial.printf("  Loop: Enter Sleep/Wait Mode for %i sec.\n", report_interval);
   // Start deep sleep
   //  esp_sleep_enable_timer_wakeup(SLEEPTIME);    // Deep Sleep Zeit einstellen
   //  esp_deep_sleep_start();                       // Starte Deep Sleep
   // or
-  mydelay(LOOPTIME*1000);   // wait with blinking red LED
+  mydelay(report_interval*1000);   // wait with blinking red LED
 
   BHLOG(LOGBH) Serial.println();
 } // end of loop()
