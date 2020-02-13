@@ -73,10 +73,10 @@
 #define HX711_CONFIG  0
 #define ADS_CONFIG    0
 #define ONEWIRE_CONFIG 0
-#define WIFI_CONFIG   0
+// #define WIFI_CONFIG   0
 #define NTP_CONFIG    0
 #define SD_CONFIG     0
-#define EPD_CONFIG    0
+// #define EPD_CONFIG    0
 #define LORA_CONFIG	  0
 
 // Pin mapping when using SDCARD in SPI mode.

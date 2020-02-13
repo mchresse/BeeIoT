@@ -304,18 +304,18 @@ int rc;
 pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
  // Prepare Pkg Header 
-  pjoin->hd.destID = GWIDx;         // We start joining always with the default BeeIoT-WAN GWID
   if(joinstatus == BIOT_JOIN){
     pjoin->hd.cmd    = CMD_JOIN;    // Lets Join
     pjoin->hd.sendID = NODEIDBASE;  // that's me by now but finally not checked in JOIN session
     pjoin->hd.index  = 0xFF;          // ser. number of JOIN package; well, could be any ID 0..0xFF
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Start Joining for a GW\n");
-  }else{
+  }else{ // REJOIN of a given status
     pjoin->hd.cmd    = CMD_REJOIN;  // Lets Join again  
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Connection lost - Re-Joining with default ChannelCfg\n");
     pjoin->hd.sendID = LoRaCfg.nodeid;   // use GW well known last node id for reactivation
     pjoin->hd.index  = LoRaCfg.msgCount; // ser. number of JOIN package; for rejoining use std. counter
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Connection lost - Re-Joining with default ChannelCfg\n");
   }
+  pjoin->hd.destID = GWIDx;         // We start joining always with the default BeeIoT-WAN GWID
   pjoin->hd.frmlen = sizeof(joinpar_t); // length of JOIN payload: ->info 
 
   // setup join frame ->info
@@ -349,23 +349,26 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
     i=0;  // reset wait counter
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
-    while (!BeeIotRXFlag & (i<WAITRX1PKG*2)){  // till RX pkg arrived or max. wait time is over
+    while (!BeeIotRXFlag && (i<WAITRX1PKG*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
         delay(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     } 
     // notice # of JOIN Retries
-    if(LoRaCfg.joinRetryCount++ % 10 == 0){
+    if(LoRaCfg.joinRetryCount++ == 10){ // max. # of acceptable JOIN Requests
       report_interval *= 10;    // wait 10-times longer to try again for saving power
+      BHLOG(LOGLORAW) Serial.printf("\n  BeeIoTJoin: After %i retries: Reduce Retry frequency to every %isec.",
+            LoRaCfg.joinRetryCount, report_interval);
+      LoRaCfg.joinRetryCount = 0; 
     };        // report_interval will be reinitialized by CONFIG with successfull JOIN request
 
     rc=0;
     if(i>=WAITRX1PKG){       // TO condition reached, no RX pkg received=> no GW in range ?
-        BHLOG(LOGLORAW) Serial.println(" None.\n");
+        BHLOG(LOGLORAW) Serial.println(" None.");
         // RX Queue should still be empty: validate it:
         if(!BeeIotRXFlag & (RXPkgSrvIdx != RXPkgIsrIdx)){ // RX Queue validation check: realy empty ?
           Serial.printf("  BeeIotJoin: This case should never happen: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0\n",RXPkgSrvIdx, RXPkgIsrIdx);
-          // ToDo: any correction action ? or exit ?
+          // ToDo: any correcting action ? or exit ?
           RXPkgSrvIdx = RXPkgIsrIdx;  // no Queue entry: RD & WR ptr. must be identical
         }
         rc=CMD_RETRY;       // initiate JOIN request again
@@ -641,14 +644,14 @@ int rc;
     } // New Pkg parsed
   } while(rc == CMD_RETRY); // for this CMDs do ACK wait again
 
-  if(BeeIoTStatus == CMD_REJOIN){ // For REJOIN we have to keep JOIN Request status (as set by BeeIoTParse())
-    BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Send Msg failed - RE-Join requested, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
+  if(rc == CMD_REJOIN){ // For REJOIN we have to keep JOIN Request status (as set by BeeIoTParse())
+    BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Send Msg failed - New-Join requested, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
     BeeIoTStatus = BIOT_JOIN;     // RE-JOIN requested by GW
-    LoRaCfg.nodeid = NODEIDBASE;  // reset provided IDs from GW -> CONFIG will provide new one (roaming ?!)
-    LoRaCfg.gwid   = GWIDx;
-    BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
+    LoRaCfg.nodeid = NODEIDBASE;   // -> CONFIG from GW will provide a new one (roaming ?!) later
+    BHLOG(LOGLORAW) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
     return(-96);
+
   }
 
    // clean up TX Msg buffer (ISR checks for MyMsg.idx == RXData.index only)
@@ -706,7 +709,7 @@ int rc;
 	case CMD_REJOIN:  
     // GW requested a REJOIN 
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.index, msg->hd.sendID);
-    BeeIoTStatus = BIOT_JOIN;  // reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
+    BeeIoTStatus = BIOT_REJOIN;  // reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
 		rc= CMD_REJOIN;	
 		break;
 

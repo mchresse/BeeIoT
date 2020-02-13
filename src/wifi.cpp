@@ -410,12 +410,13 @@ int DecodeGETParameterAndSetConfigValues(String GETParameter){
 // Connect to AllThingsTalk MQTT Broker and switch RGB-LEDs
 int ConnectToATT(){   
     int NodeState;
+    char AttPath[] = "api.allthingstalk.io";
 
     // closes TCP connection
     attTCPClient.Close();
        
     // TCP-connect to AllThingsTalk MQTT Server
-    int TCP_Connect_Result = attTCPClient.Connect("api.allthingstalk.io", 1883);
+    int TCP_Connect_Result = attTCPClient.Connect(AttPath, 1883);
     
     // Success?
     if (TCP_Connect_Result != 1){
