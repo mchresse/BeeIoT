@@ -49,6 +49,7 @@ typedef struct {
 enum {     // Status of BeeIoT WAN protocol flow (provided islora>0)
         BIOT_NONE,      // if(islora) -> Modem detected but not joined yet
         BIOT_JOIN,      // About to discover a GW and negot. new channel cfg.
+        BIOT_REJOIN,    // Modem lost connection -> try rejoin requested
         BIOT_IDLE,      // Modem detected and joined -> channel preconfigured & active => goto BeeIoTSleep() ?
         BIOT_TX,        // in TX transmition -> poll by LoRa.isTransmitting()
         BIOT_RX,        // in RX Mode -> waiting for incomming Messages
