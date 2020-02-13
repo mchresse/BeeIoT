@@ -106,6 +106,11 @@ dataset		bhdb;
 unsigned int	lflags;               // BeeIoT log flag field
 Preferences preferences;        // we must generate this object of the preference library
 
+// construct the instance attMQTTClient of class MQTTClient
+MQTTClient attMQTTClient = MQTTClient();
+byte MQTTClient_Connected;
+byte CounterForMQTT;
+
 // 8 configuration values max managed by webpage
 #define CONFIGSETS    8
 String ConfigName[CONFIGSETS];     // name of the configuration value
@@ -128,19 +133,14 @@ extern RTC_DS3231   rtc;        // Create RTC Instance
 // construct the object attTCPClient of class TCPClient
 TCPClient attTCPClient = TCPClient();
 
-// construct the object attMQTTClient of class MQTTClient
-MQTTClient attMQTTClient = MQTTClient();
-byte MQTTClient_Connected;
-byte CounterForMQTT;
 
 extern String WebRequestHostAddress;     // global variable used to store Server IP-Address of HTTP-Request
 extern byte   RouterNetworkDeviceState;
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;        // last send time
-int  report_interval = LOOPTIME; // interval between BIoT Reports
+int  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
 char LoRaBuffer[256];         // buffer for LoRa Packages
-extern byte msgCount;
 
 
 //************************************
@@ -160,7 +160,7 @@ void CheckWebPage();
 void setup() {
 // lflags = 0;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-lflags = LOGBH + LOGLORAW +LOGLORAR;
+lflags = LOGBH + LOGLORAW;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
