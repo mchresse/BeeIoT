@@ -35,7 +35,7 @@ enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK=0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
 enum _bw_t { BW125=0, BW250, BW500, BWrfu, BW10, BW15, BW20, BW31, BW41, BW62};
 
-typedef unsigned int  devaddr_t;		// Node dynmic Device address (given by GW)
+typedef unsigned int  devaddr_t;		// Node dynamic Device address (given by GW)
 typedef unsigned char cr_t;
 typedef unsigned char sf_t;
 typedef unsigned char bw_t;
@@ -74,7 +74,8 @@ typedef unsigned char bw_t;
 #define MAXRXACKWAIT	10	// # of Wait loops of MSGRESWAIT
 #define MSGMAXRETRY		5	// Do it max. n times again
 #define RXACKGRACETIME  1000 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
-#define WAITRX1PKG		5	// # of sec. to wait for add. RX pkg after last ACK
+#define MSGRX1DELAY		500	// [ms] wait for start of RX1 window
+#define WAITRX1PKG		5	// [sec] till RX1 window is closed
 
 //*******************************************************************
 // BeeIoT-WAN command package types
@@ -292,7 +293,6 @@ EU868_F9, BW125, SF7, SF12, CR_4_5, 14,   1,	// 8 EC-Band 47:	dito
 0,0,0,0,0,0,0,									// 11 reserved
 0,0,0,0,0,0,0,									// 12 reserved
 0,0,0,0,0,0,0,									// 13 reserved
-
 0,0,0,0,0,0,0,									// 14 reserved
 EU868_DN, BW125, SF9, SF9,  CR_4_5, 27, 100,	// 15 EC-Band 54: GW Downlink at RX1 & RX2 -> BIoT: RX1 only
 }; 			// FSK Mode is not used by BIoT
