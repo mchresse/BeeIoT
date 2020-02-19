@@ -855,7 +855,7 @@ int sendMessage(beeiotpkg_t * TXData, int async) {
   byte len = (byte) TXData->hd.frmlen + BIoT_MICLEN;
   LoRa.write((byte*) & TXData->data, len);          // add AppFrame incl. MIC bytewise
 
-BHLOG(LOGLORAR) Serial.printf("  LoRaSend; STart TX");
+	BHLOG(LOGLORAR) Serial.println("  sendMessage: Start TX");
   
   // Finish packet and send it in LoRa Mode
   // =0: sync mode: endPacket returns when TX_DONE Flag was achieved

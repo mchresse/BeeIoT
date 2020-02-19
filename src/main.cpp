@@ -158,9 +158,9 @@ void CheckWebPage();
 //
 //*******************************************************************
 void setup() {
-// lflags = 0;   // Define Log level (search for Log values in beeiot.h)
+// lflags = 65535;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-lflags = LOGBH + LOGLORAW + LOGLORAR;
+lflags = LOGBH + LOGLORAW;
 
   // put your setup code here, to run once:
   pinMode(LED_RED,   OUTPUT); 
@@ -170,6 +170,8 @@ lflags = LOGBH + LOGLORAW + LOGLORAR;
   while(!Serial);                 // wait to connect to computer
   Serial.begin(115200);           // enable Ser. Monitor Baud rate
   delay(3000);                    // wait for console opening
+
+
 
   Serial.println();
   Serial.println(">*******************************<");

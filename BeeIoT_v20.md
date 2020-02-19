@@ -49,7 +49,7 @@
 	* [ESP32 IDE](#esp32-ide)
 		+ [PlatformIO](#platformio)
 		+ [ESP32 Sensor Libraries + build](esp32-sensor-libraries-+-build)
-	* [Die Programm Struktur](#die-programm-struktur)
+	* [Die Client Programm Struktur](#die-client-programm-struktur)
 		+ [Setup Phase](setup-phase)
 		+ [Loop Phase](loop-phase)
 	* [Kalibrierung der Waage](#kalibrierung-der-waage)
@@ -209,7 +209,7 @@ Folgende Funktionen wollen wir unterbringen:
 	- Optional: NB-IOT via SIM7000E GPRS Modul
 + Sensorik
 	- 100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)
-	- OneWire Temperatur Sensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)
+	- OneWire Temperatursensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)
 	- OneWire Temperatursensor 12bit extern
 	- OneWire Temperatursensor 12bit extern für Stocktemperatur Messung (über 1m Leitung)
 + Optionale Erweiterung
@@ -303,7 +303,7 @@ Zur USB/Ser.Kommunikation sind daher die Leitungen GPIO 1+3 (RX+TX)belegt.
 
 Ein besonderes Augenmerk ist bei den Logikanschlüssen auf die richtige Logiklevel Nutzung bei unterschiedlich verwendeten Stromversorgungen der Sensormodule aufzubringen, wie sich später noch zeigen wird...(s. Micro SD-Card Modul)
 
-**Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten aber ausschliesslich mit 3.3V.**
+**Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten  ausschliesslich mit 3.3V.**
 
 Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für unser Projekt daher nicht zur Verfügung. Auch die Leitungen EN(Boot-Button) und GPIO36(SP) + 39(SN) sind bereits belegt.
 GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.
@@ -381,7 +381,7 @@ Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:
 + 1x RTC Modul (I2C)(DS3231) incl. Eprom
 + 1x Micro SD Card Modul (SPI)
 + 1x ePaper 2.7" (SPI) + 4 F-Keys.
-+ 1x LoRa MAC Modul (Dragino LoRa Bee 868MHz)
++ 1x LoRa MAC Modul mit Semtech SX1276 (e.g. Dragino LoRa Bee 868MHz)
 + **Optional**
 	- 1x xternes IR-Kameramodul -> für Bienensitz im Winter
 	- NB-IoT Modul zur Funk-Fernübertragung via GPRS (SM7000E)
@@ -566,10 +566,11 @@ Die GPIO Port Definitionen:
 #define SD_CS       2     // SD card CS\ line - arbitrary selection !
 #define SPISPEED 2000000  //20MHz clock speed
 ```
-Über Nutzung von FS.h ist auch der Betrieb mit long filenames bei größeren Karten möglich.
+Über Nutzung von FS.h ist auch der Betrieb mit langen filenames bei größeren Karten möglich.
 Dieses Modul unterstützt 2GB - 16GB Micro SD Cards, vorformatiert(!) mit FAT32 Format.
 
-Dieses Modul wäre aber auch ein Kandidat zur EInsparung wenn wir wieter den Strombedarf reduzieren wollen.
+Dieses Modul wäre aber auch ein Kandidat zur Einsparung wenn wir wieter den Strombedarf reduzieren wollen.
+> **Hinweis:** Es wird in vielen Artikeln zur Stabilisierung der SD Card Kommunikation empfohlen einen 10kOhm Pullup an der SD-CS\-Leitung anzulegen. In unserem Fall ist diese aber an GPIO2 angeschlossen. Der Pullup würde einen weiteren Upload von FW in das FlashRom verhindern -> Timeout. In unserem Fall ist also kein PullUp ohne größeren Aufwand möglich.
 
 #### E-Paper Display
 Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.
@@ -665,48 +666,41 @@ Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot
 Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns "weiter arbeiten/schlafen", liegt der Stromverbrauch aber nahezu bei 0mA.
 
 #### LoRa WAN Support
-Für die remote Connection ohne "stromfressenden" WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen Topologie Reichweiten bis zu 8km ermöglichen.
+Für die remote Connection ohne "stromfressenden" WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. In Europa wird das ISM Band mit 433,05 bis 434,79 Mhz und das SRD Band 863 bis 870 MHz genutzt. Auf EU-868MHz voreingestellt kann es abhängig von der räumlichen Topologie (Satadt/Land) Reichweiten bis zu 2-8km ermöglichen.
 
-Das LoRa-WAN Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.
+Das LoRa-WAN Protokoll ist auf geringe Band-Belastung (OnAir-DutyTime) und geringem Stromverbrauch ausgelegt.
 
-Das verbaute Funkmodul bietet erst einmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das **[LoRaWAN Protokoll](https://lora-alliance.org/about-lorawan)** leisten die dazugehörigen Bibliotheken (z.B. die OSS Lib: LMIC von IBM -> search in GitHub).
-Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombiniert mit SSH enthalten.
-Es zeigten sich bei der Migration der LMIC Lib Instablitäten des LoRa Modes -> es wurden immer wieder FSK Mode IRQs empfangen, was die LoRa Statusführung durcheinander bringt.
-Auch ist das von IBM gewählte OS layer Model nicht so handsam wie erwartet.
-In Summe stellte die LMIC-Lib für den ESP32 in Kombination mit den übrigen Aktionen zur Sensorbehandlung zumindest auf Node/Cient Seite einen ziemlichen overhead dar, der aber leider nötig ist um das vollständige LoRa-WAN Protokoll nach Spezifikation zu erfüllen (Band-Hopping, Encryption, OTAA joining usw.).
-Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbindung hat, um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.
-Da ein GW ggfs. mit mehreren Clients quasi-gleichzeitig zu tun hat, ist die LMIC STack implementierung optimal. Der OS Layer nimmt einem hier das Queueing hereinkommender Pakete sowie die protokollgerechte Quittierung und Bandmanagement vollständig ab.
-Ein weiterer interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:
-https://wiki.opennet-initiative.de/wiki/LoRaSensor .
+Das verbaute HW-Funkmodul bietet nur den LoRa-MAC layer Übertragungssupport.
+Auf die Umsetzung der dazugehörigen Paketübertragungs- und Netzverwaltung sowie den dazugehörigen SW Stack auf beiden Seiten gehe ich in diesem Dokument detailliert ein: **[BeeIoTWAN_v10.md](https://github.com/mchresse/BeeIoTGW/blob/master/BeeIoTWAN_v10.md)** des zugehörigen Github Projektes **BeeIoTGW**.
+Dort findet sich auch die Beschreibung der BIoT Gateway/Edge-Server Gegenstelle für die weitere Verarbeitung der Sensordaten durch AppServices. Hier vorab schonmal das prinzip Schaltbild der Module des vollständigen BIoT WAN Netzwerkes. 
+<img src="./images_v2/BeeIoT_Concept.jpg">
 
-Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!):
-Soll heisen auf basis des RADIO layers von LMIC habe ich ein eigenes "schmalspur" WAN Protokoll entworfen (BeeIoT-WAN) welches die Paket Kommunikation auf den rudimentären Austausch von Sensordaten mit einfacher Quittierung (zunächst ohne Multi-Bandmanagement oder Encryption) "optimiert".
-Auf dieser Basis habe ich die ESP32 Client- und RaspberryPi GW-seitigen Module entworfen.
-Kerneigenschaften der Module:
-- Erkennung durch Sender/Empfänger-IDs im "BeeIoT-WAN"-eigenen Header (nur 5 Bytes)
-- CRC basierte Datenprüfung
-- automatische Quittierung und resend/retry Kommunikation als Flow Control
-
-Was noch fehlt:
-- Collison detection (aber ggfs. durch die CRC Prüfung und ResendAnforderung abgedeckt)
-- Encryption auf AES Basis (abgeleitet von der LMIC AES Lib)
-- Multi Band management (heute wird nur 1 band gewählt, das aber nur alle 10-15 Minuten benutzt)
-- Duty Time recognition
+Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte leistungsfähigere WiFi/LAN Anbindung hat, um die gewonnenen SensorDaten aller Clients zu validieren, aufbereiten und auf eine Website oder andere Abnehmer (MQTT) zu spiegeln.
 
 Hauptanbieter des LoRa-MAC Layer HW Moduls ist die Firma Semtech, die auch die **[LoRaWAN Spezifikation v1.0.3](https://lora-alliance.org/resource-hub/lorawanr-specification-v103)** als Member der "LoRA Alliance" mit herausgegeben hat.
 Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats & Shields entworfen.
 Der kleinste Vertreter davon (ohne GPS Modul) ist das "Dragino Lora-Bee Modul" **[(Wiki)](http://wiki.dragino.com/index.php?title=Lora_BEE)**, welches via SPI angeschlossen wird.
+Darauf befindet sich ein RFII95-98W (eigentlich der SX1276 chip) mit SPI Interface. Dieses SX1276 Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllt denselben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.
+<img src="./images_v2/SX1276.jpg">
+Die Antenne ist behelfsweise aber auch über einen gewickelten Draht mit der passenden Länge realisierbar.
+Dabei ist das Frequenzband bestimmt nach der Formel: 868 MHz > 8,5 cm Draht für eine Lambda/4 Antenne.
+Eine SMA Antenne besteht intern ebenfalls nur aus:
+<img src="./images_v2/LoRa_Antenna.jpg">
+... einem Draht mit einer Wetterschutzkappe:
+<img src="./images_v2/Duck_Antenna.jpg">
 
-Darauf befindet sich ein RFII95-98W mit SPI Interface. Dieses Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllen densleben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.
-
-Die Verdrahtung ist recht einfach:
-Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion, eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5. 
-DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei RX/TX-Events. Für den Standard LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt (solange man beim LoRa-Mode bleibt; Für den FSK Mode werden häufig auch DIO0-2 genutzt).
-Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren. 
+Die LoraModul-Verdrahtung ist recht einfach:
+Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion (bei manchen Modulen auch NSS genannt), eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5. 
+Für den Standard LoRa-Modem Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt.(Für den FSK Mode werden häufig auch DIO1+2 benötigt).
+Manchen SW Stacks (z.B. LMIC) benötigen zum vollständigen Support DIO0-2; der Lora-Lib von Sandeep reicht aber DIO0.
+DIO0 triggert z.B. alle LoRa-Mode RX/TX Interrupts (RXDone & TXDone).
+Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; welche aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.
 Alle 3 Leitungen werden aber nur im Input Mode betrieben (zur Signalisierung des Semtech Modul Status).
+Für eine größere Stabilität am SPI Bus sollten CS udn RST mit 10k-PullUps versehen werden, damit keine Misverständnisse zw. ESP32 und SX1276 entstehen.
 
+Das beim BIoT Client verwendete Dragino Bee Modul ist massgeblich der Träger des Semtech Moduls:
 <img src="./images_v2/Dragino_Lora_Bee.jpg"> <img src="./images_v2/Dragino_Lora_Bee_Cabling.jpg">
-
+Beim Gateway begnüge ich mich mit dem Smetech Modul + Eigenbau Antenne (noch).
 Auf dem 2. Bild ist das grün gefärbte Semtech LoRa Modul gut zu erkennen.
 
 Die Spezifikation weisst folgende Eigenschaften aus:
@@ -729,8 +723,7 @@ Die Spezifikation weisst folgende Eigenschaften aus:
 
 Das Dragino Manual dazu findet sich **[hier](http://wiki.dragino.com/index.php?title=Lora_BEE)**.
 
-<img src="./images_v2/Duck_Antenna.jpg">
-Da aber nahezu alle Leitungen des SemTech Moduls 1.1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.
+Da aber nahezu alle Leitungen des SemTech Moduls 1:1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.
 
 Die aktuell verwendeten GPIO Port Definitionen:
 ```cpp
@@ -749,24 +742,22 @@ Die aktuell verwendeten GPIO Port Definitionen:
 #define BEE_DIO2	34		// unused by BEE_Lora;  connected to EPD K3 -> but is a RD only GPIO !
 ```
 Die Rolle des Client Node MAC layers ist in dieser **[Backend Specification](https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10)** festgehalten
-Aktuell gehen meine Tests, wie oben bereits erwähnt, in Richtung der LMIC LoRaWAN SW Stack Implementierung von IBM. Der MAC Layer ist durch die Implementierungen in hal.c + Radio.c enthalten.
-(siehe GitHub -> "lmic_pi"). Dieses habe ich als Basis für den GW seitigen BeeIot-WAN Aufbau auf Basis RPi verwendet.
-Alternative sei auch noch die "RadioHead" Implementierng genannt (s. GitHub).
 
-Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend. Über eine vollständige WAN Kommunikation kümmere ich mich später...
+Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend.
 
-Da ich ein eigens "BeeIoT-"LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses ESpP32 Nodes: Activation-by-Personalization (ABP) und als eindeutige statisceh LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-"DevAddr" zur Node-Protokoll ID (DevID) gebildet werden.
-Eine Anbindung an das allseits beliebte offene TT-Netzwerk schränkt die Nutzung durch limitierte Anzahl Daten und Paket/Zeitraum zu sehr ein.
-Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.) Für solch intensiven Datenaustausch ist aber Multiband management mit Duty Time Control nötig, weil sonst das einzelne Band zu sehr vereinnahmt wird.
+Die Antenne wird bei einem SMA Anschluss einfach aufgeschraubt: fertig.
+Es reicht wenn die Antenne innerhalb der Box verbleibt. Man kann die Reichweite natürlich vergrößern, wenn sie nach aussen geführt wird und ein direkter "Sichtkontakt" zum Gateway gewährleistet ist (z.B. bei TopRoof-Montage).
+
+Genaue Reichweiten Messungen stehen aber noch aus...(für die 20cm Beton-Kellerdecke reicht es aber schonmal).
 
 ### NarrowBand-IoT
-NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.
+NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und LTE-Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber insbesondere die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.
 
 Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.
 
-Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.
+Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuell nicht mehr frei sind, bleibt es erstmal bei der LoRaWan Anbindung.
 
-Das von mir bestellte Modul: 
+Das von mir bestellte Modul:
 Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
 + mit Breakout UART control pins (Baudrate: 300bps~3686400bps)
 + Control via AT commands (3GPP TS 27.007, 27.005, and SIMCOM enhanced AT Commands)
@@ -776,10 +767,9 @@ Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne
 
 => Link zum **[SIM7000E-HAT Wiki](https://www.waveshare.com/wiki/SIM7000E_NB-IoT_HAT?Amazon)**
 
-Verwendet folgende ESP32 Anschluss pins (falls verfügbar)
+Es verwendet folgende ESP32 Anschluss pins (falls verfügbar)
 + TXD0: Optional
 + RXD0: Optional
-
 =>In V2.0 aber nicht implementiert !
 
 ### RTC Uhrzeit-Modul
@@ -943,9 +933,9 @@ So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anz
 Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.
 Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:
 ```cpp
-#define BATTERY_MAX_LEVEL        4150 // mV
-#define BATTERY_MIN_LEVEL        3200 // mV
-#define BATTERY_SHUTDOWN_LEVEL   3100 // mV
+#define BATTERY_MAX_LEVEL        4150 // mV -> 100%
+#define BATTERY_MIN_LEVEL        3200 // mV	-> 0%
+#define BATTERY_SHUTDOWN_LEVEL   3100 // mV -> -10%
 ```
 
 An dieser Stelle hilft es die Energie-Rechnung aus Kapitel:  **[Die MCU Arduino/ESP32 Platform](#die-mcu-arduino-ESP32-platform)** nochmal nachzurechnen:
@@ -961,7 +951,7 @@ Pro Tag kämen wir auf einen Gesamtverbrauchsmix:
 - Passivphase: 24 x 60 - 24Minuten = 1416 Minuten -> 59mAh
 in Summe also 139mAh/Tag ergibt bei 30.000mAh Akku Kapazität = **215 Tage Laufzeit**.
 
-Und das ohne jede Ladung. Ergänzen wir das ganze noch mit einem 5V PV Modul am ext. USB port ...
+Und das ohne jede Aufladung. Ergänzen wir das ganze noch mit einem 5V PV-Solar Modul am ext. USB port ...
 
 ### Power Monitoring
 Um die oben genannten Lade-/Entladezyklen verfolgen zu können, habe ich einen 4-port AD Wandler ADS1115 spendiert der über einen 3.3V <-> 5V levelchanger ebenfalls am I2C Port des ESP32 hängt.
@@ -1000,7 +990,7 @@ Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsf
 ```
 
 ### PV Solar-Modul
-Die oben errechneten 215 tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.
+Die oben errechneten 215 Tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.
 Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:
 
 	
@@ -1015,7 +1005,7 @@ Auch hier müssen wir eine Lösung finden, die im Schnitt 5V liefert und dies mi
 In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.
 Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.
 
-Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet. 
+Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet.
 Den Rest erledigt die Akku-interne Ladekontrolle, solange das Panel 5V liefern kann. Und das ist dank eines PV-nternen step Reglers recht lange der Fall.
 Bei einem trüben aber freundlichen Märztag war eine PV Modul interne interne PV-Modul-Spannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…
 
@@ -1179,6 +1169,7 @@ Die Aussenansicht des Backpanels + ePaper Panel:
 
 Die Innenansichten der Anschlussstecker und der MCU Extension-Box:
 <img src="./images_v2/BoxInsideOvw.jpg">
+<img src="./images_v2/BoxInsideBack.jpg">
 
 ##### One Wire Sensoren
 One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse-GND, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.
@@ -1359,31 +1350,37 @@ Diese Lbraries sollten nach einer Installation z.B. über PlatformIO unter folge
 
 Zuletzt müssen eure WLAN credentials in der build_flags Zeile angepasst werden.
 
-Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern der per upload auf den ESP32 geladen wird.
+Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern, welches per upload auf den ESP32 geladen wird.
 
-Der Dependency Graph könnte wie folgt aussehen:
+Die HW Erkennung wird in den ersten Zeilen des Build Laufs angezeigt:
+```
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 1.11.1 > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+```
+Der Dependency Graph sollte danach wie folgt aussehen:
 ```
 Dependency Graph
 |-- <GxEPD> 3.0.9
-|   |-- <Adafruit GFX Library> 1.6.1
+|   |-- <Adafruit GFX Library> 1.7.5
 |   |   |-- <SPI> 1.0
 |   |-- <SPI> 1.0
 |-- <DallasTemperature> 3.8.0
 |   |-- <OneWire> 2.3.5
 |-- <RTClib> 1.3.3
 |   |-- <Wire> 1.0.1
-|-- <U8g2> 2.27.2
+|-- <U8g2> 2.27.6
 |   |-- <SPI> 1.0
 |   |-- <Wire> 1.0.1
-|-- <Adafruit GFX Library> 1.6.1
+|-- <Adafruit GFX Library> 1.7.5
 |   |-- <SPI> 1.0
-|-- <SdFat> 1.1.0
+|-- <SdFat> 1.1.1
 |   |-- <SPI> 1.0
 |-- <HX711> 0.7.1
 |-- <LoRa> 0.7.0
 |   |-- <SPI> 1.0
 |-- <OneWire> 2.3.5
-|-- <Adafruit ADS1X15> 1.0.1
+|-- <Adafruit ADS1X15> 1.0.3
 |   |-- <Wire> 1.0.1
 |-- <FS> 1.0
 |-- <SD(esp32)> 1.0.5
@@ -1401,14 +1398,17 @@ Dependency Graph
 |   |-- <FS> 1.0
 ```
 
-### Die Programm Struktur
+Nach der Compilierung wird das FW Image via COMx Port hochgeladen.
+Mein akt. ESP32 meldet sich wie folgt:
+```
+Chip is ESP32D0WDQ5 (revision 1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+```
+### Die Client Programm Struktur
 Um sich in den Source schneller zurecht zu finden, hier in paar Übersichten:
 
 Die Client HW Modul Struktur in SW Module übertragen:
 <img src="./images_v2/SWModuleSheet.jpg">
-
-Die dazugehörige Klassen-Struktur:
-<img src="./images_v2/SWClassView.jpg">
 
 Zuletzt der Funktions-Programmflussplan der Loop() Schleife:
 <img src="./images_v2/SWMainFlow.jpg">
@@ -1421,58 +1421,108 @@ Mögliche Debugmeldungen habe ich über ein simples Macro parametrisiert:
 uint16_t	lflags;      // BeeIoT log flag field; for flags enter beeiot.h
 
 void setup(){
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
-lflags = LOGBH + LOGLORA + LOGLAN;
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
+lflags = LOGBH + LOGLORAW + LOGLAN;
 ```
 Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.
 
-Mit den obigen 3 Schalter: LOGBH + LOGLORA + LOGLAN
-könnte der Konsol-Output wie folgt aussehen:
+Mit den obigen 3 Schalter: LOGBH + LOGLORAW + LOGLAN erhält man den Loglevel code: 1 + 16 + 512 = 529
+Bei allen Log Flags gesetzt (65535), könnte der Konsol-Output wie folgt aussehen:
 ```
 >*******************************<
 > BeeIoT - BeeHive Weight Scale <
->       by R.Esser 10/2019      <
+>       by R.Esser (c) 10/2019  <
 >*******************************<
-LogLevel: 273
-Main: Start Sensor Setup ...
-  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+LogLevel: 65535
+Start Sensor Setup Phase ...
+  Setup: ESP32 DevKitC Chip ID = DCxxxxxxxxxxxx
   Setup: Init runtime config settings
   Setup: Init RTC Module DS3231
-  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: Temperature: 22.25 °C, SqarePin switched off
   RTC: STart RTC Test Output ...
-2019/12/13 (Friday) 15:15:52
- since midnight 1/1/1970 = 1576250152s = 18243d
- now + 7d + 30s: 2019/12/21 3:45:58
-
+2020/2/18 (Tuesday) 16:36:48
+ since midnight 1/1/1970 = 1582043808s = 18310d
+ now + 7d + 30s: 2020/2/26 5:6:54
+  RTC: Get RTC Time: 2020-02-18T16:36:48 - 2020-02-18 - 16:36:48
+2020-02-18T16:36:48
   Setup: SPI Devices ...
+  MSPI: VSPI port for 3 devices
+  MSPI: SPI-Init of SD card...
+  MSPI: SD Card mounted
+  MSPI: SPI-Init: ePaper EPD part1 ...
   Setup: HX711 Weight Cell
+  HX711: init Weight cell ADC port
+  HX711: Offset(raw): 297570 - Unit(raw): 44000 per kg
   Setup: ADS11x5
+  ADS: Init I2C-port incl. Alert line
   Setup: Wifi in Station Mode
-  Setup: WIFI port in station mode
+  WiFi: Init port in station mode
   Wifi: Scan started...done
-  Wifi: networks found: 3
-        1: MyNet (-45)*
-        2: YOURNet (-45)*
-        3: WLAN-Foreign (-91)*
-  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  Wifi: networks found: 1
+        1: MyNet (-66)*
+  WIFI: Connect.ed with DomNet - IP: 192.168.0.02
   WIFI: MDNS-Responder gestartet.
   Setup: Init NTP Client
-Friday, December 13 2019 15:15:56
+Tuesday, February 18 2020 16:36:51
   Setup: Get new Date & Time:
-  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
-  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP2RTC: set new RTC Time: 2020-02-18T16:36:51
+  RTC: Get RTC Time: 2020-02-18T16:36:51 - 2020-02-18 - 16:36:51
   NTP: BHDB updated by RTC time
   Setup: SD Card
+  SD: SD Card Type: SDSC - Size: 1938MB
+  SD: File /logdata.txt found
   Setup: LoRa SPI device & Base layer
-    Setup: Start Lora SPI Init
-    LoRa: init succeeded.
-  Setup: ePaper + show start frame
+  LoRa: Cfg Lora Modem V1.0.1 (868100000 Mhz)
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5,
+           LPreamble:12, SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRa: assign ISR to DIO0  - default: GWID:0x99, NodeID:0x80
+  BeeIoTJoin: Start Joining for a GW
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[255]
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12   SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRaSend: TXData <PkgLen= 29By>
+  sendMessage: Start TX
+  LoRaSend(0x80>0x99)[255](cmd=0) <FrmLen: 20By>
+  BeeIotJoin: JOIN-Retry: #0 (Overall retries: 0)
+  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:ooooo
+onReceive: got Pkg: len 0x11
+MSGfield at 0x3FFC13B4:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 8099 FF06 08                              <.....>
+onReceive: RX(0x99>0x80)[255]:(cmd=6: CONFIG) DataLen=8 Bytes
+  BeeIotJoin: RX pkg received: CONFIG
+  BeeIotJoin: RX Queue Status: SrvIdx:0, IsrIdx:1, new PkgID:255, RXFlag:1
+  BeeIoTParse[255]: cmd= CONFIG -> switch to new channel cfg.
+  BeeIoTParseCfg: New Configuration: BIoT-Interval: 600sec., Verbose:0, ChIndex:0, NDID:0x01, GwID:0x08, MsgCnt:255
+  Lora: Joined! New: GWID:0x08, NodeID:0x01, msgcount:255
+    DEVEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+   JOINEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+    DEVKEY: 0x-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx
+  BeeIoTSleep()
+  Lora: Sleep Mode
   Setup: OneWire Bus setup
-  Setup: Setup done
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 0 devices.
+    Device 0: Int-Address: 28201F8E1Fxxxxxx  DS18B20
+    Device 1: BH. Address: 28AAE46D18xxxxxx  DS18B20
+    Device 2: Ext.Address: 28AACA6A18xxxxxx  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00	(-> ext. Sensor nicht angeschlossen)
+  OWBus: Ext.Temp.Sensor (°C): 20.62
+  Setup: ePaper + show start frame
+  EPD: Start ePaper Display
+  EPD: print Welcome Display
+  EPD: Draw BitmapWaveshare
+Setup Phase done
+
+=> here starts the sensor read loop forever
 ```
-Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wi si voneinander abhängig sind und wo möglich nach protokoll Klassen sortiert.
-So liegen die SPI devices und I2C devices je intereinander, weil sie teilweise diesselbe Vorbereitung benötigen.
-Optional resourcen (WiFi + NTP alsauch das ePaper enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Widereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.
+
+Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wie sie voneinander abhängig sind und wo möglich nach Protokoll Klassen sortiert.
+So liegen die SPI devices und I2C devices hintereinander, zwecks gleicher Vorbereitung. Optionale Resourcen (WiFi + NTP), als auch das ePaper, enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Wiedereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.
 
 Die Logik der Setup-Bereiche:
 1. Initiaisierung des Log Flag fields
@@ -1490,38 +1540,86 @@ Die Logik der Setup-Bereiche:
 11. Discover WiFi and NTP client service
 	a. Wenn NTP verfügbar -> read new time => init RTC Modul
 	b. If no NTP: Read time from RTC Module only
-	c. Start Web-HTTP service to offer config page for firsttime init settings -> wait till done 
+	c. Optional: Start Wifi in HotSpot Mode and start a Web-HTTP service to offer a config page for firsttime init settings
+	-> wait till done 
 12. Init SD Card access -> create new logfile if not detected
-13. Init Lora Module for sending -> join to gateway (if any in range)
+13. Init Lora Module for sending -> join to gateway (OTAA) (if any in range)
 14. Init ePaper Moduel -> Show startframe of BeeIoT
 15. init OneWire Bus -> detect expected 3 temperatur sensors
 
 Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.
 ToDo: => Ein Fehler im Programm oder in der Library ?
 
-Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der Pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist es wiederum  effektiver als LoRaWan.
+Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen. Denn in der "Pampa" habe ich keinen WiFi-AP nötig, und die Config settings könnte ich auch statisch auf die SD Card uploaden. Für den Heimbetrieb ist es wiederum effektiver als LoRaWan.
 
 >Hinweis:
->Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das Programm "mitten drin" neugestartet, aber eine WiFi Connection schlägt dann meist fehl. In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel...
+>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setup-Phase (also bis zum Welcome Screen) den Serial Monitor der IDE zu früh, wird das Programm mitten im Wifi-Setup neugestartet, aber eine WiFi Connection schlägt dann meistens fehl.
+In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect- Anforderungen übel...
 
 ### Loop Phase
 Wie bei Arduino's üblich, wird nach dem Ende der Setupphase automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:
 
 Am Serial Monitor zeigt sie sich so:
 ```
->>****************************************<
-> Main: Start BeeIoT Weight Scale
-> Loop: 0  (Laps: 0)
->****************************************<
-  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+>*******************************************<
+> Start next BeeIoT Weight Scale loop
+> Loop# 0  (Laps: 0, BHDB[0])
+>*******************************************<
+  RTC: Get RTC Time: 2020-02-18T16:37:36 - 2020-02-18 - 16:37:36
   NTP: BHDB updated by RTC time
-  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-    LoRa[0x77]: Sent #0:<0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-> LoRaWAN package to 0x88 - 75 bytes -> done
-  MAIN: Enter Sleep/Wait Mode for 360 sec.
+  Loop: Weight(raw) : -234817 - Weight(unit): -5.337 kg (bei offenem Deckel ohne Gewicht)
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 3 devices.
+    Device 0: Int-Address: 28201F8E1F130185  DS18B20
+    Device 1: BH. Address: 28AAE46D1813022F  DS18B20
+    Device 2: Ext.Address: 28AACA6A181302F3  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00
+  OWBus: Ext.Temp.Sensor (°C): 20.56
+  Loop: ADSPort(0-3):
+  ADS: Single-ended read from AIN0: 3.28V -
+  ADS: Single-ended read from AIN1: 4.99V -
+  ADS: Single-ended read from AIN2: 3.95V (78%) -
+  ADS: Single-ended read from AIN3: 2.54V
+  Loop[0]: 2020-02-18 16:37:36,-5.34,20.56,20.69,-127.00,22.25,3.28,5.09,4.99,3.95,78#0 o.k.
+  SD: Appending to file: /logdata.txt...Done
+  LoRaLog: BeeIoTStatus = 6
+  BeeIoTWakeUp()
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12  SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[0]
+  LoRaSend: TXData <PkgLen= 92By>
+  sendMessage: Start TX
+  LoRaSend(0x01>0x08)[0](cmd=2) <FrmLen: 83By>
+MSGfield at 0x3FFC1334:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=92Byte
+  +   0: 0801 0002 5332 3032  302D 3032 2D31 3820  <....S2020-02-18 >
+  +  10: 3136 3A33 373A 3336  2C2D 352E 3334 2C32  <16:37:36,-5.34,2>
+  +  20: 302E 3536 2C32 302E  3639 2C2D 3132 372E  <0.56,20.69,-127.>
+  +  30: 3030 2C32 322E 3235  2C33 2E32 382C 352E  <00,22.25,3.28,5.>
+  +  40: 3039 2C34 2E39 392C  332E 3935 2C37 3823  <09,4.99,3.95,78#>
+  +  50: 3020 6F2E 6B2E 0D00  xxxx xxxx            <0 o.k.......>
+  LoRaLog: wait for incoming ACK in RXCont mode (Retry: #0)...
+onReceive: got Pkg: len 0x09
+MSGfield at 0x3FFC1434:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 0108 0005 00                              <.....>
+onReceive: RX(0x08>0x01)[0]:(cmd=5: ACK) DataLen=0 Bytes
+  LoRaLog: wait for add. RX1 Pkg. (RXCont):oooooooooo None.
+
+LoraLog: Enter Sleep Mode
+  BeeIoTSleep()
+  Lora: Sleep Mode
+  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:1, IsrIdx:1, NextMsgID:257, RXFlag:0
+  Loop: Show Sensor Data on EPD
+  Loop: Enter Sleep/Wait Mode for 600 sec.
+
 ```
 
-Die Logik-Ablauf für die loop() Routine:
+Der Logik-Ablauf für die loop() Routine:
 1. Get round robin index of new sensor data objekt for (BHDB-Idx)
 2. Check: Any Web request reached -> take special action (not supported yet
 3. read out time & date from  RTC Module
@@ -1575,8 +1673,8 @@ Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung 
 
 Soweit der Aufbau der Binenstockwaage. Wenn euch noch weitere Angaben für einen erfolgreichen Aufbau fehlen, lasst es mich wissen. Ansonsten viel Spass dabei...
 
-Hier noch ien paar Addendums:
-==============================
+Hier noch ein paar Anhänge:
+===========================
 
 ### Optional: WebUI Daten Service
 Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.
@@ -1722,7 +1820,7 @@ Weitere Bienenstockwaage-Projekte im Eigenbau (Hobby- und Open Source-Projekte):
 Das war es soweit erstmal von meiner Seite.
 
 Viel Spass damit und einen Imkerlichen Gruss
-wünscht Euch 
+wünscht Euch
 
 Randolph Esser
 (mail(a)RandolphEsser.de)
