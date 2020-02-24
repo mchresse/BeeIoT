@@ -58,10 +58,16 @@ extern GxEPD_Class display;   // ePaper instance from MultiSPI Module
 extern int isepd;             // =0 ePaper found
 extern dataset bhdb;          // central BeeIo DB
 extern uint16_t	lflags;      // BeeIoT log flag field
+extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
 
 
 uint16_t read16(SdFile& f);
 uint32_t read32(SdFile& f);
+int SetonKey(int key, void(*callback)(void));
+void onKey1(void);		// ISR for EPD_KEY1 -> Yellow Button
+void onKey2(void);		// ISR for EPD_KEY2 -> Red	  Button
+void onKey3(void);		// ISR for EPD_KEY3 -> Green  Button
+void onKey4(void);		// ISR for EPD_KEY4 -> Blue   Button
 
 //*******************************************************************
 // ePaper Setup Routine
@@ -99,10 +105,82 @@ int setup_epd() {   // My EPD Constructor
   // EPD_KEY2 => EN     == Reset Button 
   // Key3 reused by BEE_DIO2 -> defined there
   // pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3 
-  pinMode(EPD_KEY4, INPUT_PULLUP);  // define as active 0: Key4
+	SetonKey(1, onKey1);
+	SetonKey(2, onKey2);
+	SetonKey(3, onKey3);
+	SetonKey(4, onKey4);
 
   return isepd;
 }
+
+
+//*************************************************************************
+// SetonKey()
+// Assign ISR to EPD-Keyx	(1: Yellow, 2: Red, 3: Green, 4: Blue)
+// PIN-Keys already defined in beeiot.h
+// Input:
+//   key		1..4	Key number of EPD board (PIN definition see also beeiot.h)
+//   callback	*ptr	Function ptr to be assigned to IRQ of Key-GPIO
+// Return:
+//	0			Callback assignd to IRQ of KEYx Port
+// -1			Wrong/reserved  key #
+// -2			GPIO is not ready for ISR assignment
+//*************************************************************************
+int SetonKey(int key, void(*callback)(void)){
+	if(!callback)	// NULL ptr. can not be assigned
+ 		return(-1);
+
+	switch (key){
+	case 1: 			// EPD_KEY 1
+		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key1 reserved by Boot Funktion of DevKitC Board");
+		return(-2);
+		break;
+	case 2: 			// EPD_KEY 2
+		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key1 reserved by Reset Funktion of DevKitC Board");
+		return(-2);
+		break;
+	case 3: 			// EPD_KEY 3
+		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key3 reserved by Bee-DIO2 Funktion of SX1276");
+		return(-2);
+		break;
+	case 4: 			// EPD_KEY 4
+		if(callback){
+			pinMode(EPD_KEY4, INPUT);	// /w ext 10k Pullup to 3.3V!
+    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 ISR assigned");
+		}else{
+	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
+		}
+		break;
+	default:
+		return(-1);
+		break;
+	}
+	return(0);
+}
+
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Yellow Button
+void onKey1(void){
+	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Red Button
+void onKey2(void){
+	BHLOG(LOGBH) Serial.println("  onKey2: EPD-Key2 IRQ: Red Key");
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Green Button
+void onKey3(void){
+	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Green Key");
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Blue button
+void onKey4(void){
+	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
+ 	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
+}
+
 
 
 // show Sensor log data on epaper Display
@@ -160,7 +238,7 @@ void showdata(int sampleID){
   display.setTextColor(GxEPD_BLACK);
 //  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
 
-  display.update();
+  display.update();				// WakeUp -> update display -> BusyWait -> Sleep
   display.setRotation(rotation); // restore
 } // end of ShowData()
 

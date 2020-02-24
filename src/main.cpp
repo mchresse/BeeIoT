@@ -141,6 +141,7 @@ extern byte   RouterNetworkDeviceState;
 long lastSendTime = 0;        // last send time
 int  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
 char LoRaBuffer[256];         // buffer for LoRa Packages
+bool GetData = 0;			// =1 manual trigger by ISR (blue key) to start next measurement
 
 
 //************************************
@@ -494,7 +495,12 @@ void mydelay(int32_t tval){
 //        CheckWebPage();
 //      }
     delay(2000);  // wait 2 second
-  }
+	if(GetData){
+		// user wants next measurement loop
+		GetData = 0;	// reset loop trigger flag
+		return;			// and start next measurement loop
+	}
+  } // loop
 }
 
 //*******************************************************************
