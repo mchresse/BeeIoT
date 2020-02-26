@@ -18,10 +18,9 @@
 #ifndef BEEIOTWAN_H
 #define BEEIOTWAN_H
 
-// Format: V.maj.min.minsub		starting with V1.0.00
-#define BIoT_VMAJOR		1
-#define BIoT_VMINOR		0
-#define BIoT_VMINSUB 	1		// internal only not reported to GW
+// Format: v.maj.min	>	starting with V1.0
+#define BIoT_VMAJOR		1		// Major version
+#define BIoT_VMINOR		0		// Minor version
 
 //***********************************************
 // LoRa MAC Presets

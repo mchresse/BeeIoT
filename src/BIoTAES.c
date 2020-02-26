@@ -311,7 +311,7 @@ uint8_t inv_affine(const uint8_t x)
 #  define block_copy_nn(d, s, l)    copy_block_nn(d, s, l)
 #  define block_copy(d, s)          copy_block(d, s)
 #endif
-
+/*
 static void copy_block( void *d, const void *s )
 {
 #if defined( HAVE_UINT_32T )
@@ -342,9 +342,10 @@ static void copy_block( void *d, const void *s )
 static void copy_block_nn( uint8_t * d, const uint8_t *s, uint8_t nn )
 {
     while( nn-- )
-        //*((uint8_t*)d)++ = *((uint8_t*)s)++;
+        // *((uint8_t*)d)++ = *((uint8_t*)s)++;
         *d++ = *s++;
 }
+*/
 
 static void xor_block( void *d, const void *s )
 {

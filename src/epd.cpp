@@ -54,10 +54,10 @@
 //************************************
 // Global data object declarations
 //**********************************
-extern GxEPD_Class display;   // ePaper instance from MultiSPI Module
-extern int isepd;             // =0 ePaper found
-extern dataset bhdb;          // central BeeIo DB
-extern uint16_t	lflags;      // BeeIoT log flag field
+extern GxEPD_Class display;	// ePaper instance from MultiSPI Module
+extern int isepd;			// =0 ePaper found
+extern dataset bhdb;		// central BeeIo DB
+extern uint16_t	lflags;		// BeeIoT log flag field
 extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
 
 
@@ -222,12 +222,14 @@ void showdata(int sampleID){
   display.println(String(bhdb.dlog[sampleID].TempIntern,1));
 
   display.setTextColor(GxEPD_BLACK);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.print("Batt-V:");
+  display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+  display.print("Batt[V]: ");
   display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
-  display.print("V - Load:");
+  display.print("(");
   display.print(String(bhdb.dlog[sampleID].BattLevel));
-  display.println("%");
+  display.print("%)<");
+  display.print(String((float)bhdb.dlog[sampleID].BattCharge/1000,2));
+  display.println();
 
 //  display.setTextColor(GxEPD_RED);
   display.print(HOSTNAME);

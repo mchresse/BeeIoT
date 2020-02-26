@@ -34,8 +34,8 @@
 #include <Arduino.h>
 #include <stdio.h>
 // #include <esp_log.h>
-#include "FS.h"
-#include "SD.h"
+// #include "FS.h"
+// #include "SD.h"
 
 #include "beeiot.h"     	// provides all GPIO PIN configurations of all sensor Ports !
 

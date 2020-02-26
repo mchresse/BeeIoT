@@ -24,8 +24,8 @@
 #include <stdio.h>
 #include <esp_log.h>
 #include "sdkconfig.h"
-#include "FS.h"
-#include "SD.h"
+//#include "FS.h"
+//#include "SD.h"
 
 //*******************************************************************
 // GETNTP - Local Libraries

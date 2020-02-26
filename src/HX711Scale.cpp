@@ -28,8 +28,6 @@
 #include <stdio.h>
 #include <esp_log.h>
 #include "sdkconfig.h"
-#include "FS.h"
-#include "SD.h"
 
 // Library for generic HX711 Access
 #include <HX711.h>

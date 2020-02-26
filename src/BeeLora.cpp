@@ -123,8 +123,8 @@ void BIoT_getmic	(beeiotpkg_t * pkg, byte * mic);
 int setup_LoRa() {
 byte * pb;  // BytePtr for field handling
 
-	BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem V%d.%d.%d (%ld Mhz)\n", 
-		(int)BIoT_VMAJOR, (int)BIoT_VMINOR, (int)BIoT_VMINSUB, LoRaCfg.freq);
+	BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
+		(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
 	islora = 0;
 	BeeIoTStatus = BIOT_NONE;
 
@@ -308,7 +308,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     pjoin->hd.cmd    = CMD_JOIN;    // Lets Join
     pjoin->hd.sendID = NODEIDBASE;  // that's me by now but finally not checked in JOIN session
     pjoin->hd.index  = 0xFF;          // ser. number of JOIN package; well, could be any ID 0..0xFF
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Start Joining for a GW\n");
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Start searching for a GW\n");
   }else{ // REJOIN of a given status
     pjoin->hd.cmd    = CMD_REJOIN;  // Lets Join again  
     pjoin->hd.sendID = LoRaCfg.nodeid;   // use GW well known last node id for reactivation
@@ -367,7 +367,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
         BHLOG(LOGLORAW) Serial.println(" None.");
         // RX Queue should still be empty: validate it:
         if(!BeeIotRXFlag & (RXPkgSrvIdx != RXPkgIsrIdx)){ // RX Queue validation check: realy empty ?
-          Serial.printf("  BeeIotJoin: This case should never happen: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0\n",RXPkgSrvIdx, RXPkgIsrIdx);
+          Serial.printf("  BeeIotJoin: This case should never happen: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0 -> fixed\n",RXPkgSrvIdx, RXPkgIsrIdx);
           // ToDo: any correcting action ? or exit ?
           RXPkgSrvIdx = RXPkgIsrIdx;  // no Queue entry: RD & WR ptr. must be identical
         }
@@ -391,7 +391,9 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
       }
       BeeIotRXFlag--;   // and we can release one more RX Queue buffer
       if((!BeeIotRXFlag) & (RXPkgSrvIdx != RXPkgIsrIdx)){ // RX Queue validation check: realy empty ?
-        Serial.printf("  BeeIotJoin: This case should never happen 2: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0\n",RXPkgSrvIdx, RXPkgIsrIdx);
+        Serial.printf("  BeeIotJoin: This case should never happen 2: Queue-RD(%i)/WR(%i) Index different when BeeIoTRXFlag==0 -> fixed\n",RXPkgSrvIdx, RXPkgIsrIdx);
+          // ToDo: any correcting action ? or exit ?
+          RXPkgSrvIdx = RXPkgIsrIdx;  // no Queue entry: RD & WR ptr. must be identical
       }
     } // New Pkg parsed
 

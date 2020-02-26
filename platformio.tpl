@@ -30,6 +30,8 @@ platform = espressif32
 board = esp32dev
 framework = arduino
 
+extra_scripts = pre:buildscript_versioning.py
+
 ; build_flags = 
 build_flags = -DCONFIG_WIFI_SSID=\"MYDOMAIN\" -DCONFIG_WIFI_PASSWORD=\"MYPASSWD\"
 
