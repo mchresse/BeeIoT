@@ -68,7 +68,7 @@ Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
 // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.25mV   0.015625mV
 // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
 //*******************************************************************
-int setup_i2c_ADS() {
+int setup_i2c_ADS(int reentry) {
 // put your setup code here, to run once:
 
   // ADS1115S constructor
@@ -87,7 +87,7 @@ int setup_i2c_ADS() {
    // 	BHLOG(LOGADS) i2c_scan();	// reqires I2C-CoreDriver running
 #endif //ADS_CONFIG
 
-  return 0;   // I2C-ADS device port is initialized
+  return 1;   // I2C-ADS device port is initialized
 } // end of setup_i2c_ADS()
 
 

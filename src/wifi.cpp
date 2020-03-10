@@ -57,7 +57,7 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 extern Preferences preferences;  
 
 // For WiFI & WebServer Instances
-int iswifi =-1;               // WIFI flag; =0 connected
+int iswifi =0;               // WIFI flag; =1 connected
 String WebRequestHostAddress; // global variable used to store Server IP-Address of HTTP-Request
 byte RouterNetworkDeviceState;
 
@@ -85,21 +85,20 @@ extern MQTTClient attMQTTClient;
 //*******************************************************************
 // Wifi Setup Routine
 //*******************************************************************
-int setup_wifi() { // WIFI Constructor
-  iswifi = -1;
+int setup_wifi(int reentry) { // WIFI Constructor
+  iswifi = 0;
 
 #ifdef WIFI_CONFIG
-  BHLOG(LOGLAN) Serial.println("  WiFi: Init port in station mode");
+		BHLOG(LOGLAN) Serial.println("  WiFi: Init port in station mode");
 
-  WiFi.mode(WIFI_STA);        // set WIFI chip to station (client) mode
-  BHLOG(LOGLAN) wifi_scan();  // show me all networks in space
+		WiFi.mode(WIFI_STA);        // set WIFI chip to station (client) mode
+		BHLOG(LOGLAN) wifi_scan();  // show me all networks in space
 
-  // Connect to the WiFi network (see function below loop)
-  iswifi = wifi_connect(SSID_HOME, PWD_HOME, HOSTNAME);
-
-  if(iswifi==0){
-    Webserver_Start();          // Start Webserver service using new Wifi LAN
-  }
+		// Connect to the WiFi network (see function below loop)
+		if(wifi_connect(SSID_HOME, PWD_HOME, HOSTNAME)==0){
+			iswifi=1;
+			Webserver_Start();          // Start Webserver service using new Wifi LAN
+		}
 #endif // WIFI_CONFIG
 
   return iswifi;   // Wifi device port is initialized
@@ -144,9 +143,9 @@ void wifi_scan(){
 // finally enable DNS service for given hostname
 //*******************************************************************
 int wifi_connect(const char * ssid, const char * pwd, const char* hostname){
+#ifdef WIFI_CONFIG
 int i;
 
-#ifdef WIFI_CONFIG
   BHLOG(LOGLAN) Serial.print("  WIFI: Connect");
   WiFi.begin(ssid, pwd); // request IP address from WLAN
 

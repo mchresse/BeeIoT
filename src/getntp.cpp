@@ -44,7 +44,7 @@
 extern dataset bhdb;
 extern int iswifi;    // WiFI semaphor
 extern int isrtc;     // RTC semaphor
-       int isntp = -1;// by now we do not have any NTP client
+       int isntp = 0; // by now we do not have any NTP client
 
 extern uint16_t	lflags;      // BeeIoT log flag field
 
@@ -63,28 +63,32 @@ const int   daylightOffset_sec = 3600;
 //*******************************************************************
 // NTP Setup Routine
 //*******************************************************************
-int setup_ntp() { // NTP Constructor
+int setup_ntp(int reentry) { // NTP Constructor
+isntp = 0;
 #ifdef NTP_CONFIG
-    BHLOG(LOGLAN) Serial.println("  Setup: Init NTP Client");
-/*
-  // Initialize a NTPClient to get time
-  timeClient.begin();
-  // Set offset time in seconds to adjust for your timezone, for example:
-  // GMT +1 = 3600    // for MET
-  // GMT +8 = 28800
-  // GMT -1 = -3600
-  // GMT 0 = 0
-  timeClient.setTimeOffset(gmtOffset_sec);
-*/
-  //init and get the time
-//  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  configTzTime(TZ_INFO, ntpServer);
+  if(!reentry){
+	BHLOG(LOGLAN) Serial.println("  Setup: Init NTP Client");
+		/*
+		// Initialize a NTPClient to get time
+		timeClient.begin();
+		// Set offset time in seconds to adjust for your timezone, for example:
+		// GMT +1 = 3600    // for MET
+		// GMT +8 = 28800
+		// GMT -1 = -3600
+		// GMT 0 = 0
+		timeClient.setTimeOffset(gmtOffset_sec);
+		*/
+		//init and get the time
+		//  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+		configTzTime(TZ_INFO, ntpServer);
+		isntp = 1;      // now we are up to date
 
-  BHLOG(LOGBH) printLocalTime();
+
+	  BHLOG(LOGBH) printLocalTime();
+  }
 #endif // NTP_CONFIG
-  isntp = 0;      // now we are up to date
 
-  return 0;   // NTP Source prepared
+  return isntp;   // NTP Source prepared
 } // end of setup_ntp()
 
 
@@ -101,29 +105,28 @@ int getTimeStamp() {
   struct tm timeinfo;
   char tmstring[30];
 
-  if(isrtc==0){   // do we have RTC time resource
-  // we prefer local time from NTP if available
-      getRTCtime();  // update global BHDB by RTC date & time
-      BHLOG(LOGLAN) Serial.println("  NTP: BHDB updated by RTC time");
-      return(0);
-  }
+	if(isrtc){   // do we have RTC time resource
+		// we prefer local time from RTC if available
+		getRTCtime();  // update global BHDB by RTC date & time
+		BHLOG(LOGLAN) Serial.println("  NTP: BHDB updated by RTC time");
+		return(0);
+	}
 
-  if(isntp == 0){            // alternatively we search for NTP server via Wifi
-    if(!getLocalTime(&timeinfo)){
+	if(!isntp){		// no RTC nor NTP Time at all
+		sprintf(bhdb.formattedDate, "YYYY\\MM\\DDTHH:MM:SSZ");
+		sprintf(bhdb.date,      "YYYY\\MM\\DD");
+		sprintf(bhdb.time,      "HH:MM:SS");
+		return(-2);               // we give up
+	}
+	
+	// alternatively we search for NTP server via Wifi
+	if(!getLocalTime(&timeinfo)){
       BHLOG(LOGLAN) Serial.println("  NTP: Failed to obtain NTP time");
-      isntp = -1;
-      return(-1);             // no RTC nor NTP Time at all, we give up.
+      isntp = 0;				// remember NTP access failed
+      return(-1);             	// no RTC nor NTP Time at all, we give up.
     }
-  }else{                      // no RTC nor NTP Time at all
-    isntp = -1;
-    isrtc = -1;
-    sprintf(bhdb.formattedDate, "YYYY\\MM\\DDTHH:MM:SSZ");
-    sprintf(bhdb.date,      "YYYY\\MM\\DD");
-    sprintf(bhdb.time,      "HH:MM:SS");
-    return(-2);               // we give up
-  }
-
-// We need to extract date and time from timeinfo (struct tm)
+ 
+// For NTP: We need to extract date and time from timeinfo (struct tm)
 // The formattedDate should have the following format: 2018-05-28T16:00:13Z
 // sprintf(tmstring, "%4i\%2i\%2iT%2i:%2i:%2iZ", 
 //                    1900+timeinfo.tm_year,

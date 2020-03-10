@@ -45,7 +45,7 @@ HX711 scale;            // the one and only weight cell
 //*******************************************************************
 // HX711Scale Setup Routine
 //*******************************************************************
-int setup_hx711Scale() {
+int setup_hx711Scale(int reentry) {
 // put your setup code here, to run once:
 
 #ifdef HX711_CONFIG
@@ -64,7 +64,7 @@ int setup_hx711Scale() {
   scale.power_down();
 #endif // HX711_CONFIG
 
-  return 0;   // HX711 & wight cell initialized
+  return 1;   // HX711 & wight cell initialized
 } // end of setup_HX711Scale()
 
 

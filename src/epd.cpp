@@ -55,7 +55,7 @@
 // Global data object declarations
 //**********************************
 extern GxEPD_Class display;	// ePaper instance from MultiSPI Module
-extern int isepd;			// =0 ePaper found
+extern int isepd;			// =1 ePaper found
 extern dataset bhdb;		// central BeeIo DB
 extern uint16_t	lflags;		// BeeIoT log flag field
 extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
@@ -72,11 +72,14 @@ void onKey4(void);		// ISR for EPD_KEY4 -> Blue   Button
 //*******************************************************************
 // ePaper Setup Routine
 //*******************************************************************
-int setup_epd() {   // My EPD Constructor
+int setup_epd(int reentry) {   // My EPD Constructor
+// isepd is defined at multi SPI setup;
+
 #ifdef EPD_CONFIG
+if(!reentry){
   BHLOG(LOGEPD) Serial.println("  EPD: Start ePaper Display");
 
-  if(isepd==0){ // set some presets for a std. text field
+  if(isepd){ // set some presets for a std. text field
     BHLOG(LOGEPD) Serial.println("  EPD: print Welcome Display");
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
@@ -98,6 +101,7 @@ int setup_epd() {   // My EPD Constructor
     BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
     BHLOG(LOGEPD) display.update();
   }  
+}
 #endif
 
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)

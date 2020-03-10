@@ -59,7 +59,7 @@ void printAddress(DeviceAddress deviceAddress);
 //*******************************************************************
 // OW-bus Setup Routine
 //*******************************************************************
-int setup_owbus() {
+int setup_owbus(int reentry) {
 // put your setup code here, to run once:
 
 // ONEWIRE Constructor

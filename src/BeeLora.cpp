@@ -42,7 +42,7 @@
 // Central Database of all measured values and runtime parameters
 extern dataset		bhdb;		// central node status DB -> main.cpp
 extern unsigned int	lflags;		// BeeIoT log flag field (masks see beeiot.h)
-int     islora;					// =1: we have an active LoRa Node
+int     islora=0;				// =1: we have an active LoRa Node
 
 // GPIO PINS of current connected LoRa Modem chip (SCK, MISO & MOSI are system default)
 const int csPin     = BEE_CS;	// LoRa radio chip select
@@ -50,7 +50,7 @@ const int resetPin  = BEE_RST;	// LoRa radio reset
 const int irqPin    = BEE_DIO0;	// change for your board; must be a hardware interrupt pin
 
 // Lora Modem default configuration
-struct LoRaRadioCfg_t{
+RTC_DATA_ATTR struct LoRaRadioCfg_t{
   // addresses of GW and node used for package identification -> might get updated by JOIN_CONFIG acknolewdge pkg
   byte nodeid	= NODEIDBASE;	// My address/ID (of this node/device) -> Preset with JOIN defaults
   byte gwid		= GWIDx;		// My current gateway ID to talk with  -> Preset with JOIN defaults
@@ -76,26 +76,26 @@ extern int report_interval; // interval between BIoT Reports
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
 //////////////////////////////////////////////////
+// all variables in RTC Mem for sleep mode persistence
 
 // Node unique device ID (LSBF) -> will be initialized with local BoardID in Setup_Lora()
-  u1_t DEVEUI[8]	= { 0xCC, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+RTC_DATA_ATTR  u1_t DEVEUI[8]	= { 0xCC, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
 // BIoT application service ID (LSBF) -> constant in (see BeeIoTWAN.h)
-  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI 
+RTC_DATA_ATTR  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI 
 
 // Node-specific AES key (derived from device EUI)
-  u1_t  DEVKEY[16]	= { 0xBB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+RTC_DATA_ATTR  u1_t  DEVKEY[16]	= { 0xBB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
 // BIoT Nws & App service Keys fro pkt and frame encryption
-  u1_t AppSKey[16]	= { 0xAA, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-  u1_t  NwSKey[16]	= { 0xDD, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+RTC_DATA_ATTR  u1_t AppSKey[16]	= { 0xAA, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+RTC_DATA_ATTR  u1_t  NwSKey[16]	= { 0xDD, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
+RTC_DATA_ATTR byte BeeIoTStatus = BIOT_NONE;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
 
-byte BeeIoTStatus = BIOT_NONE;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
-
-beeiotmsg_t MyMsg;				// Lora message on the air (if MyMsg.data != NULL)
 
 #define MAXRXPKG		3		// Max. number of parallel processed RX packages
+beeiotmsg_t MyMsg;				// Lora message on the air (if MyMsg.data != NULL)
 byte    BeeIotRXFlag =0;		// Semaphor for received message(s) 0 ... MAXRXPKG-1
 byte    RXPkgIsrIdx  =0;		// index on next LoRa Package for ISR callback Write
 byte    RXPkgSrvIdx  =0;		// index on next LoRa Package for Service Routine Read/serve
@@ -120,77 +120,86 @@ void BIoT_getmic	(beeiotpkg_t * pkg, byte * mic);
 //*********************************************************************
 // Setup_LoRa(): init BEE-client object: LoRa
 //*********************************************************************
-int setup_LoRa() {
+int setup_LoRa(int reentry) {
 byte * pb;  // BytePtr for field handling
 
-	BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
-		(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
+	if(!reentry){	// at Reset only
+		BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
+			(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
+		BeeIoTStatus = BIOT_NONE;
+	}
 	islora = 0;
-	BeeIoTStatus = BIOT_NONE;
 
 #ifdef LORA_CONFIG
-  // Initial Modem & channel setup:
-  // Set GPIO(SPI) Pins, Reset device, Discover SX1276 (only by Lora.h lib) device, results in: 
-  // OM=>STDBY/Idle, AGC=On(0x04), freq = FREQ, TX/RX-Base = 0x00, LNA = BOOST(0x03), TXPwr=17
-  if (!LoRa.begin(LoRaCfg.freq)) {          // initialize ratio at LORA_FREQ [MHz] 
-    // for SX1276 only (Version = 0x12)
-    Serial.println("  LoRa: SX1276 not detected. Check your GPIO connections.");
-    return(islora);                          // No SX1276 module found -> Stop LoRa protocol
-  }
-  // For debugging: Stream Lora-Regs:      
-  //   BHLOG(LOGLORAR) LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
-// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
-  SetChannelCfg(JOINCFGIDX);      // initialize LoraCfg field by default modem cfg for joining
-  configLoraModem(&LoRaCfg);
+	// Initial Modem & channel setup:
+	// Set GPIO(SPI) Pins, Reset device, Discover SX1276 (only by Lora.h lib) device, results in: 
+	// OM=>STDBY/Idle, AGC=On(0x04), freq = FREQ, TX/RX-Base = 0x00, LNA = BOOST(0x03), TXPwr=17
+	if (!LoRa.begin(LoRaCfg.freq)) {          // initialize ratio at LORA_FREQ [MHz] 
+		// for SX1276 only (Version = 0x12)
+		Serial.println("  LoRa: SX1276 not detected. Check your GPIO connections.");
+		return(islora);                          // No SX1276 module found -> Stop LoRa protocol
+	}
+	// For debugging: Stream Lora-Regs:      
+	//   BHLOG(LOGLORAR) LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
-  // lets see where we are...
-  //  BHLOG(LOGLORAR)  LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
+	if(!reentry){	// for Reset only
+		// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
+		SetChannelCfg(JOINCFGIDX);      // initialize LoraCfg field by default modem cfg for joining
+		configLoraModem(&LoRaCfg);
 
-// Setup RX Queue management
-  BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
-  LoRaCfg.msgCount    = 0;      // no package sent by now
-  RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
-  RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
-  LoRaCfg.joinRetryCount =0;	// No JOIN yet
+		// lets see where we are...
+		//  BHLOG(LOGLORAR)  LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
-// Reset TX Msg buffer
-  MyMsg.idx=0;
-  MyMsg.ack=0;
-  MyMsg.retries=0;
-  MyMsg.pkg  = (beeiotpkg_t*) NULL;
+		// Create a unique Node DEVEUI from BoardID(only Byte 0-6 can be used) > 0xbbbbbbfffebbbbbb
+		pb = (byte*) & bhdb.BoardID;
+		DEVEUI[0] = (byte) pb[5];   // get byte stream from back to start
+		DEVEUI[1] = (byte) pb[4];
+		DEVEUI[2] = (byte) pb[3];
+		DEVEUI[3] = 0xFF;   // fill up to 8 By.
+		DEVEUI[4] = 0xFE;   // fill up to 8 By.
+		DEVEUI[5] = (byte) pb[2];
+		DEVEUI[6] = (byte) pb[1];
+		DEVEUI[7] = (byte) pb[0];
 
-// Create a unique Node DEVEUI from BoardID(only Byte 0-6 can be used) > 0xbbbbbbfffebbbbbb
-  pb = (byte*) & bhdb.BoardID;
-  DEVEUI[0] = (byte) pb[5];   // get byte stream from back to start
-  DEVEUI[1] = (byte) pb[4];
-  DEVEUI[2] = (byte) pb[3];
-  DEVEUI[3] = 0xFF;   // fill up to 8 By.
-  DEVEUI[4] = 0xFE;   // fill up to 8 By.
-  DEVEUI[5] = (byte) pb[2];
-  DEVEUI[6] = (byte) pb[1];
-  DEVEUI[7] = (byte) pb[0];
+		LoRaCfg.joinRetryCount =0;	// No JOIN yet
+		LoRaCfg.msgCount    = 0;      // reset pkg counter to default
+	}
 
-// Assign IRQ callback on DIO0
-  LoRa.onReceive(onReceive);    // (called by loRa.handleDio0Rise(pkglen))
-  BHLOG(LOGLORAR) Serial.printf("  LoRa: assign ISR to DIO0  - default: GWID:0x%02X, NodeID:0x%02X\n", LoRaCfg.gwid, LoRaCfg.nodeid);
-  islora=1;                     // Declare:  LORA Modem is active now!
+	// Setup RX Queue management
+	BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
+	RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
+	RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
 
-  // From now on : JOIN to a GW
-  BeeIoTStatus = BIOT_JOIN; // have to join to a GW
+	// Reset TX Msg buffer
+	MyMsg.idx=0;
+	MyMsg.ack=0;
+	MyMsg.retries=0;
+	MyMsg.pkg  = (beeiotpkg_t*) NULL;
 
-  // 1. Try: send a message to join to a GW
-  if(BeeIoTJoin(BeeIoTStatus) <= 0){
-    BHLOG(LOGLORAW)  Serial.printf("  Lora: 1. BeeIoT JOIN failed -> remaining in BIOT_JOIN Mode\n");
-    // ToDo: any Retry action after a while ?
-    BeeIoTStatus = BIOT_JOIN;
-  }else{
-    BeeIoTStatus = BIOT_IDLE; // we have a joined modem -> wait for RX/TX pkgs.
+	// Assign IRQ callback on DIO0
+	LoRa.onReceive(onReceive);    // (called by loRa.handleDio0Rise(pkglen))
+	BHLOG(LOGLORAR) Serial.printf("  LoRa: assign ISR to DIO0  - default: GWID:0x%02X, NodeID:0x%02X\n", LoRaCfg.gwid, LoRaCfg.nodeid);
+	islora=1;                     // Declare:  LORA Modem is active now!
 
-    // Modem is joined and ready, but may be BIOT_SLEEP would be better to save power
-    BeeIoTSleep();  // by now we can support "Joined-Sleep" only => because WakeUp will set Idle mode
-  }
+	if(!reentry){	// for Reset only
+		// From now on : JOIN to a GW
+		BeeIoTStatus = BIOT_JOIN; // have to join to a GW
+
+		// 1. Try: send a message to join to a GW
+		if(BeeIoTJoin(BeeIoTStatus) <= 0){
+			BHLOG(LOGLORAW)  Serial.printf("  Lora: 1. BeeIoT JOIN failed -> remaining in BIOT_JOIN Mode\n");
+			// ToDo: any Retry action after a while ?
+			BeeIoTStatus = BIOT_JOIN;
+		}else{
+			BeeIoTStatus = BIOT_IDLE; // we have a joined modem -> wait for RX/TX pkgs.
+
+			// Modem is joined and ready, but may be BIOT_SLEEP would be better to save power
+			BeeIoTSleep();  // by now we can support "Joined-Sleep" only => because WakeUp will set Idle mode
+		}
+	}
 #endif
+
   return(islora);
 } // end of Setup_LoRa()
 
@@ -494,7 +503,7 @@ int i;
 int rc;
   BHLOG(LOGLORAR) Serial.printf("  LoRaLog: BeeIoTStatus = %i\n", BeeIoTStatus);
   if(BeeIoTStatus == BIOT_NONE){ 
-    if(!setup_LoRa())
+    if(!setup_LoRa(0))
       return(-98);
   }
   if(BeeIoTStatus == BIOT_SLEEP) {
@@ -652,6 +661,7 @@ int rc;
         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
     BeeIoTStatus = BIOT_JOIN;     // RE-JOIN requested by GW
     LoRaCfg.nodeid = NODEIDBASE;   // -> CONFIG from GW will provide a new one (roaming ?!) later
+	// msgid counter remains unchanged
     BHLOG(LOGLORAW) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
     return(-96);
 
@@ -816,7 +826,8 @@ channeltable_t * pchcfg;
 
 // update next Modem Config settings (gets activated at next configLoraModem() call)
     LoRaCfg.chcfgid = channelidx; 
-	  pchcfg = & txchntab[LoRaCfg.chcfgid];
+
+	pchcfg = & txchntab[LoRaCfg.chcfgid];
     LoRaCfg.freq = pchcfg->frq;
     LoRaCfg.bw   = pchcfg->band;
     LoRaCfg.sf   = pchcfg->sfbegin;

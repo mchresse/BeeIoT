@@ -43,7 +43,7 @@
 extern dataset bhdb;
 extern int iswifi;    // WiFI semaphor
 extern int isntp;     // by now we do not have any NTP client
-int   isrtc =-1;      // =0 if RTC time discovered
+int   isrtc =0;      // =1 if RTC time discovered
 
 extern uint16_t	lflags;      // BeeIoT log flag field
 
@@ -54,14 +54,14 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 //*******************************************************************
 // Setup_RTC(): Initial Setup of RTC module instance
 //*******************************************************************
-int setup_rtc () {
-  isrtc =-1;
+int setup_rtc (int mode) {
+  isrtc = 0;
 
   if (! rtc.begin()) {
     Serial.println("  RTC: Couldn't find RTC device");
     return(isrtc);
   }
-  isrtc = 0;  // RTC Module detected;
+  isrtc = 1;  // RTC Module detected;
   //  if NTC based adjustment is needed use:
   //  static void adjust(const DateTime& dt);
   // or update by NTP: -> main() => ntp2rtc()
@@ -78,7 +78,7 @@ int setup_rtc () {
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 
-    isrtc =-2;  // power again but no valid time => lets hope for NTP update later on
+    isrtc =0;  // power again but no valid time => lets hope for NTP update later on
   }
    return(isrtc);
 } // end of rtc_setup()
@@ -90,11 +90,11 @@ int ntp2rtc() {
 struct tm tinfo;      // new time source: from NTP
 
   // if no RTC nor NTP Time at all, we give up.
-  if(isntp != 0)   {
+  if(!isntp)   {
     BHLOG(LOGLAN) Serial.println("  NTP2RTC(-1): No NTP Server detected ");
     return(-1);       // is NTP server via Wifi active ?
   }
-  if((isrtc != -2) && (isrtc != 0)) {  
+  if(!isrtc) {  
     BHLOG(LOGLAN) Serial.println("  NTP2RTC(-2): No RTC Module detected ");
     return(-2);       // Need a valid RTC Module (even with powerloss status)
   }
@@ -123,7 +123,7 @@ struct tm tinfo;      // new time source: from NTP
 } // end of ntp2rtc()
 
 //*******************************************************************
-// getRTCtime(): read out current timeostamp and stor it to global BHDB
+// getRTCtime(): read out current timeostamp and store it to global BHDB
 //*******************************************************************
 int getRTCtime(){
 // The formattedDate comes with the following format: 2018-05-28T16:00:13Z

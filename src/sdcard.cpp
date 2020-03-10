@@ -35,36 +35,39 @@
 #include "beeiot.h"     // provides all GPIO PIN configurations of all sensor Ports !
 #include "sdcard.h"     // detailed SD parameters
 
-extern int issdcard;    // =0 SDCard found
+extern int issdcard;    // =1 SDCard found
 extern uint16_t	lflags;      // BeeIoT log flag field
 
 
 //*******************************************************************
 // SDCard SPI Setup Routine
 //*******************************************************************
-int setup_sd() {  // My SDCard Constructor
+int setup_sd(int reentry) {  // My SDCard Constructor
 #ifdef SD_CONFIG
-  uint8_t cardType = SD.cardType();
-  if(cardType == CARD_NONE) {
-    issdcard = -2;
-    Serial.println("  SD: No SD card found");
-    return issdcard;
-  }
-  
-  BHLOG(LOGSD) Serial.print("  SD: SD Card Type: ");
-  if (cardType == CARD_MMC) {
-    BHLOG(LOGSD) Serial.print("MMC");
-  } else if (cardType == CARD_SD) {
-    BHLOG(LOGSD) Serial.print("SDSC");
-  } else if (cardType == CARD_SDHC) {
-    BHLOG(LOGSD) Serial.print("SDHC");
-  } else {
-    BHLOG(LOGSD) Serial.print("UNKNOWN");
-  }
+	if(reentry >1)	// No reset nor Deep Sleep Mode
+		return(issdcard);	// nothing to do here
 
-  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  BHLOG(LOGSD) Serial.printf(" - Size: %lluMB\n", cardSize);
-  issdcard = 0;   // we have an SDCard
+	issdcard = 0;
+	uint8_t cardType = SD.cardType();
+
+	if(cardType == CARD_NONE) {
+		Serial.println("  SD: No SD card found");
+		return issdcard;
+	}
+	issdcard = 1;   // we have an SDCard
+	
+	BHLOG(LOGSD) Serial.print("  SD: SD Card Type: ");
+	if (cardType == CARD_MMC) {
+		BHLOG(LOGSD) Serial.print("MMC");
+	} else if (cardType == CARD_SD) {
+		BHLOG(LOGSD) Serial.print("SDSC");
+	} else if (cardType == CARD_SDHC) {
+		BHLOG(LOGSD) Serial.print("SDHC");
+	} else {
+		BHLOG(LOGSD) Serial.print("UNKNOWN");
+	}
+		uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+	BHLOG(LOGSD) Serial.printf(" - Size: %lluMB\n", cardSize);
 
 /*
   if(lflags & LOGSD){   // lets get some Debug data from SDCard

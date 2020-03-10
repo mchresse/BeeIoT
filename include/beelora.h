@@ -58,7 +58,7 @@ enum {     // Status of BeeIoT WAN protocol flow (provided islora>0)
 
 
 // BeeLoRa.cpp functions
-int  setup_LoRa		(void);
+int  setup_LoRa		(int mode);
 int  LoRaLog		(const char * outgoing, byte outlen, int sync);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);

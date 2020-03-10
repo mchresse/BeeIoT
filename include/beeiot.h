@@ -73,8 +73,8 @@
 #define HX711_CONFIG  0
 #define ADS_CONFIG    0
 #define ONEWIRE_CONFIG 0
-#define WIFI_CONFIG   0
-#define NTP_CONFIG    0
+// #define WIFI_CONFIG   0
+// #define NTP_CONFIG    0
 #define SD_CONFIG     0
 #define EPD_CONFIG    0
 #define LORA_CONFIG	  0
@@ -197,7 +197,7 @@ typedef struct {				// data elements of one log line entry
 	char	 comment[DROWNOTELEN];
 } datrow;
 
-#define datasetsize	6			// max. # of dynamic dataset buffer: each for "looptime" seconds
+#define datasetsize	4			// max. # of dynamic dataset buffer: each for "looptime" seconds
 #define LENFDATE 	21
 #define LENDATE		11
 #define LENTIME		9
@@ -218,11 +218,15 @@ typedef struct {
 //*******************************************************************
 // Global Helper functions declaration
 //*******************************************************************
-int setup_hx711Scale(void);
-int setup_owbus		(void);
-int setup_wifi		(void);
-int setup_ntp		(void);
-int setup_i2c_ADS	(void);
+int setup_hx711Scale(int mode);
+int setup_owbus		(int mode);
+int setup_wifi		(int mode);
+int setup_ntp		(int mode);
+int setup_i2c_ADS	(int mode);
+int setup_rtc		(int mode);		// in rtc.cpp
+int setup_spi_VSPI	(int mode);		// in multiSPI.cpp
+int setup_sd		(int mode);		// in sdcard.cp
+int setup_epd		(int mode);		// in epd.cpp
 
 // in hx711Scale.cpp
 float   HX711_read  (int mode);
@@ -235,6 +239,7 @@ int		WiFi_AccessPointStart(char* AccessPointNetworkSSID);
 void 	WiFi_SetBothModesNetworkStationAndAccessPoint();
 String 	WiFi_GetOwnIPAddressInRouterNetwork();
 
+// Draft functions
 void 	Webserver_Start();
 String 	Webserver_GetRequestGETParameter();
 void 	Webserver_SendHTMLPage(String HTMLPage);
@@ -244,7 +249,6 @@ int 	ConnectToATT();
 void 	SendSensorDateToATT(String SensorName, byte SensorDate);
 
 // in rtc.cpp
-int 	setup_rtc	(void);
 int 	ntp2rtc		(void);
 int 	getRTCtime	(void);
 void	rtc_test	(void);
@@ -264,14 +268,8 @@ int16_t ads_read	(int channel);
 void	Logdata     (void);
 void	mydelay		(int32_t tval);
 
-// in multiSPI.cpp
-int setup_spi_VSPI	(void);
-
-//in sdcard.cp
-int setup_sd	(void);
 
 // epd.cpp functions
-int  setup_epd		(void);
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);
 void drawBitmaps_200x200();
 void drawBitmaps_other(void);
