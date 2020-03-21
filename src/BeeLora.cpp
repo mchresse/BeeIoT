@@ -51,28 +51,31 @@ const int irqPin    = BEE_DIO0;	// change for your board; must be a hardware int
 
 // Lora Modem default configuration
 RTC_DATA_ATTR struct LoRaRadioCfg_t{
-  // addresses of GW and node used for package identification -> might get updated by JOIN_CONFIG acknolewdge pkg
-  byte nodeid	= NODEIDBASE;	// My address/ID (of this node/device) -> Preset with JOIN defaults
-  byte gwid		= GWIDx;		// My current gateway ID to talk with  -> Preset with JOIN defaults
-  byte chcfgid	= 0;			// channel cfg ID of initialzed ChannelTab[]-config set: default id=0 => EU868_F1
+    // addresses of GW and node used for package identification -> might get updated by JOIN_CONFIG acknolewdge pkg
+    byte nodeid	= NODEIDBASE;	// My address/ID (of this node/device) -> Preset with JOIN defaults
+    byte gwid		= GWIDx;		// My current gateway ID to talk with  -> Preset with JOIN defaults
+    byte chcfgid	= 0;			// channel cfg ID of initialzed ChannelTab[]-config set: default id=0 => EU868_F1
 
-  // following cfg parameters are redefined by a new channel-cfg set reflected by the channel ID provided via CONFIG CMD
-  long	freq	= FREQ;			// =EU868_F1..9,DN (EU868_F1: 868.1MHz)
-  s1_t	pw		= TXPOWER;		// =2-16  TX PA Mode (14)
-  sf_t	sf		= SPREADING;	// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
-  bw_t	bw		= SIGNALBW;		// =0..3 RFU Bandwidth 125-500 (0:125kHz)
-  cr_t	cr		= CODING;		// =0..3 Coding mode 4/5..4/8 (0:4/5)
-  int	ih		= IHDMODE;		// =1 implicite Header Mode (0)
-  u1_t ihlen	= IHEADERLEN;	// =0..n if IH -> header length (0)
-  u1_t nocrc	= NOCRC;		// =0/1 no CRC check used for Pkg (0)
-  u1_t noRXIQinversion = NORXIQINV;	// =0/1 flag to switch RX+TX IQinv. on/off (1)
-// runtime parameters for messages
-  int	msgCount = 0;			// gobal serial counter of outgoing messages 0..255 round robin
-  int	joinCount= 0;			// global JOIN packet counter
-  int	joinRetryCount= 0;		// # of JOIN+REJOIN Request Actions
+    // following cfg parameters are redefined by a new channel-cfg set reflected by the channel ID provided via CONFIG CMD
+    long	freq	= FREQ;			// =EU868_F1..9,DN (EU868_F1: 868.1MHz)
+    s1_t	pw		= TXPOWER;		// =2-16  TX PA Mode (14)
+    sf_t	sf		= SPREADING;	// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
+    bw_t	bw		= SIGNALBW;		// =0..3 RFU Bandwidth 125-500 (0:125kHz)
+    cr_t	cr		= CODING;		// =0..3 Coding mode 4/5..4/8 (0:4/5)
+    int	  ih		= IHDMODE;		// =1 implicite Header Mode (0)
+    u1_t ihlen	= IHEADERLEN;	// =0..n if IH -> header length (0)
+    u1_t nocrc	= NOCRC;		// =0/1 no CRC check used for Pkg (0)
+    u1_t noRXIQinversion = NORXIQINV;	// =0/1 flag to switch RX+TX IQinv. on/off (1)
+    // runtime parameters for messages
+    int	msgCount = 0;			// gobal serial counter of outgoing messages 0..255 round robin
+    int	joinCount= 0;			// global JOIN packet counter
+    int	joinRetryCount= 0;		// # of JOIN+REJOIN Request Actions
 } LoRaCfg;
 
+RTC_DATA_ATTR byte BeeIoTStatus = BIOT_NONE;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
+
 extern int report_interval; // interval between BIoT Reports
+
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
 //////////////////////////////////////////////////
@@ -88,17 +91,15 @@ RTC_DATA_ATTR  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI
 RTC_DATA_ATTR  u1_t  DEVKEY[16]	= { 0xBB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
 // BIoT Nws & App service Keys fro pkt and frame encryption
-RTC_DATA_ATTR  u1_t AppSKey[16]	= { 0xAA, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+RTC_DATA_ATTR  u1_t  AppSKey[16]	= { 0xAA, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 RTC_DATA_ATTR  u1_t  NwSKey[16]	= { 0xDD, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-
-RTC_DATA_ATTR byte BeeIoTStatus = BIOT_NONE;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
 
 
 #define MAXRXPKG		3		// Max. number of parallel processed RX packages
+RTC_DATA_ATTR  byte  BeeIotRXFlag =0;		// Semaphor for received message(s) 0 ... MAXRXPKG-1
+RTC_DATA_ATTR  byte  RXPkgIsrIdx  =0;		// index on next LoRa Package for ISR callback Write
+RTC_DATA_ATTR  byte  RXPkgSrvIdx  =0;		// index on next LoRa Package for Service Routine Read/serve
 beeiotmsg_t MyMsg;				// Lora message on the air (if MyMsg.data != NULL)
-byte    BeeIotRXFlag =0;		// Semaphor for received message(s) 0 ... MAXRXPKG-1
-byte    RXPkgIsrIdx  =0;		// index on next LoRa Package for ISR callback Write
-byte    RXPkgSrvIdx  =0;		// index on next LoRa Package for Service Routine Read/serve
 beeiotpkg_t MyRXData[MAXRXPKG];	// received message for userland processing
 beeiotpkg_t MyTXData;			// Lora package buffer for sending
 
@@ -123,7 +124,7 @@ void BIoT_getmic	(beeiotpkg_t * pkg, byte * mic);
 int setup_LoRa(int reentry) {
 byte * pb;  // BytePtr for field handling
 
-	if(!reentry){	// at Reset only
+	if(!reentry){	// after PON Reset only
 		BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
 			(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
 		BeeIoTStatus = BIOT_NONE;
@@ -143,7 +144,7 @@ byte * pb;  // BytePtr for field handling
 	// For debugging: Stream Lora-Regs:      
 	//   BHLOG(LOGLORAR) LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
-	if(!reentry){	// for Reset only
+	if(!reentry){	// after PON Reset only
 		// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
 		SetChannelCfg(JOINCFGIDX);      // initialize LoraCfg field by default modem cfg for joining
 		configLoraModem(&LoRaCfg);
@@ -164,7 +165,11 @@ byte * pb;  // BytePtr for field handling
 
 		LoRaCfg.joinRetryCount =0;	// No JOIN yet
 		LoRaCfg.msgCount    = 0;      // reset pkg counter to default
-	}
+	} else {
+  	// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
+		SetChannelCfg(LoRaCfg.chcfgid);      // initialize LoraCfg field by assigned modem cfg
+		configLoraModem(&LoRaCfg);  
+  }
 
 	// Setup RX Queue management
 	BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
@@ -351,6 +356,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   while(!sendMessage(&MyTXData, 0)); // send it in sync mode
 
   // Lets wait for expected CONFIG Msg
+  BeeIotRXFlag=0;             // spawn ISR RX flag
   // Activate RX Contiguous flow control
   do{
     MyMsg.ack=0;                // reset ACK & Retry flags
@@ -365,7 +371,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     } 
     // notice # of JOIN Retries
     if(LoRaCfg.joinRetryCount++ == 10){ // max. # of acceptable JOIN Requests reached ?
-      report_interval *= 10;    		// wait 10-times longer to try again for saving power
+      report_interval *= 2;    		// wait 10-times longer to try again for saving power
       BHLOG(LOGLORAW) Serial.printf("\n  BeeIoTJoin: After %i retries: Reduce Retry frequency to every %isec.",
             LoRaCfg.joinRetryCount, report_interval);
       LoRaCfg.joinRetryCount = 0; 
@@ -458,7 +464,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 // BIoT_getmic()
 //Create pkg integrity code for pkg->hdr + pkg->data (except MIC itself)
 void BIoT_getmic(beeiotpkg_t * pkg, byte * mic) {
-byte cmac[16]={1,2,3,4};
+byte cmac[16]={0x11,0x22,0x33,0x44};
 
   // ToDo get MIC calculation:
   // cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
@@ -480,8 +486,8 @@ void BeeIoTSleep(void){
     BHLOG(LOGLORAR) Serial.printf("  BeeIoTSleep()\n");
     BeeIoTStatus = BIOT_SLEEP;  // go into power safe mode
     BHLOG(LOGLORAR) Serial.printf("  Lora: Sleep Mode\n");
-    LoRa.sleep();
-}
+    LoRa.sleep(); // Lora.sleep() + spi.end()
+  }
 
 //****************************************************************************************
 // LoraLog()
@@ -532,7 +538,7 @@ int rc;
   MyTXData.hd.sendID = LoRaCfg.nodeid;   // that's me
   MyTXData.hd.index  = LoRaCfg.msgCount; // ser. number of sent packages
   MyTXData.hd.cmd    = cmd;            // define type of action/data sent
-  MyTXData.hd.frmlen = length;         // length of user payload data incl. any EOL
+  MyTXData.hd.frmlen = length;         // length of user payload data incl. any EOL excl. MIC
   strncpy(MyTXData.data, outgoing, length);
   if(cmd == CMD_LOGSTATUS)          // do we send a string ?
     MyTXData.data[length-1]=0;        // assure EOL = 0

@@ -97,8 +97,8 @@
 
 #define LOOPTIME    600		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   60		// RTC sleep time in seconds
-#define SLEEPMODE	1		// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
-							// =3 ModemSleep Mode; =4 Active Wait Loop
+#define SLEEPMODE	  1 		// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
+							            // =3 ModemSleep Mode; =4 Active Wait Loop
 
 // WakeUp Source control
 bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
@@ -163,6 +163,7 @@ void InitConfig(int mode);
 void prepare_sleep_mode(int mode, int sleeptime);
 esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
+void BeeIoTSleep(void);
 
 
 
@@ -179,7 +180,7 @@ int rc;		// generic return code variable
 
   while(!Serial);                 // wait to connect to computer
   Serial.begin(115200);           // enable Ser. Monitor Baud rate
-  delay(3000);                    // wait for console opening
+  delay(1000);                    // wait for console opening
 
 //***************************************************************
   //Print the wakeup reason for ESP32
@@ -210,7 +211,7 @@ int rc;		// generic return code variable
 // lflags = 65535;   // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 	if(!ReEntry) {
-		lflags = LOGBH + LOGLORAW;
+		lflags = LOGBH + LOGLORAW + LOGLORAR;
 
 		Serial.println();
 		Serial.println(">***********************************<");
@@ -509,7 +510,7 @@ String dataMessage; // Global data objects
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (are we joined ?)
     LoRaLog((char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
-    }else{
+  }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }
 
@@ -530,7 +531,7 @@ void mydelay(int32_t tval){
 //        CheckWebPage();
 //      }
     delay(2000);  // wait 2 second
-	if(GetData){
+	if(GetData){  // Semaphor controlled by GPIO35 Key (blue button)
 		// user wants next measurement loop
 		GetData = 0;	// reset loop trigger flag
 		return;			// and start next measurement loop
@@ -571,7 +572,8 @@ void InitConfig(int reentry){
 		}
 	}  
 
-  // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino 
+// Next settings are for Web based config Page:
+// see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino 
   preferences.begin("MyJourney", false);
 
   // takeout 4 Strings out of the Non-volatile storage
@@ -672,6 +674,7 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 //			esp_bluedroid_disable();
 //			esp_bt_controller_disable();
 //			esp_wifi_stop();
+      BeeIoTSleep();
 
 			/*
 			Next we decide what all peripherals to shut down/keep on.
@@ -682,9 +685,9 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 			Left the line commented as an example of how to configure peripherals.
 			The line below turns off all RTC peripherals in deep sleep.
 			*/
-			esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+//			esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
 //			BHLOG(LOGBH) Serial.println("  Main: Configured all RTC Peripherals to be powered");
-			esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, GPIO_INTR_NEGEDGE);		// select GPIO35 (blue button) as Wakup Trigger on low level
+//			esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, GPIO_INTR_NEGEDGE);		// select GPIO35 (blue button) as Wakup Trigger on low level
 
 			BHLOG(LOGBH) Serial.println("  Main: Going to Deep Sleep - Trigger: Timer only");
 			/*
@@ -695,7 +698,7 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 			delay(1000);
 //			Serial.flush(); 
 //			esp_deep_sleep(SLEEPTIME * uS_TO_S_FACTOR);	// start sleep with RTC time trigger
-			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger
+			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return here
 			BHLOG(LOGBH) Serial.println("  Main: This will never be printed");
 			break;
 
@@ -741,18 +744,17 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 
   switch(wakeup_reason)
   {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-	case ESP_SLEEP_WAKEUP_GPIO : Serial.println("Wakeup caused by GPIO"); break;
-
-	case ESP_SLEEP_WAKEUP_UNDEFINED : 
-		Serial.println(" Reset or unknown WakeUp cause"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); 
-		return(ESP_SLEEP_WAKEUP_UNDEFINED);
-		break;
+    case ESP_SLEEP_WAKEUP_EXT0:       Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1:       Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER:      Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD:   Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP:        Serial.println("Wakeup caused by ULP program"); break;
+	  case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
+	  case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
+    default : 
+        Serial.printf("Wakeup caused by Deep Sleep: %d\n",wakeup_reason); 
+		    return(ESP_SLEEP_WAKEUP_UNDEFINED);
+		    break;
   }
 	return(wakeup_reason);
 }
