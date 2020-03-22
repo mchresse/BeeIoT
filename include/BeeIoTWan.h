@@ -70,11 +70,11 @@ typedef unsigned char bw_t;
 #define BIoT_MICLEN     4	// length of NsMIC field
 #define BIoT_FRAMELEN	BIoT_DLEN-BIoT_MICLEN	// length of BIoT App-Frame (encoded by AppKey) - MIC
 #define	MSGRESWAIT		500	// scan each 0.5 seconds the message status in a waitloop
-#define MAXRXACKWAIT	20	// # of Wait loops of MSGRESWAIT
+#define MAXRXACKWAIT	10	// # of Wait loops of MSGRESWAIT
 #define MSGMAXRETRY		5	// Do it max. n times again
-#define RXACKGRACETIME  1000 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
+#define RXACKGRACETIME  100 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
 #define MSGRX1DELAY		500	// [ms] wait for start of RX1 window
-#define WAITRX1PKG		5	// [sec] till RX1 window is closed
+#define WAITRX1PKG		3	// [sec] till RX1 window is closed
 
 //*******************************************************************
 // BeeIoT-WAN command package types

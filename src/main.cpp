@@ -460,8 +460,6 @@ float x;              // Volt calculation buffer
 // End of Main Loop ->  Save data and enter Sleep/Delay Mode
 	ReEntry = SLEEPMODE;	// initial startup sleep mode;
 					// =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-	BHLOG(LOGBH) Serial.printf("  Loop: Enter Sleep/Wait Mode for %i sec. (mode %i)\n", report_interval, ReEntry);
-
   // Start sleep/wait loop
 	prepare_sleep_mode(ReEntry, report_interval); // intervall in seconds
 
@@ -674,7 +672,6 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 //			esp_bluedroid_disable();
 //			esp_bt_controller_disable();
 //			esp_wifi_stop();
-      BeeIoTSleep();
 
 			/*
 			Next we decide what all peripherals to shut down/keep on.
@@ -689,14 +686,14 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 //			BHLOG(LOGBH) Serial.println("  Main: Configured all RTC Peripherals to be powered");
 //			esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, GPIO_INTR_NEGEDGE);		// select GPIO35 (blue button) as Wakup Trigger on low level
 
-			BHLOG(LOGBH) Serial.println("  Main: Going to Deep Sleep - Trigger: Timer only");
+			BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer only(%i sec.)\n", waittime);
 			/*
 			Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep, 
 			we can now start going to deep sleep. In the case that no wake up sources were provided but
 			deep sleep was started, it will sleep forever unless hardware reset occurs.
 			*/
-			delay(1000);
-//			Serial.flush(); 
+			delay(500);
+			Serial.flush(); 
 //			esp_deep_sleep(SLEEPTIME * uS_TO_S_FACTOR);	// start sleep with RTC time trigger
 			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return here
 			BHLOG(LOGBH) Serial.println("  Main: This will never be printed");
@@ -707,7 +704,7 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 //			esp_bt_controller_disable();
 //			esp_wifi_stop();
 
-			BHLOG(LOGBH) Serial.println("  Main: Going to Light Sleep now - Trigger: Timer + GPIO35(blue Key4)");
+			BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO35(blue Key4)\n", waittime);
 			gpio_wakeup_enable(GPIO_NUM_35,GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 			esp_sleep_enable_gpio_wakeup();
 
@@ -726,6 +723,7 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 		case 4:		// Active Mode
 			// NOP
 		default:
+    	BHLOG(LOGBH) Serial.printf("  Loop: Enter WaitLoop(%i sec.)\n", report_interval);
 			mydelay(waittime*1000);   // time in ms - wait with blinking red LED
 			BHLOG(LOGBH) Serial.println();
 			break;

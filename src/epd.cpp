@@ -59,7 +59,8 @@ extern int isepd;			// =1 ePaper found
 extern dataset bhdb;		// central BeeIo DB
 extern uint16_t	lflags;		// BeeIoT log flag field
 extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
-
+extern const char * beeiot_StatusString[];
+extern byte BeeIoTStatus;
 
 uint16_t read16(SdFile& f);
 uint32_t read32(SdFile& f);
@@ -235,11 +236,16 @@ void showdata(int sampleID){
   display.print(String((float)bhdb.dlog[sampleID].BattCharge/1000,2));
   display.println();
 
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+  display.print("Status : ");
+  display.print(beeiot_StatusString[BeeIoTStatus]);  
+
 //  display.setTextColor(GxEPD_RED);
-  display.print(HOSTNAME);
-  display.print("  (");
-  display.print(bhdb.ipaddr);
-  display.print(")");
+//  display.print(HOSTNAME);
+//  display.print("  (");
+//  display.print(bhdb.ipaddr);
+//  display.print(")");
 
   display.setTextColor(GxEPD_BLACK);
 //  display.writeFastHLine(0, 16, 2, 0xFF); // does not work

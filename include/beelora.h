@@ -46,7 +46,9 @@ typedef struct {
     beeiotpkg_t * pkg;  // real TX pkg struct
 } beeiotmsg_t;
 
-enum {     // Status of BeeIoT WAN protocol flow (provided islora>0)
+// Status of BeeIoT WAN protocol flow (provided islora>0)
+// for corresponding Status Strings see BeeLora.cpp: beeiot_StatusString[]
+enum {
         BIOT_NONE,      // if(islora) -> Modem detected but not joined yet
         BIOT_JOIN,      // About to discover a GW and negot. new channel cfg.
         BIOT_REJOIN,    // Modem lost connection -> try rejoin requested

@@ -72,7 +72,7 @@ RTC_DATA_ATTR struct LoRaRadioCfg_t{
     int	joinRetryCount= 0;		// # of JOIN+REJOIN Request Actions
 } LoRaCfg;
 
-RTC_DATA_ATTR byte BeeIoTStatus = BIOT_NONE;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
+RTC_DATA_ATTR byte BeeIoTStatus;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
 
 extern int report_interval; // interval between BIoT Reports
 
@@ -103,6 +103,17 @@ beeiotmsg_t MyMsg;				// Lora message on the air (if MyMsg.data != NULL)
 beeiotpkg_t MyRXData[MAXRXPKG];	// received message for userland processing
 beeiotpkg_t MyTXData;			// Lora package buffer for sending
 
+// define BeeIoT LoRA Status strings
+// for enum def. -> see beelora.h
+const char * beeiot_StatusString[] = {
+	[BIOT_NONE]   = "NoLORA",
+	[BIOT_JOIN]   = "JOIN",
+	[BIOT_REJOIN]	= "REJOIN",
+	[BIOT_IDLE]	  = "IDLE",
+	[BIOT_TX]		  = "TX",
+	[BIOT_RX]		  = "RX",
+	[BIOT_SLEEP]	= "SLEEP",
+};
 
 //********************************************************************
 // Function Prototypes
@@ -128,7 +139,9 @@ byte * pb;  // BytePtr for field handling
 		BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
 			(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
 		BeeIoTStatus = BIOT_NONE;
-	}
+	}else{
+		BHLOG(LOGLORAR) Serial.printf("  LoRa: WakeUpMode:%i in Status: %s\n", reentry, beeiot_StatusString[BeeIoTStatus]);
+  }
 	islora = 0;
 
 #ifdef LORA_CONFIG
@@ -144,15 +157,7 @@ byte * pb;  // BytePtr for field handling
 	// For debugging: Stream Lora-Regs:      
 	//   BHLOG(LOGLORAR) LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
-	if(!reentry){	// after PON Reset only
-		// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
-		SetChannelCfg(JOINCFGIDX);      // initialize LoraCfg field by default modem cfg for joining
-		configLoraModem(&LoRaCfg);
-
-		// lets see where we are...
-		//  BHLOG(LOGLORAR)  LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
-
-		// Create a unique Node DEVEUI from BoardID(only Byte 0-6 can be used) > 0xbbbbbbfffebbbbbb
+	// Create a unique Node DEVEUI from BoardID(only Byte 0-6 can be used) > 0xbbbbbbfffebbbbbb
 		pb = (byte*) & bhdb.BoardID;
 		DEVEUI[0] = (byte) pb[5];   // get byte stream from back to start
 		DEVEUI[1] = (byte) pb[4];
@@ -163,13 +168,19 @@ byte * pb;  // BytePtr for field handling
 		DEVEUI[6] = (byte) pb[1];
 		DEVEUI[7] = (byte) pb[0];
 
+	if(!reentry){	// after PON Reset only	
 		LoRaCfg.joinRetryCount =0;	// No JOIN yet
-		LoRaCfg.msgCount    = 0;      // reset pkg counter to default
+		LoRaCfg.msgCount       =0;  // reset pkg counter to default
+		// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
+		SetChannelCfg(JOINCFGIDX);      // initialize LoraCfg field by default modem cfg for joining
 	} else {
   	// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
 		SetChannelCfg(LoRaCfg.chcfgid);      // initialize LoraCfg field by assigned modem cfg
-		configLoraModem(&LoRaCfg);  
   }
+	configLoraModem(&LoRaCfg);  
+
+	// lets see where we are...
+	//  BHLOG(LOGLORAR)  LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
 	// Setup RX Queue management
 	BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
@@ -195,7 +206,8 @@ byte * pb;  // BytePtr for field handling
 		if(BeeIoTJoin(BeeIoTStatus) <= 0){
 			BHLOG(LOGLORAW)  Serial.printf("  Lora: 1. BeeIoT JOIN failed -> remaining in BIOT_JOIN Mode\n");
 			// ToDo: any Retry action after a while ?
-			BeeIoTStatus = BIOT_JOIN;
+			BeeIoTStatus = BIOT_JOIN; // stay in JOIN mode
+      LoRa.sleep(); // stop modem and clear FIFO
 		}else{
 			BeeIoTStatus = BIOT_IDLE; // we have a joined modem -> wait for RX/TX pkgs.
 
@@ -321,6 +333,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   if(joinstatus == BIOT_JOIN){
     pjoin->hd.cmd    = CMD_JOIN;    // Lets Join
     pjoin->hd.sendID = NODEIDBASE;  // that's me by now but finally not checked in JOIN session
+    LoRaCfg.nodeid   = NODEIDBASE;  // store "JOIN"-NodeID for onreceive() check
     pjoin->hd.index  = 0xFF;          // ser. number of JOIN package; well, could be any ID 0..0xFF
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Start searching for a GW\n");
   }else{ // REJOIN of a given status
@@ -423,6 +436,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
         }else{  // Max. # of Retries reached -> give up
           BHLOG(LOGLORAW) Serial.printf("  BeeIotJoin: JOIN-Request stopped (Retries: #%i)\n", MyMsg.retries);
           // clean up TX Msg buffer (ISR checks for MyMsg.idx == RXData.index only)
+          LoRa.sleep(); // stop modem and clear FIFO
           MyMsg.ack     = 0;
           MyMsg.idx     = 0;
           MyMsg.retries = 0;
@@ -475,7 +489,7 @@ byte cmac[16]={0x11,0x22,0x33,0x44};
 }
 
 int BeeIoTWakeUp(void){
-  BHLOG(LOGLORAR) Serial.printf("  BeeIoTWakeUp()\n");
+  BHLOG(LOGLORAR) Serial.printf("  BeeIoTWakeUp: Enter Idle Mode\n");
   // toDo. kind of Setup_Lora here
   configLoraModem(&LoRaCfg);
   BeeIoTStatus = BIOT_IDLE;     // modem is active
@@ -483,9 +497,8 @@ int BeeIoTWakeUp(void){
 }
 
 void BeeIoTSleep(void){
-    BHLOG(LOGLORAR) Serial.printf("  BeeIoTSleep()\n");
+    BHLOG(LOGLORAR) Serial.printf("  BeeIoTSleep: Enter Sleep Mode\n");
     BeeIoTStatus = BIOT_SLEEP;  // go into power safe mode
-    BHLOG(LOGLORAR) Serial.printf("  Lora: Sleep Mode\n");
     LoRa.sleep(); // Lora.sleep() + spi.end()
   }
 
@@ -507,7 +520,7 @@ byte length;
 byte cmd;
 int i;
 int rc;
-  BHLOG(LOGLORAR) Serial.printf("  LoRaLog: BeeIoTStatus = %i\n", BeeIoTStatus);
+  BHLOG(LOGLORAR) Serial.printf("  LoRaLog: BeeIoTStatus = %s\n", beeiot_StatusString[BeeIoTStatus]);
   if(BeeIoTStatus == BIOT_NONE){ 
     if(!setup_LoRa(0))
       return(-98);
@@ -565,6 +578,7 @@ int rc;
     BHLOG(LOGLORAW) Serial.printf("  LoRaLog: Msg(#%i) Done; RX Queue Status SrvIdx:%i, IsrIdx:%i, Length:%i\n", 
             LoRaCfg.msgCount, RXPkgSrvIdx, RXPkgIsrIdx, BeeIotRXFlag);
     LoRaCfg.msgCount++;           // increment global sequential TX package/message ID
+    BeeIoTSleep();
     rc=0;
     return(rc); // No Ack response expected and we skip waiting for further CMDs
   } 
@@ -603,8 +617,8 @@ int rc;
           BeeIoTStatus = BIOT_REJOIN;            // release modem for other sessions
 
           BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Sleep Mode\n");
-//          BeeIoTSleep();          // in JOIN Mode Sleep/WakeUp cycle is not support yet
-          LoRaCfg.msgCount++;       // increment global sequ. TX package/message ID for next TX pkg
+          LoRa.sleep();     // stop modem and clear FIFO
+          LoRaCfg.msgCount++; // increment global sequ. TX package/message ID for next TX pkg
           rc=-99;           // TX-timeout -> max. # of Retries reached
           return(rc);       // give up and no RX Queue check needed neither -> GW dead ?
         } // if(ACK-TO & Max-Retry) 
@@ -666,11 +680,11 @@ int rc;
     BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Send Msg failed - New-Join requested, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
     BeeIoTStatus = BIOT_JOIN;     // RE-JOIN requested by GW
+    LoRa.sleep();                 // stop modem and clear FIFO, but keep JOIN mode
     LoRaCfg.nodeid = NODEIDBASE;   // -> CONFIG from GW will provide a new one (roaming ?!) later
 	// msgid counter remains unchanged
     BHLOG(LOGLORAW) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
     return(-96);
-
   }
 
    // clean up TX Msg buffer (ISR checks for MyMsg.idx == RXData.index only)
@@ -680,10 +694,7 @@ int rc;
   MyMsg.pkg     = (beeiotpkg_t *) NULL;  // TX done -> release LoRa package buffer
   LoRaCfg.msgCount++;           // increment global sequ. TX package/message ID
 
-  BeeIoTStatus = BIOT_IDLE;  // Active and free for new jobs
-
-  BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Enter Sleep Mode\n");
-  BeeIoTSleep();
+  BeeIoTSleep();  // we are Done! Sleep till next command
 
   BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
