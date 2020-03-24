@@ -33,7 +33,7 @@
 <ul>
 <li><a href="#esp32-vorbereitungen">ESP32 Vorbereitungen</a></li><li><a href="#esp32-ide">ESP32 IDE</a><ul>
 <li><a href="#platformio">PlatformIO</a></li><li><a href="esp32-sensor-libraries-+-build">ESP32 Sensor Libraries + build</a></li></ul>
-</li><li><a href="#die-programm-struktur">Die Programm Struktur</a><ul>
+</li><li><a href="#die-client-programm-struktur">Die Client Programm Struktur</a><ul>
 <li><a href="setup-phase">Setup Phase</a></li><li><a href="loop-phase">Loop Phase</a></li></ul>
 </li><li><a href="#kalibrierung-der-waage">Kalibrierung der Waage</a></li><li><a href="#optional:-webui-daten-service">Optional: WebUI Daten Service</a></li></ul>
 </li><li><a href="#webui-todo---liste">WebUI ToDo - Liste</a></li><li><a href="#ideen-liste">Ideen Liste</a></li><li><a href="#todo:-optional-hw-module">ToDo: Optional HW Module</a><ul>
@@ -70,7 +70,7 @@
 </li><li>Kommunikation<ul>
 <li>Übertragung aller Sensordaten alle 10 Minuten um auch “Bienen-Events” mitzukriegen</li><li>lokal via externen USB auf internen USB/Ser. Adapter Port der MCU</li><li>WiFI support mit HTTP Web Service zur Startup Configuration</li><li>LoRaWAN Kommunikation mit Gateway (bis zu 7km Radius)</li><li>optional: Bluetooth (BLE)</li><li>Optional: NB-IOT via SIM7000E GPRS Modul</li></ul>
 </li><li>Sensorik<ul>
-<li>100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)</li><li>OneWire Temperatur Sensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)</li><li>OneWire Temperatursensor 12bit extern</li><li>OneWire Temperatursensor 12bit extern für Stocktemperatur Messung (über 1m Leitung)</li></ul>
+<li>100kg Wägezelle über einen 24bit A/D Wandler Modul HX711(am Raspi GPIO Port Anschluss)</li><li>OneWire Temperatursensor 12bit intern an der Wägezelle (zur temp. Kalibrierung)</li><li>OneWire Temperatursensor 12bit extern</li><li>OneWire Temperatursensor 12bit extern für Stocktemperatur Messung (über 1m Leitung)</li></ul>
 </li><li>Optionale Erweiterung<ul>
 <li>USB GPS Maus (als Diebstahlschutz)</li><li>IR Kameramodul extern (USB oder I2C Port Anschluss)</li><li>IR Lichtschranke als Fluglochzähler (beecounter)</li></ul>
 </li></ul><p>Daraus ergeben sich spezielle technische Anforderungen an jedes modul bezüglich Stromverbrauch, benötigte Schnittstellen und lokale/remote Erreichbarkeit, die wir weiter unten noch zu diskutieren haben.</p><h2 id="die-mcu-arduino/esp32-platform"><a name="die-mcu-arduino/esp32-platform" href="#die-mcu-arduino/esp32-platform"></a>Die MCU Arduino/ESP32 Platform</h2><p>Um bis zu 6 Monat Laufzeit zu erreichen darf  man bei einem  10.000mAh Akku nur im Mittel 2.3mA verbrauchen (10.000/4320). Das schafft man bei so vielen Sensoren/Modulen aber nicht im Dauerlaufzustand, sondern nur indem man Sleep Phasen einschiebt.</p><p><em>Dazu folgende Rechnung:</em><br>Unter der Annahme man benötigt für die Ermittlung der Sensordaten inkl. Übertragung z.B 10 Sekunden,<br>Wäre das Verhältnis aktiver Betriebszeit zu Sleep Phase: 10/(6<em>30</em>24<em>60</em>60)=1/1.555.200.<br>Würde man in der SleepPhase aber unter 1mA kommen hätte man für die Betriebsphase über die gesamte Laufzeit noch zur Verfügung:</p><ul>
@@ -342,7 +342,7 @@
 <td>U1-CTS</td>
 </tr>
 </tbody>
-</table><p><strong>Pinning durch IDE board pre-selection = “esp32dev” für ESP32 DevKit-C boards </strong></p><p>Welche default Einstellung pro Board bei der IDE gilt kann man bei Platformio z.B. hier finden:<br>C:\Users\’benutzername’.platformio\packages\framework-arduinoespressif32\variants\’boardtype’\pins_arduino.h</p><p>Als nächstes macht man sich auf die Suche nach geeigneten GPIO Control Leitungen, die mit ihren Eigenschaften der angeschlossenen Funktion für den Modulanschluss entsprechen müssen. Manche GPIO Leitungen sind, anders als bei einem reinen ESP32 Modul bereits durch onboard Funktionen des DevKitC Boards belegt. Dies muss aber kein Nachteil sein, weil die Funktionen ja auch benötigt werden:</p><p>Geflasht wird der ESP32 über die onboard USB-A Buchse die auch gleichzeitig zur 5V Stromversorgung des DevKitC Boards verwendet wird (standard). Onboard wird dann die 3.3V Leitung für die ESP32 MCU über einen internen DC/DC Wandler AMS1117-3.3 von Microship erzeugt, der max. 1A durchsetzen kann.<br>Zur USB/Ser.Kommunikation sind daher die Leitungen GPIO 1+3 (RX+TX)belegt.</p><p>Ein besonderes Augenmerk ist bei den Logikanschlüssen auf die richtige Logiklevel Nutzung bei unterschiedlich verwendeten Stromversorgungen der Sensormodule aufzubringen, wie sich später noch zeigen wird…(s. Micro SD-Card Modul)</p><p><strong>Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten aber ausschliesslich mit 3.3V.</strong></p><p>Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für unser Projekt daher nicht zur Verfügung. Auch die Leitungen EN(Boot-Button) und GPIO36(SP) + 39(SN) sind bereits belegt.<br>GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.</p><p>Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der “Onboard USB to serial Converter” CP2102N im Windows Device Manager als:<br><img src="images_v2/ESP32_COMPort.jpg"></p><p>Über dieses COM device ist er auch für IDEs wie die <em>Arduino-IDF</em> (<a href="https://github.com/espressif/esp-idf">https://github.com/espressif/esp-idf</a>) oder <em>VC-Platform-IO</em> erreichbar. Eine COM Port Erkennung findet zumindest bei PlatformIO automatisch statt.</p><p>Auf einem Linux System nennt sich das USB Converter Device: <em>/dev/ttyUSB0</em>.</p><p>Als Standard Baudrate sollte man es erstmal mit 115200 versuchen.<br>Der USB/UART Converter CP2102 schafft aber max. 921600 Baud rate.</p><h4 id="esp32-gpio-nutzung"><a name="esp32-gpio-nutzung" href="#esp32-gpio-nutzung"></a>ESP32 GPIO Nutzung</h4><p>Und nun konkret die gewählte GPIO-Belegung der ESP32 DevKitC Sockel-Pins für das BeeIoT Projekt:<br>(gilt für WROOM32D alsauch Wrover-B Module)</p><table>
+</table><p><strong>Pinning durch IDE board pre-selection = “esp32dev” für ESP32 DevKit-C boards </strong></p><p>Welche default Einstellung pro Board bei der IDE gilt kann man bei Platformio z.B. hier finden:<br>C:\Users\’benutzername’.platformio\packages\framework-arduinoespressif32\variants\’boardtype’\pins_arduino.h</p><p>Als nächstes macht man sich auf die Suche nach geeigneten GPIO Control Leitungen, die mit ihren Eigenschaften der angeschlossenen Funktion für den Modulanschluss entsprechen müssen. Manche GPIO Leitungen sind, anders als bei einem reinen ESP32 Modul bereits durch onboard Funktionen des DevKitC Boards belegt. Dies muss aber kein Nachteil sein, weil die Funktionen ja auch benötigt werden:</p><p>Geflasht wird der ESP32 über die onboard USB-A Buchse die auch gleichzeitig zur 5V Stromversorgung des DevKitC Boards verwendet wird (standard). Onboard wird dann die 3.3V Leitung für die ESP32 MCU über einen internen DC/DC Wandler AMS1117-3.3 von Microship erzeugt, der max. 1A durchsetzen kann.<br>Zur USB/Ser.Kommunikation sind daher die Leitungen GPIO 1+3 (RX+TX)belegt.</p><p>Ein besonderes Augenmerk ist bei den Logikanschlüssen auf die richtige Logiklevel Nutzung bei unterschiedlich verwendeten Stromversorgungen der Sensormodule aufzubringen, wie sich später noch zeigen wird…(s. Micro SD-Card Modul)</p><p><strong>Hinweis: Der ESP32 selbst und alle GPIO-Anschlüsse arbeiten  ausschliesslich mit 3.3V.</strong></p><p>Für den Flash-MM Anschluss werden GPIO6-11 onboard verwendet und stehen für unser Projekt daher nicht zur Verfügung. Auch die Leitungen EN(Boot-Button) und GPIO36(SP) + 39(SN) sind bereits belegt.<br>GPIO-00 wird per DevKitC FW als Reset Interrupt ausgewertet.</p><p>Über ein USB Kabel an einen Windows PC angeschlossen, zeigt sich der “Onboard USB to serial Converter” CP2102N im Windows Device Manager als:<br><img src="images_v2/ESP32_COMPort.jpg"></p><p>Über dieses COM device ist er auch für IDEs wie die <em>Arduino-IDF</em> (<a href="https://github.com/espressif/esp-idf">https://github.com/espressif/esp-idf</a>) oder <em>VC-Platform-IO</em> erreichbar. Eine COM Port Erkennung findet zumindest bei PlatformIO automatisch statt.</p><p>Auf einem Linux System nennt sich das USB Converter Device: <em>/dev/ttyUSB0</em>.</p><p>Als Standard Baudrate sollte man es erstmal mit 115200 versuchen.<br>Der USB/UART Converter CP2102 schafft aber max. 921600 Baud rate.</p><h4 id="esp32-gpio-nutzung"><a name="esp32-gpio-nutzung" href="#esp32-gpio-nutzung"></a>ESP32 GPIO Nutzung</h4><p>Und nun konkret die gewählte GPIO-Belegung der ESP32 DevKitC Sockel-Pins für das BeeIoT Projekt:<br>(gilt für WROOM32D alsauch Wrover-B Module)</p><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -701,7 +701,7 @@
 </table><p>(x unter components =&gt; darf nicht verwendet werden.)</p><p>Das MCU board erhält die 5V versorgung über den internen USB connector und erzeugt die 3.3V selbst.<br>Der 5V_Ext Anschluss wird nicht verwendet. Die 5V Leitung des MCU Extension Boards wird direkt von der Batterieversorgung gespeist.</p><p>Damit sind alle möglichen GPIO Leitungen funktionell belegt. Eine Erweiterung wäre nur noch über aufwendige IO port Multiplexer möglich. Die Auswahlkriterien werden weiter unten nochmal pro Sensor diskutiert.</p><h2 id="die-beeiot-sensorik"><a name="die-beeiot-sensorik" href="#die-beeiot-sensorik"></a>Die BeeIoT Sensorik</h2><p>Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:</p><ul>
 <li>1x Wägezelle    -&gt; über einen 24bit A/D Wandler HX711 an die GPIO Ports des ESP32 angeschlossen.</li><li>3x Temperatursensoren zur Messung der (DS18B20 OneWire)<ul>
 <li>Intern: Stocktemperatur (innerhalb der Beute)</li><li>Externe Temperatur</li><li>Wägezellen Temperatur (ggfs. zur Kompensation einer Temperaturdrift)</li><li>=&gt; Alle Temp. Sensoren sind über das OneWire Protokoll direkt an einen GPIO Port des ESP32 angeschlossen.</li></ul>
-</li><li>1x ADS1115 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung</li><li>1x RTC Modul (I2C)(DS3231) incl. Eprom</li><li>1x Micro SD Card Modul (SPI)</li><li>1x ePaper 2.7” (SPI) + 4 F-Keys.</li><li>1x LoRa MAC Modul (Dragino LoRa Bee 868MHz)</li><li><strong>Optional</strong><ul>
+</li><li>1x ADS1115 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung</li><li>1x RTC Modul (I2C)(DS3231) incl. Eprom</li><li>1x Micro SD Card Modul (SPI)</li><li>1x ePaper 2.7” (SPI) + 4 F-Keys.</li><li>1x LoRa MAC Modul mit Semtech SX1276 (e.g. Dragino LoRa Bee 868MHz)</li><li><strong>Optional</strong><ul>
 <li>1x xternes IR-Kameramodul -&gt; für Bienensitz im Winter</li><li>NB-IoT Modul zur Funk-Fernübertragung via GPRS (SM7000E)</li><li>USB GPS Maus (mapped über ser. Port RX/TX)</li></ul>
 </li></ul><h3 id="die-wägezellen-auswahl"><a name="die-wägezellen-auswahl" href="#die-wägezellen-auswahl"></a>Die Wägezellen Auswahl</h3><p>Eine Standardwägezelle mit geringer Temperaturdrift und hoher Gewichtsstabilität sowie Messwiederholgenauigkeit weist heutzutage typischerweise vorkalibrierte Dehnmesstreifen in einer Wheatstonebrücke verschaltet auf. Diese ist eine gegenläufige Verschaltung von 4 Dehnmessstreifen (DMS) im Rautenmodell (siehe Schaltbild weiter unten) incl. Temperaturdriftkompensation.</p><p>Meine Auswahl fiel (wie bei so manchen anderen Waagen-Projekte im Netz auch) auf den Hersteller Bosche. Die Wägezelle muss folgenden Anforderungen entsprechen:</p><ul>
 <li>Messbereich 100Kg (Waagendeckel + Beute (2 Brut- und 2 Honig-Zargen) + Deckel und Abdeckgewicht.</li><li>Stabile Verschraubung mit dem Waagendeckel zur Kraftübertragung möglich (für Zander: 40 x 50cm) Unterboden</li><li>Dadurch geringe Eckgewichtslast-Fehler</li><li>Spannungsversorgung ab 5V (aus Raspi Versorgungsspannung)</li><li>Großer Temperaturmessbereich -30 … +50 Grad</li><li>bei vorgegebener Genauigkeit: Class C3: 2mV/V<ul>
@@ -785,7 +785,9 @@
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_SCK      SCK   <span class="hljs-comment">// SPI SCLK -&gt; VSPI = 18 shared with ePD &amp; LoRa Bee</span></span>
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SD_CS       2     <span class="hljs-comment">// SD card CS\ line - arbitrary selection !</span></span>
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> SPISPEED 2000000  <span class="hljs-comment">//20MHz clock speed</span></span>
-</code></pre><p>Über Nutzung von FS.h ist auch der Betrieb mit long filenames bei größeren Karten möglich.<br>Dieses Modul unterstützt 2GB - 16GB Micro SD Cards, vorformatiert(!) mit FAT32 Format.</p><p>Dieses Modul wäre aber auch ein Kandidat zur EInsparung wenn wir wieter den Strombedarf reduzieren wollen.</p><h4 id="e-paper-display"><a name="e-paper-display" href="#e-paper-display"></a>E-Paper Display</h4><p>Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.<br>Dadurch sieht man wesentliche Werte und aktuelle massnahmen gleich vorort und nicht nur über eine Webseite remote.</p><p>Als Kriterien sollen gelten:</p><ul>
+</code></pre><p>Über Nutzung von FS.h ist auch der Betrieb mit langen filenames bei größeren Karten möglich.<br>Dieses Modul unterstützt 2GB - 16GB Micro SD Cards, vorformatiert(!) mit FAT32 Format.</p><p>Dieses Modul wäre aber auch ein Kandidat zur Einsparung wenn wir wieter den Strombedarf reduzieren wollen.</p><blockquote>
+<p><strong>Hinweis:</strong> Es wird in vielen Artikeln zur Stabilisierung der SD Card Kommunikation empfohlen einen 10kOhm Pullup an der SD-CS-Leitung anzulegen. In unserem Fall ist diese aber an GPIO2 angeschlossen. Der Pullup würde einen weiteren Upload von FW in das FlashRom verhindern -&gt; Timeout. In unserem Fall ist also kein PullUp ohne größeren Aufwand möglich.</p>
+</blockquote><h4 id="e-paper-display"><a name="e-paper-display" href="#e-paper-display"></a>E-Paper Display</h4><p>Zur stromsparenden Darstellung der aktuellen Zustands- und Mess-Werte musste ein Display her.<br>Dadurch sieht man wesentliche Werte und aktuelle massnahmen gleich vorort und nicht nur über eine Webseite remote.</p><p>Als Kriterien sollen gelten:</p><ul>
 <li>Stromsparend auch in der Wait-Loop Phase zwischen den Messungen</li><li>Gute Ablesbarkeit durch hohen Kontrast auch bei direkter Sonneneinstrahlung</li><li>Einfacher Anschluss an bestehende ESP32 Interface-Pegel: 3.3V</li><li>Einfache Ansteuerung und Kontrolle der Darstellung.</li></ul><p>Zumindest die ersten 3 Punkte konnte ich durch das ePaper von WaveShare erfüllen:</p><ul>
 <li>Waveshare 2.7 Inch E-Paper Display HAT Module Kit 264x176 Resolution</li><li>3.3v E-ink Electronic Paper Screen with Embedded Controller</li><li>for ESP32 SPI Interface</li></ul><p>Ein Stromverbrauch entsteht nur in der Initialisierungs- und Ladephase der Darstellungsdaten.<br>Größter Vorteil ist aber das passive Darstellungsmedium: ePaper, welches auch bei direkter Sonne wie ein gedrucktes Papier erscheint. Das erhöht die Lesbarkeit im Outdoor-Einsatz enorm.<br>Ein LCD Display müsste hier nachgesteuert werden und muss dazu dauerhaft mit Strom versorgt werden.<br>Hat allerdings den Vorteil der möglichen Beleuchtung bei Dämmerung/Dunkelheit.<br>Allerdings mal ehrlich: wer imkert dann noch ???</p><p>Daher hat ein EPaper i.d.R. auch keine Hintergrundbeleuchtung. Dieses Modul weißt neben dem eigentlichen Display dafür noch 4 universelle Schalter zur späteren funktionellen Erweiterung von z.B. verschiedenen Darstellungsebenen auf. Dazu später mehr…</p><p><img src="images_v2/WaveShareFront.jpg"></p><p>Ursprünglich stellt dieses Modul einen RaspberryPi Hat dar und hat daher auch eine 40-pol. Buchsenleiste kompatibel zum RPi. Für unsere Zwecke verwenden wir den parallelen Kabelanschluss.<br>mit einem separaten SPI Interface über einen 8poligen Stecker incl Kabel:</p><p><img src="images_v2/WaveShareBack.jpg"></p><p>Die Anschlussbelegung des SPI Kabelanschlusses:</p><table>
 <thead>
@@ -897,10 +899,8 @@
 <span class="hljs-preprocessor">#<span class="hljs-keyword">include</span> "BitmapWaveShare.h"</span>
 
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> HAS_RED_COLOR     <span class="hljs-comment">// as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT</span></span>
-</code></pre><p>Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot. Wie sich bei der Anwendung aber herausstellte, verlängert das die eh schon mit &gt;10 Sek. recht lange Display-Update Zeiten nochmal zusätzlich. <strong>Hier ist eine Optimierung zur Stromeinsparung noch zu implementieren</strong>.<br><img src="images_v2/WaveShareFront.jpg"></p><p>Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns “weiter arbeiten/schlafen”, liegt der Stromverbrauch aber nahezu bei 0mA.</p><h4 id="lora-wan-support"><a name="lora-wan-support" href="#lora-wan-support"></a>LoRa WAN Support</h4><p>Für die remote Connection ohne “stromfressenden” WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. Auf 868MHz voreingestellt kann es abhängig von der räumlichen Topologie Reichweiten bis zu 8km ermöglichen.</p><p>Das LoRa-WAN Protokoll ist auf geringe Band-Belastung und geringem Stromverbrauch ausgelegt.</p><p>Das verbaute Funkmodul bietet erst einmal nur den LoRa-MAC layer Übertragungssupport. Den Rest für das <strong><a href="https://lora-alliance.org/about-lorawan">LoRaWAN Protokoll</a></strong> leisten die dazugehörigen Bibliotheken (z.B. die OSS Lib: LMIC von IBM -&gt; search in GitHub).<br>Darin sind dann eine Peer2Peer Verbindung über unique Sender/Empfänger IDs und Verschlüsselungs-keys ähnlich wie bei TCP/IP kombiniert mit SSH enthalten.<br>Es zeigten sich bei der Migration der LMIC Lib Instablitäten des LoRa Modes -&gt; es wurden immer wieder FSK Mode IRQs empfangen, was die LoRa Statusführung durcheinander bringt.<br>Auch ist das von IBM gewählte OS layer Model nicht so handsam wie erwartet.<br>In Summe stellte die LMIC-Lib für den ESP32 in Kombination mit den übrigen Aktionen zur Sensorbehandlung zumindest auf Node/Cient Seite einen ziemlichen overhead dar, der aber leider nötig ist um das vollständige LoRa-WAN Protokoll nach Spezifikation zu erfüllen (Band-Hopping, Encryption, OTAA joining usw.).<br>Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte WiFi/LAN Anbindung hat, um die gewonnenen Daten zu validieren und auf eine Website zu spiegeln.<br>Da ein GW ggfs. mit mehreren Clients quasi-gleichzeitig zu tun hat, ist die LMIC STack implementierung optimal. Der OS Layer nimmt einem hier das Queueing hereinkommender Pakete sowie die protokollgerechte Quittierung und Bandmanagement vollständig ab.<br>Ein weiterer interessanter Client sample Code findet sich über eine Beispielprojekt des Opennet teams:<br><a href="https://wiki.opennet-initiative.de/wiki/LoRaSensor">https://wiki.opennet-initiative.de/wiki/LoRaSensor</a> .</p><p>Aktuell befinden sich der Code dazu mangels vollwertigem Gateway noch im Beta-Stadium (!):<br>Soll heisen auf basis des RADIO layers von LMIC habe ich ein eigenes “schmalspur” WAN Protokoll entworfen (BeeIoT-WAN) welches die Paket Kommunikation auf den rudimentären Austausch von Sensordaten mit einfacher Quittierung (zunächst ohne Multi-Bandmanagement oder Encryption) “optimiert”.<br>Auf dieser Basis habe ich die ESP32 Client- und RaspberryPi GW-seitigen Module entworfen.<br>Kerneigenschaften der Module:</p><ul>
-<li>Erkennung durch Sender/Empfänger-IDs im “BeeIoT-WAN”-eigenen Header (nur 5 Bytes)</li><li>CRC basierte Datenprüfung</li><li>automatische Quittierung und resend/retry Kommunikation als Flow Control</li></ul><p>Was noch fehlt:</p><ul>
-<li>Collison detection (aber ggfs. durch die CRC Prüfung und ResendAnforderung abgedeckt)</li><li>Encryption auf AES Basis (abgeleitet von der LMIC AES Lib)</li><li>Multi Band management (heute wird nur 1 band gewählt, das aber nur alle 10-15 Minuten benutzt)</li><li>Duty Time recognition</li></ul><p>Hauptanbieter des LoRa-MAC Layer HW Moduls ist die Firma Semtech, die auch die <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-specification-v103">LoRaWAN Spezifikation v1.0.3</a></strong> als Member der “LoRA Alliance” mit herausgegeben hat.<br>Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats &amp; Shields entworfen.<br>Der kleinste Vertreter davon (ohne GPS Modul) ist das “Dragino Lora-Bee Modul” <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">(Wiki)</a></strong>, welches via SPI angeschlossen wird.</p><p>Darauf befindet sich ein RFII95-98W mit SPI Interface. Dieses Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllen densleben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.</p><p>Die Verdrahtung ist recht einfach:<br>Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion, eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5.<br>DIO0 bildet z.B. den LoRa Interrupt ab und triggert bei RX/TX-Events. Für den Standard LoRa Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt (solange man beim LoRa-Mode bleibt; Für den FSK Mode werden häufig auch DIO0-2 genutzt).<br>Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.<br>Alle 3 Leitungen werden aber nur im Input Mode betrieben (zur Signalisierung des Semtech Modul Status).</p><p><img src="images_v2/Dragino_Lora_Bee.jpg"> <img src="images_v2/Dragino_Lora_Bee_Cabling.jpg"></p><p>Auf dem 2. Bild ist das grün gefärbte Semtech LoRa Modul gut zu erkennen.</p><p>Die Spezifikation weisst folgende Eigenschaften aus:</p><ul>
-<li>168 dB maximum link budget.</li><li>+20 dBm - 100 mW constant RF output vs.</li><li>+14 dBm high efficiency PA.</li><li>Programmable bit rate up to 300 kbps.</li><li>High sensitivity: down to -148 dBm.</li><li>Bullet-proof front end: IIP3 = -12.5 dBm.</li><li>Excellent blocking immunity.</li><li>Low RX current of 10.3 mA, 200 nA register retention.</li><li>Fully integrated synthesizer with a resolution of 61 Hz.</li><li>FSK, GFSK, MSK, GMSK, LoRaTM and OOK modulation.</li><li>Built-in bit synchronizer for clock recovery.</li><li>Preamble detection.</li><li>127 dB Dynamic Range RSSI.</li><li>Automatic RF Sense and CAD with ultra-fast AFC.</li><li>Packet engine up to 256 bytes with CRC.</li><li>Built-in temperature sensor and low battery indicator.</li></ul><p>Das Dragino Manual dazu findet sich <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">hier</a></strong>.</p><p><img src="images_v2/Duck_Antenna.jpg"><br>Da aber nahezu alle Leitungen des SemTech Moduls 1.1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.</p><p>Die aktuell verwendeten GPIO Port Definitionen:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;SPI.h&amp;gt;    // default for all SPI devices
+</code></pre><p>Als weiteres Gimmick unterstützt dieses ePaper von Waveshare auch die Farbe rot. Wie sich bei der Anwendung aber herausstellte, verlängert das die eh schon mit &gt;10 Sek. recht lange Display-Update Zeiten nochmal zusätzlich. <strong>Hier ist eine Optimierung zur Stromeinsparung noch zu implementieren</strong>.<br><img src="images_v2/WaveShareFront.jpg"></p><p>Ist da Display einmal aktualisiert, ud die BUSY Leitung lässt uns “weiter arbeiten/schlafen”, liegt der Stromverbrauch aber nahezu bei 0mA.</p><h4 id="lora-wan-support"><a name="lora-wan-support" href="#lora-wan-support"></a>LoRa WAN Support</h4><p>Für die remote Connection ohne “stromfressenden” WiFi Betrieb oder nicht-erreichbarem Hotspot, ist ein LoRa Funktmodul vorgesehen. In Europa wird das ISM Band mit 433,05 bis 434,79 Mhz und das SRD Band 863 bis 870 MHz genutzt. Auf EU-868MHz voreingestellt kann es abhängig von der räumlichen Topologie (Satadt/Land) Reichweiten bis zu 2-8km ermöglichen.</p><p>Das LoRa-WAN Protokoll ist auf geringe Band-Belastung (OnAir-DutyTime) und geringem Stromverbrauch ausgelegt.</p><p>Das verbaute HW-Funkmodul bietet nur den LoRa-MAC layer Übertragungssupport.<br>Auf die Umsetzung der dazugehörigen Paketübertragungs- und Netzverwaltung sowie den dazugehörigen SW Stack auf beiden Seiten gehe ich in diesem Dokument detailliert ein: <strong><a href="https://github.com/mchresse/BeeIoTGW/blob/master/BeeIoTWAN_v10.md">BeeIoTWAN_v10.md</a></strong> des zugehörigen Github Projektes <strong>BeeIoTGW</strong>.<br>Dort findet sich auch die Beschreibung der BIoT Gateway/Edge-Server Gegenstelle für die weitere Verarbeitung der Sensordaten durch AppServices. Hier vorab schonmal das prinzip Schaltbild der Module des vollständigen BIoT WAN Netzwerkes.<br><img src="images_v2/BeeIoT_Concept.jpg"></p><p>Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte leistungsfähigere WiFi/LAN Anbindung hat, um die gewonnenen SensorDaten aller Clients zu validieren, aufbereiten und auf eine Website oder andere Abnehmer (MQTT) zu spiegeln.</p><p>Hauptanbieter des LoRa-MAC Layer HW Moduls ist die Firma Semtech, die auch die <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-specification-v103">LoRaWAN Spezifikation v1.0.3</a></strong> als Member der “LoRA Alliance” mit herausgegeben hat.<br>Die Firma Dragino hat auf Basis dieses Quasi-Standard Modules (basierend auf dem SX1276/SX1278 transceiver chips) diverse Hats &amp; Shields entworfen.<br>Der kleinste Vertreter davon (ohne GPS Modul) ist das “Dragino Lora-Bee Modul” <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">(Wiki)</a></strong>, welches via SPI angeschlossen wird.<br>Darauf befindet sich ein RFII95-98W (eigentlich der SX1276 chip) mit SPI Interface. Dieses SX1276 Basismodul von Semtech kann man aber auch günstig (2-6€) in Asien bestellen) und erfüllt denselben Zweck. Die Draginomodule nehmen einem nur zusätzliche Verdrahtung und ggfs. den Antennenanschluss ab.<br><img src="images_v2/SX1276.jpg"><br>Die Antenne ist behelfsweise aber auch über einen gewickelten Draht mit der passenden Länge realisierbar.<br>Dabei ist das Frequenzband bestimmt nach der Formel: 868 MHz &gt; 8,5 cm Draht für eine Lambda/4 Antenne.<br>Eine SMA Antenne besteht intern ebenfalls nur aus:<br><img src="images_v2/LoRa_Antenna.jpg"><br>… einem Draht mit einer Wetterschutzkappe:<br><img src="images_v2/Duck_Antenna.jpg"></p><p>Die LoraModul-Verdrahtung ist recht einfach:<br>Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion (bei manchen Modulen auch NSS genannt), eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5.<br>Für den Standard LoRa-Modem Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt.(Für den FSK Mode werden häufig auch DIO1+2 benötigt).<br>Manchen SW Stacks (z.B. LMIC) benötigen zum vollständigen Support DIO0-2; der Lora-Lib von Sandeep reicht aber DIO0.<br>DIO0 triggert z.B. alle LoRa-Mode RX/TX Interrupts (RXDone &amp; TXDone).<br>Daher habe ich in dieser Schaltung nur DIO0 + DIO1 auf duplex fähige GPIO Leitungen mappen können, und DIO2 auf eine Read Only Leitung (weil sie noch frei war, aber geshared mit dem Key3 des ePaper Moduls; welche aber aktuell ohne Funktion bleibt). Ggfs. kann man darüber noch einen manuellen Sendetrigger imlementieren.<br>Alle 3 Leitungen werden aber nur im Input Mode betrieben (zur Signalisierung des Semtech Modul Status).<br>Für eine größere Stabilität am SPI Bus sollten CS udn RST mit 10k-PullUps versehen werden, damit keine Misverständnisse zw. ESP32 und SX1276 entstehen.</p><p>Das beim BIoT Client verwendete Dragino Bee Modul ist massgeblich der Träger des Semtech Moduls:<br><img src="images_v2/Dragino_Lora_Bee.jpg"> <img src="images_v2/Dragino_Lora_Bee_Cabling.jpg"><br>Beim Gateway begnüge ich mich mit dem Smetech Modul + Eigenbau Antenne (noch).<br>Auf dem 2. Bild ist das grün gefärbte Semtech LoRa Modul gut zu erkennen.</p><p>Die Spezifikation weisst folgende Eigenschaften aus:</p><ul>
+<li>168 dB maximum link budget.</li><li>+20 dBm - 100 mW constant RF output vs.</li><li>+14 dBm high efficiency PA.</li><li>Programmable bit rate up to 300 kbps.</li><li>High sensitivity: down to -148 dBm.</li><li>Bullet-proof front end: IIP3 = -12.5 dBm.</li><li>Excellent blocking immunity.</li><li>Low RX current of 10.3 mA, 200 nA register retention.</li><li>Fully integrated synthesizer with a resolution of 61 Hz.</li><li>FSK, GFSK, MSK, GMSK, LoRaTM and OOK modulation.</li><li>Built-in bit synchronizer for clock recovery.</li><li>Preamble detection.</li><li>127 dB Dynamic Range RSSI.</li><li>Automatic RF Sense and CAD with ultra-fast AFC.</li><li>Packet engine up to 256 bytes with CRC.</li><li>Built-in temperature sensor and low battery indicator.</li></ul><p>Das Dragino Manual dazu findet sich <strong><a href="http://wiki.dragino.com/index.php?title=Lora_BEE">hier</a></strong>.</p><p>Da aber nahezu alle Leitungen des SemTech Moduls 1:1 am Bee-Sockel ausgeführt sind, kann man im Grunde jede Bibliothek verwenden, die den SX1276 (für 868MHz) unterstützt.</p><p>Die aktuell verwendeten GPIO Port Definitionen:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;SPI.h&amp;gt;    // default for all SPI devices
 // Libraries for LoRa
 #include &quot;LoRa.h&quot;
 
@@ -926,9 +926,9 @@
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO0    33        <span class="hljs-comment">// Main Lora_Interrupt line</span></span>
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO1    13        <span class="hljs-comment">// for Bee-Events</span></span>
 <span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BEE_DIO2    34        <span class="hljs-comment">// unused by BEE_Lora;  connected to EPD K3 -&gt; but is a RD only GPIO !</span></span>
-</code></pre><p>Die Rolle des Client Node MAC layers ist in dieser <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10">Backend Specification</a></strong> festgehalten<br>Aktuell gehen meine Tests, wie oben bereits erwähnt, in Richtung der LMIC LoRaWAN SW Stack Implementierung von IBM. Der MAC Layer ist durch die Implementierungen in hal.c + Radio.c enthalten.<br>(siehe GitHub -&gt; “lmic_pi”). Dieses habe ich als Basis für den GW seitigen BeeIot-WAN Aufbau auf Basis RPi verwendet.<br>Alternative sei auch noch die “RadioHead” Implementierng genannt (s. GitHub).</p><p>Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend. Über eine vollständige WAN Kommunikation kümmere ich mich später…</p><p>Da ich ein eigens “BeeIoT-“LoRaWAN Netzwerk aufbauen möchte ist die Rolle dieses ESpP32 Nodes: Activation-by-Personalization (ABP) und als eindeutige statisceh LoRa Devide-ID habe ich daher die ESP32 interne BoardID (basierend auf der WiFi MAC Adresse) vorgesehen. Daraus kann auch die LoRa-“DevAddr” zur Node-Protokoll ID (DevID) gebildet werden.<br>Eine Anbindung an das allseits beliebte offene TT-Netzwerk schränkt die Nutzung durch limitierte Anzahl Daten und Paket/Zeitraum zu sehr ein.<br>Als Advanced feature ist OTAA anzusehen. Der standardisierte Weg über LoRaWAn FW updates remote auf den ESP32 als Lora Node aufzuspielen. Damit ist echte Fernwartung möglich, (wie sonst nur bei einer echten LAN Verbindung und laufendem OS auf dem Node wie bei einem RPi.) Für solch intensiven Datenaustausch ist aber Multiband management mit Duty Time Control nötig, weil sonst das einzelne Band zu sehr vereinnahmt wird.</p><h3 id="narrowband-iot"><a name="narrowband-iot" href="#narrowband-iot"></a>NarrowBand-IoT</h3><p>NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber zusätzlich die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.</p><p>Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.</p><p>Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuelle nicht frei sind, bleibt es erstmal bei der LoRaWan Anbindung.</p><p>Das von mir bestellte Modul:<br>Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne</p><ul>
-<li>mit Breakout UART control pins (Baudrate: 300bps~3686400bps)</li><li>Control via AT commands (3GPP TS 27.007, 27.005, and SIMCOM enhanced AT Commands)</li><li>Supports SIM application toolkit: SAT Class 3, GSM 11.14 Release 98, USAT</li></ul><p><img src="images_v2/SIM7000E_NBIoT.jpg"></p><p>=&gt; Link zum <strong><a href="https://www.waveshare.com/wiki/SIM7000E_NB-IoT_HAT?Amazon">SIM7000E-HAT Wiki</a></strong></p><p>Verwendet folgende ESP32 Anschluss pins (falls verfügbar)</p><ul>
-<li>TXD0: Optional</li><li>RXD0: Optional</li></ul><p>=&gt;In V2.0 aber nicht implementiert !</p><h3 id="rtc-uhrzeit-modul"><a name="rtc-uhrzeit-modul" href="#rtc-uhrzeit-modul"></a>RTC Uhrzeit-Modul</h3><p>Für eine gutes Monitoring und auch für die LoRaWAn Kommunikation ist stets die genaue Uhrzeit zur Synchronisation der Datenpakete nötig.</p><p>Für eine genaue Uhrzeit kommen 2 Quellen in Frage:</p><ul>
+</code></pre><p>Die Rolle des Client Node MAC layers ist in dieser <strong><a href="https://lora-alliance.org/resource-hub/lorawanr-back-end-interfaces-v10">Backend Specification</a></strong> festgehalten</p><p>Für ESP32 MAC Layer Testzwecke habe ich im Sketch aktuell die Lora-Library von Sandeep (GitHub) in Verwendung. Diese ist für eine stabile MAC Layer Kommunikation vollkommen ausreichend.</p><p>Die Antenne wird bei einem SMA Anschluss einfach aufgeschraubt: fertig.<br>Es reicht wenn die Antenne innerhalb der Box verbleibt. Man kann die Reichweite natürlich vergrößern, wenn sie nach aussen geführt wird und ein direkter “Sichtkontakt” zum Gateway gewährleistet ist (z.B. bei TopRoof-Montage).</p><p>Genaue Reichweiten Messungen stehen aber noch aus…(für die 20cm Beton-Kellerdecke reicht es aber schonmal).</p><h3 id="narrowband-iot"><a name="narrowband-iot" href="#narrowband-iot"></a>NarrowBand-IoT</h3><p>NearBand-IoT ist grundsätzlich eine LTE basierte Kommunikation mit SIM Karte und LTE-Provider, wie bei jedem Smart-Mobile auch. NB-IoT verwendet aber insbesondere die niederfrequenten Band-Anteile und erreicht damit eine bessere Durchdringung von Gebäuden. Ein Client im 3. Stock einer Tiefgarage soll damit problemlos möglich sein, was für die meisten Smart-Home Anwendung aureichend sein sollte.</p><p>Als Sender mit einem SIM Kartenleser Modul habe ich mir den häufig verwendeten und Library seitig gut unterstützten SIM700E mit GPS Maus (optional) support ausgesucht.</p><p>Leider benötigt es als echtes SIM Modem eine serielle RX/TX ANbindung, wofür weitere 2 GPIO Leitung benötigt werden. Da diese aktuell nicht mehr frei sind, bleibt es erstmal bei der LoRaWan Anbindung.</p><p>Das von mir bestellte Modul:<br>Waveshare NB-IoT eMTC Edge GPRS GNSS Hat incl. Antenne</p><ul>
+<li>mit Breakout UART control pins (Baudrate: 300bps~3686400bps)</li><li>Control via AT commands (3GPP TS 27.007, 27.005, and SIMCOM enhanced AT Commands)</li><li>Supports SIM application toolkit: SAT Class 3, GSM 11.14 Release 98, USAT</li></ul><p><img src="images_v2/SIM7000E_NBIoT.jpg"></p><p>=&gt; Link zum <strong><a href="https://www.waveshare.com/wiki/SIM7000E_NB-IoT_HAT?Amazon">SIM7000E-HAT Wiki</a></strong></p><p>Es verwendet folgende ESP32 Anschluss pins (falls verfügbar)</p><ul>
+<li>TXD0: Optional</li><li>RXD0: Optional<br>=&gt;In V2.0 aber nicht implementiert !</li></ul><h3 id="rtc-uhrzeit-modul"><a name="rtc-uhrzeit-modul" href="#rtc-uhrzeit-modul"></a>RTC Uhrzeit-Modul</h3><p>Für eine gutes Monitoring und auch für die LoRaWAn Kommunikation ist stets die genaue Uhrzeit zur Synchronisation der Datenpakete nötig.</p><p>Für eine genaue Uhrzeit kommen 2 Quellen in Frage:</p><ul>
 <li>Befragung eines NTP Servers via WiFI Anbindung, oder</li><li>via localem RTC Module</li></ul><p>Beide sind im Sketch implementiert und redundant zueinander verschaltet:<br>Besteht keine WiFi Verbindung wird das RTC Modul direkt befragt. Ansonsten wird via WiFi Verbindung Kontakt zu einem NTP Server aufgenommen und das lokale RTC Modul neu mit der NTP Zeit synchronisiert.<br>Darüber erhalten wir stets eine hinreichend genaue Uhrzeit vor.</p><p><img src="images_v2/RTC_DS3231.jpg"></p><p>Dieses RTC Modul mit DS3231 chip enthält neben einem sehr genauen Uhrzeitmodul auch ein internes EEPROM zur residenten Ablage von Betriebsdaten im Sleep Mode. Dies ist eine zusätzliche Alternative zur ESP NVRAM area oder gar der SDCard. Weitere Test müssen aber noch herausarbeiten, welcher Weg den geringeren Stromverbrauch bei hinreichender Speichergröße für die Sleep Mode Housekeeping Daten darstellt. Auch ist die Häufigkeit der Widerbeschreibbarkeit ein Thema, da der Sleep Mode alle 10-Minuten gestartet wird.</p><p>Dieses EEPROM 2432 ist mit einer eigenen Stromversorgung über ein 3V onboard Lithium-Akku (LIR-2032/3.6V)gepuffert.<br>Alternativ kann der Li-Akku auch durch eine normale 3V Li Zelle (CR2032 oder CR2016) ersetzt werden, dann aber mit endlicher Laufzeit. Eine “LostPower()” Funktion erlaubt einen Batterie-Stromausfall zu erkennnen und nachträglich abzufragen, um dann ggfs. die Uhrzeit neu zu stellen.</p><p>In rot umrandet eingezeichnet sind die, von mir vorgenommenen und <strong><a href="https://thecavepearlproject.org/2014/05/21/using-a-cheap-3-ds3231-rtc-at24c32-eeprom-from-ebay/">allseits empfohlenen Änderungen</a></strong> um den Stromverbrauch weiter zu reduzieren:</p><ul>
 <li>Als Massnahme zur Stromreduktion:<ul>
 <li>Abschalten der Power LED durch Abheben des Widerstandes links neben der POWER LED (oben im Bild).</li></ul>
@@ -987,15 +987,15 @@ enum Ds3231SqwPinMode {
 <li>mit 30.000mAh Kapazität</li><li>3 USB Output(5V/2,1A)</li><li>2x USB 2A-Charge Input (parallel)</li><li>mit Lade-/Entladeintelligenz kompatibel zu  iPhone XR/XS/X / 8 / 8Plus / 7 Samsung Galaxy usw.</li><li>Preis: 25,99€</li></ul><p>Dummerweise ist die interne Lade/Entladeintelligenz auch hinderlich, wenn sie der Meinung ist, ein ESP32 im Sleep Mode wäre “nicht vorhanden”. Denn dann wird der Ausgang einfach abgeschaltet. Genauere Messungen ergaben aber, dass der Ausgang nicht vollständig abgeschaltet wurde, sondern nur der StepUp Regler umgangen wurde. Es lagen dann am Ausgang die direkte Batteriespannung zw. 3.2 - 4.2V an.<br>Daher habe ich mich entschlossen die Charge Funktion zu erhalten, die Ausgangskontrolle aber einfach zu umgehen und die internen Anschlüsse direkt anzuzapfen:<br><img src="images_v2/BeeIoT_PowerBank.jpg"></p><ul>
 <li>rot -&gt; USB output (mit temp. Abschaltung)</li><li>grün -&gt; Charge Input (+3-5V)</li><li>weiss -&gt; Akku + Anschluss direkt (3.2 - 4.2V)</li><li>schwarz -&gt; Masse / Akku - Anschluss</li></ul><p>Dadurch haben wir innerhalb der Extension Box alle Optionen diese Powerbank zu integrieren:</p><ul>
 <li>Die ext. USB +5V Leitung an den Charge input</li><li>Der USB-Out Ausgang wird über einen nun externen StepUp Boost Regler von Sodial (4,35€) geführt<br><img src="images_v2/LinearBooster_LM2577.jpg"></li></ul><p>Der Linearregler: LM2577  liefert einstellbar saubere 5V und regelt definiert auf 0V runter, wenn die IN-Spannug auch gen 0V geht (Ein-/Ausschaltverhalten). Überschreitet der EIngang allerdings den eingestellten AUsgangswert von 5V, steigt auch der Ausgang mit an ! In unserem Fall aber ken problem, weil der LiFe Akku kaum mehr als 4.2V liefern könnte.<br>Weitere Eigenschaften des LM2577:</p><ul>
-<li>Eingangsspannung: DC 3-34V, Eingangsstrom: 3A (max.)</li><li>Ausgangsspannung: DC 4-35V (stufenlos einstellbar), Ausgangsstrom: 2,5 A (max.)</li></ul><p>Ein ähnliches Exemplar nur ohne LED ANzeige:<br><strong>ANGEEK DC-DC Boost Buck Adjustable Step Up Step Down Automatic Converter XL6009 Module</strong> 6,99€<br>aber mit einem BuckBoost Converter XL6009, regelte am Ausgang plötzlich auf ca. 15V hoch, wenn die Eingangsspannung unterhalb 3.2V ging. Erst weit unter 2V ging die Ausgangsspannug auch gegen 0V.<br>Diese Episode hätte den ESP32 in die ewigen Jagdgründe geschossen.<br>So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anzeige und Linearregler.</p><p>Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.<br>Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define BATTERY_MAX_LEVEL        4150 // mV
-#define BATTERY_MIN_LEVEL        3200 // mV
-#define BATTERY_SHUTDOWN_LEVEL   3100 // mV
-</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MAX_LEVEL        4150 <span class="hljs-comment">// mV</span></span>
-<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MIN_LEVEL        3200 <span class="hljs-comment">// mV</span></span>
-<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_SHUTDOWN_LEVEL   3100 <span class="hljs-comment">// mV</span></span>
+<li>Eingangsspannung: DC 3-34V, Eingangsstrom: 3A (max.)</li><li>Ausgangsspannung: DC 4-35V (stufenlos einstellbar), Ausgangsstrom: 2,5 A (max.)</li></ul><p>Ein ähnliches Exemplar nur ohne LED ANzeige:<br><strong>ANGEEK DC-DC Boost Buck Adjustable Step Up Step Down Automatic Converter XL6009 Module</strong> 6,99€<br>aber mit einem BuckBoost Converter XL6009, regelte am Ausgang plötzlich auf ca. 15V hoch, wenn die Eingangsspannung unterhalb 3.2V ging. Erst weit unter 2V ging die Ausgangsspannug auch gegen 0V.<br>Diese Episode hätte den ESP32 in die ewigen Jagdgründe geschossen.<br>So bleibt es erstmal bei dem etwas mehr Strom verbrauchenden Wandler mit LED Anzeige und Linearregler.</p><p>Die so gewonnen 5V werden so lange geliefert, wie der LiFe-Akku nicht unter 3.2V kommt.<br>Darum habe ich im Programm über einen ADS1115 gemessen folgende Batterieschwellwerte festgelegt, die für jede 3.7V LiFe Akku gelten:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define BATTERY_MAX_LEVEL        4150 // mV -&amp;gt; 100%
+#define BATTERY_MIN_LEVEL        3200 // mV    -&amp;gt; 0%
+#define BATTERY_SHUTDOWN_LEVEL   3100 // mV -&amp;gt; -10%
+</code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MAX_LEVEL        4150 <span class="hljs-comment">// mV -&gt; 100%</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_MIN_LEVEL        3200 <span class="hljs-comment">// mV    -&gt; 0%</span></span>
+<span class="hljs-preprocessor">#<span class="hljs-keyword">define</span> BATTERY_SHUTDOWN_LEVEL   3100 <span class="hljs-comment">// mV -&gt; -10%</span></span>
 </code></pre><p>An dieser Stelle hilft es die Energie-Rechnung aus Kapitel:  <strong><a href="#die-mcu-arduino-ESP32-platform">Die MCU Arduino/ESP32 Platform</a></strong> nochmal nachzurechnen:</p><ul>
 <li>Anteil Aktivphase: 10 Sek./10Minuten: 1/60</li><li>auf 6 Monate entspricht das (6x30x24)h/60 = 72h = 3Tage Aktivphase</li><li>=&gt; 4320-3 Tage Passivphase = 4317 Tage</li><li>Stromverbrauch Passivphase: 4317 x 1mAh = 4317mAh von nun <strong>30.000mAh</strong> </li><li>Möglicher <strong>Stromverbrauch Aktivphase</strong>: (30.000mAh - 4317mAh)/72h = 5683mAh / 72h = <strong>~365mA</strong></li></ul><p>Pro Tag kämen wir auf einen Gesamtverbrauchsmix:</p><ul>
-<li>Aktivphase : 24 x 6 x 10Sekunden = 24 Minuten -&gt; 80mAh</li><li>Passivphase: 24 x 60 - 24Minuten = 1416 Minuten -&gt; 59mAh<br>in Summe also 139mAh/Tag ergibt bei 30.000mAh Akku Kapazität = <strong>215 Tage Laufzeit</strong>.</li></ul><p>Und das ohne jede Ladung. Ergänzen wir das ganze noch mit einem 5V PV Modul am ext. USB port …</p><h3 id="power-monitoring"><a name="power-monitoring" href="#power-monitoring"></a>Power Monitoring</h3><p>Um die oben genannten Lade-/Entladezyklen verfolgen zu können, habe ich einen 4-port AD Wandler ADS1115 spendiert der über einen 3.3V &lt;-&gt; 5V levelchanger ebenfalls am I2C Port des ESP32 hängt.<br><img src="images_v2/ADS1115.jpg"></p><p>Falls eingestellte Schwellwerte erreicht werden, wird die Alertleitung als Interrupt genutzt.<br>Dies ist z.B. der fall wenn der BATTERY_MIN_LEVEL an der Akku+ Line erreicht wird,<br>dann muss die Stockwaage abgeschaltet werden (bzw. Dauersleepmode) um den Lithium-Akku zu schützen.</p><p>Für die eigene Versorgungsspannung Vcc= 5V des Converters habe ich 5V gewählt um ein größeres messbares Spannungsfenster an den AnalogPorts verfügbar zu haben: 0V – 4,096V -&gt; 1mV / Step .<br>Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenleitung auf 5V Pegel umgesetzt.<br>Über 2x 3.3kOhm Widerstände werden am ADS1115 AnalogPort 3 ein Spannungsteiler zur Messung der (eigenen) 5V Spannungsversorgung ermöglicht. Ähnlich müsste man bei größeren Spannungsquellen verfahren die &gt;4V liegen.</p><p>Durch die Verschaltung des ADDR = 0 Anschlusses erhalten wir die I2C Adresse 0x48. Somit kein Konflikt mit dem RTC Modul zu befürchten.<br>Hier die Definitionen des ADS im Sketch:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;Adafruit_ADS1015.h&amp;gt;    // support for ADS1015/1115
+<li>Aktivphase : 24 x 6 x 10Sekunden = 24 Minuten -&gt; 80mAh</li><li>Passivphase: 24 x 60 - 24Minuten = 1416 Minuten -&gt; 59mAh<br>in Summe also 139mAh/Tag ergibt bei 30.000mAh Akku Kapazität = <strong>215 Tage Laufzeit</strong>.</li></ul><p>Und das ohne jede Aufladung. Ergänzen wir das ganze noch mit einem 5V PV-Solar Modul am ext. USB port …</p><h3 id="power-monitoring"><a name="power-monitoring" href="#power-monitoring"></a>Power Monitoring</h3><p>Um die oben genannten Lade-/Entladezyklen verfolgen zu können, habe ich einen 4-port AD Wandler ADS1115 spendiert der über einen 3.3V &lt;-&gt; 5V levelchanger ebenfalls am I2C Port des ESP32 hängt.<br><img src="images_v2/ADS1115.jpg"></p><p>Falls eingestellte Schwellwerte erreicht werden, wird die Alertleitung als Interrupt genutzt.<br>Dies ist z.B. der fall wenn der BATTERY_MIN_LEVEL an der Akku+ Line erreicht wird,<br>dann muss die Stockwaage abgeschaltet werden (bzw. Dauersleepmode) um den Lithium-Akku zu schützen.</p><p>Für die eigene Versorgungsspannung Vcc= 5V des Converters habe ich 5V gewählt um ein größeres messbares Spannungsfenster an den AnalogPorts verfügbar zu haben: 0V – 4,096V -&gt; 1mV / Step .<br>Die 3.3V GPIO Pegel werden über einen duplexfähigen Level Converter per Datenleitung auf 5V Pegel umgesetzt.<br>Über 2x 3.3kOhm Widerstände werden am ADS1115 AnalogPort 3 ein Spannungsteiler zur Messung der (eigenen) 5V Spannungsversorgung ermöglicht. Ähnlich müsste man bei größeren Spannungsquellen verfahren die &gt;4V liegen.</p><p>Durch die Verschaltung des ADDR = 0 Anschlusses erhalten wir die I2C Adresse 0x48. Somit kein Konflikt mit dem RTC Modul zu befürchten.<br>Hier die Definitionen des ADS im Sketch:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#include &amp;lt;Adafruit_ADS1015.h&amp;gt;    // support for ADS1015/1115
 
 // ADS1115 + RTC DS3231 - I2C Port
 #define ADS_ALERT   27    // arbitrary selection of ALERT line
@@ -1025,7 +1025,7 @@ Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
     <span class="hljs-comment">// ADS1015: 11bit ADC -&gt; 6144/2048  = 3 mV / bit</span>
     <span class="hljs-comment">// ADS1115: 15bit ADC -&gt; 6144/32768 = 0.1875 mV / bit</span>
     data = (<span class="hljs-keyword">int16_t</span>)((<span class="hljs-keyword">float</span>)adcdata * <span class="hljs-number">0.1875</span>);    <span class="hljs-comment">// multiply by 1bit-sample in mV</span>
-</code></pre><h3 id="pv-solar-modul"><a name="pv-solar-modul" href="#pv-solar-modul"></a>PV Solar-Modul</h3><p>Die oben errechneten 215 tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.<br>Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:</p><p><img src="images_v2/SolarPanel_RAVPower.jpg"><br><strong>Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)</strong></p><p>Die Besonderheit liegt in der hohen Dynamik der Energieversorgung durch wechselnde Sonneneinstrahlung, weswegen ein nachgeschalteter interner Laderegler via Batterie die Energie puffert und in die gewünschte Zielspannung von 5V umsetzt.<br>Auch hier ist das Angebots-Spektrum sehr groß, von einem 180W Panel 1,8m x 0,8m Größe bis hin zu einem 40W Faltpanel, teilweise gleich mit Micro USB Kabel Anschlüssen.</p><p>Auch hier müssen wir eine Lösung finden, die im Schnitt 5V liefert und dies mit ausreichender Leistung. Solche Module sind häufig im Campingbereich zu finden, als Kompromiss zw. Mobilität und Leistung.</p><p>In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.<br>Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.</p><p>Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet.<br>Den Rest erledigt die Akku-interne Ladekontrolle, solange das Panel 5V liefern kann. Und das ist dank eines PV-nternen step Reglers recht lange der Fall.<br>Bei einem trüben aber freundlichen Märztag war eine PV Modul interne interne PV-Modul-Spannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…</p><p>Langzeittest besonders bzgl. Wetterfestigkeit stehen aber noch aus.</p><h3 id="alternativer-batterie-laderegler"><a name="alternativer-batterie-laderegler" href="#alternativer-batterie-laderegler"></a>Alternativer Batterie Laderegler</h3><p>Neben dem günstigen obe beschriebenen PV Modul mit integriertem 5V Ausgangsregler via USB Stecker, sind aber noch leistungsfähigere Module denkbar, die aber auch leistungsfähigere Laderegler für z.B 12V Akkus benötigen.</p><p>Die effiziente Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.</p><p>Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen <strong>PV Solar Panel MPPT Laderegler von Sunix</strong> gestartet: </p><p><img src="images_v2/SolarCharger.jpg"></p><p><strong>Modell: SU-SU702  (CMTD 2420) / 10A mit den Maßen: 14,4 x 8,3 x 4,1 cm für 13,99€</strong></p><p>Er hat die interessante Zusatzfunktion neben jeder Eingangsspannung bis 70V und der Batterieausgangsspannung zw. 12-14.3V auch 2 Standard USB Ports anzubieten mit geregelten 5V.<br>Diese würden direkt für den Betrieb der ESP32 Stockwaage herhalten können.</p><p>Die Kennwerte dieses Moduls sind:</p><blockquote>
+</code></pre><h3 id="pv-solar-modul"><a name="pv-solar-modul" href="#pv-solar-modul"></a>PV Solar-Modul</h3><p>Die oben errechneten 215 Tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.<br>Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:</p><p><img src="images_v2/SolarPanel_RAVPower.jpg"><br><strong>Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)</strong></p><p>Die Besonderheit liegt in der hohen Dynamik der Energieversorgung durch wechselnde Sonneneinstrahlung, weswegen ein nachgeschalteter interner Laderegler via Batterie die Energie puffert und in die gewünschte Zielspannung von 5V umsetzt.<br>Auch hier ist das Angebots-Spektrum sehr groß, von einem 180W Panel 1,8m x 0,8m Größe bis hin zu einem 40W Faltpanel, teilweise gleich mit Micro USB Kabel Anschlüssen.</p><p>Auch hier müssen wir eine Lösung finden, die im Schnitt 5V liefert und dies mit ausreichender Leistung. Solche Module sind häufig im Campingbereich zu finden, als Kompromiss zw. Mobilität und Leistung.</p><p>In unserem Fall wäre es kein großes Problem ein kleines Panel neben die Beute zu platzieren.<br>Im Winter läuft man allerdings Gefahr, dass der Schnee zu lange die Energieversorgung ausbremst und die Batterie leerläuft.</p><p>Die Handhabung ist denkbar einfach: Auseinanderfalten, mit einem Nagel an der Beuten-Südseite sicher befsetigen, und per Micro USB Stecker an das Steckerpanel der Stockwaage, wo sich der ext. USB Connector befindet.<br>Den Rest erledigt die Akku-interne Ladekontrolle, solange das Panel 5V liefern kann. Und das ist dank eines PV-nternen step Reglers recht lange der Fall.<br>Bei einem trüben aber freundlichen Märztag war eine PV Modul interne interne PV-Modul-Spannung von 14,6V über mehrere Stunden gegeben. Tests bei Vollsonne stehen noch aus…</p><p>Langzeittest besonders bzgl. Wetterfestigkeit stehen aber noch aus.</p><h3 id="alternativer-batterie-laderegler"><a name="alternativer-batterie-laderegler" href="#alternativer-batterie-laderegler"></a>Alternativer Batterie Laderegler</h3><p>Neben dem günstigen obe beschriebenen PV Modul mit integriertem 5V Ausgangsregler via USB Stecker, sind aber noch leistungsfähigere Module denkbar, die aber auch leistungsfähigere Laderegler für z.B 12V Akkus benötigen.</p><p>Die effiziente Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.</p><p>Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen <strong>PV Solar Panel MPPT Laderegler von Sunix</strong> gestartet: </p><p><img src="images_v2/SolarCharger.jpg"></p><p><strong>Modell: SU-SU702  (CMTD 2420) / 10A mit den Maßen: 14,4 x 8,3 x 4,1 cm für 13,99€</strong></p><p>Er hat die interessante Zusatzfunktion neben jeder Eingangsspannung bis 70V und der Batterieausgangsspannung zw. 12-14.3V auch 2 Standard USB Ports anzubieten mit geregelten 5V.<br>Diese würden direkt für den Betrieb der ESP32 Stockwaage herhalten können.</p><p>Die Kennwerte dieses Moduls sind:</p><blockquote>
 <p>Nennspannung : 12V / 24V (Auto-Switch)<br>Max. Lade / Entlade-Strom : 10A<br>Max. Solar-Panel Eingangs-Spannung : =50V<br>Stop-Ladespannung : 14.7V / 29.4V<br>Nieder-Voltage-Wiederherstellung : 12,2 V / 24.4V<br>Nieder- Spannungsschutz : 10.5V / 21.0V<br>USB-Ausgangs-Spannung / Strom : 5V 2A<br>Kein- Lade-Verlust : =10mA<br>Temperatur Kompensation : -3mV / Cell / ° C<br>Betriebs-Temperatur : -20 ° C ~ 60 ° C</p>
 </blockquote><p>Mit folgenden Schutzmassnahmen:</p><ol>
 <li>Überlastschutz</li><li>Kurzschlussschutz</li><li>Blitzschutz</li><li>Unterspannungsschutz</li><li>Überladeschutz</li><li>Verpolschutz</li></ol><p>Mit diesem Laderegler ist es möglich die Batterie-Beladung durch unterschiedliche Stromquellen über Dioden zusammengeführt zu konfigurieren, während ein Verbraucher parallel versorgt wird (können viel Batteriepacks nicht: nur Laden oder nur Liefern)=&gt; PassThru Mode.</p><p>Über 2x BY500 Dioden lassen sich weitere Stromlieferanten am Eingang einpflegen.</p><p>Bei dem angedachten Verbrauchspegel des ESP32 Moduls ist dieser Ansatz aber ein Overkill, da alleine der Eigenverbrauch höher liegt, als der, des zu versorgenden Verbrauchers.</p><h2 id="der-aufbau"><a name="der-aufbau" href="#der-aufbau"></a>Der Aufbau</h2><p>Die Anforderungsliste liest sich gut:</p><ul>
@@ -1314,7 +1314,7 @@ Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
 </tr>
 </tbody>
 </table><h3 id="das-aussengehäuse"><a name="das-aussengehäuse" href="#das-aussengehäuse"></a>Das Aussengehäuse</h3><p>Das Aussengehäuse bestehend aus MBF Platten besteht aus einer Coverhülle und einer Bodenplatte.<br>Auf die Bodenplatte ist die Waagrzellenkonstruktion verschraubt. Die Coverhülle, welche von oben mit dem Wäägemodul verschraubt ist, schwebt quasi frei darüber und ermöglicht so die Gewichtskraft auf die Wäägezelle zu übertragen.<br><img src="images_v2/BoxOutsideView.jpg"></p><p>Hier sieht man schematisch im Querschnitt die Auflagekonstruktion der Wägezelle.</p><p><img src="images_v2/BoxSideView.jpg"></p><p>Der damit verbundene Deckel + Compute Node + Power Module schwebt über dem Bodenelement und liegt samt komplettem Beutengewicht ausschliesslich auf den etwa 16cm2 Fläche der verschraubten Wägezelle auf. Dies erreicht man über 6-8mm starke Zwischenbleche jeweils an der oberen und unteren Verschraubung der Wägezelle, die je mit 4x M10 Senkkopf-Schrauben fixiert ist.</p><p>Steht die i.d.R. 50-70kg schwere Beute auf der Waage schwankt sie recht steif über der Bodenplatte. Dies ist ein Zeichen dafür, dass das Waagzellen Element aktiv die Kraft aufnimmt und nirgends aufliegt.</p><p>In der Rückwand ist das Anschlusspanel + ePaper Display Panel eingearbeitet und sowie die notwendigen Aussenanschlüsse.</p><h4 id="die-bosche-wägezelle"><a name="die-bosche-wägezelle" href="#die-bosche-wägezelle"></a>Die Bosche Wägezelle</h4><p>(Einbau als Single-point Wägezelle)<br>Die Wägezellen von Bosche für Plattformwaagen gibt es in 4- oder 6-pin Ausführung.<br>Beide sind funktionell gleichwertig:</p><p><img src="images_v2/BoscheCell4.jpg"> <img src="images_v2/BoscheCell6.jpg"></p><p>Hier kommt die übliche Wheatstone-Brücke zum Einsatz, die die beste Temperatur-Kompensation bei hoher Messgenauigkeit bietet. Die Temperaturkalibrierung an den Dehnmesstreifen wurde werksseitig schon vorgenommen. Ggfs. bei Temperaturen kleiner -5Grad kann noch eine rechnerische Kompensation softwareseitig überlagert werden und sinnvoll sein.</p><p>Der Einbau gestaltet sich sehr einfach. Einzig die Fixierung der jeweils 4 Schrauben pro Auflagefläche muss sehr stabil und genau erfolgen. Hier setzt der Hebel des gesamten Beutengewichts samt Waagedeckel an.</p><p>Dazu die Auszugsbilder aus der mechanischen Applikations-Beschreibung:</p><p><img src="images_v2/BoscheApplication.jpg"></p><p>sowie die einfache Konstruktion, wie sie hier zum Einsatz kommt:</p><p><img src="images_v2/WeightCell.jpg"></p><p>Die obere und untere Platte zur Kraftübertragung auf die Wägezelle sollte mind. 6-8mm betragen und idealerweise aus Edelstahl. Aus Kostengründen geht aber auch Aluminium. Dann aber besser mit 10mm Stärke. Die Plattenmaße betragen bei mir 18 x 18cm (darf aber auch größer sein).</p><p>Die Distanzscheiben habe ich mit je 4mm gewählt und bestehen aus separaten kleinen Aluscheiben mit dem Maßen 6x6cm inkl. den benötigten 4 Bohrungen für die M12 Schrauben. Ohne die Abstandsscheiben kann die Wägezelle durch das Gewicht nicht verformt werden !<br>Die Bohrungen in der Platte sollten 1mm größer ausfallen als die Schraubenstärke und nach „aussen“ konisch durch einen Phasenschneider erweitert werden. Dadurch kann man die als Senkschrauben ausgelegten 2x4 M6-M8 Schrauben bündig abschliessen. Dies ist nötig um die Gehäuse-Deckel/Boden bündig auf die Platten zur bessern Kraftübertragung anzubringen.</p><p>Die Überlastsicherung besteht aus einer M6 - M8 Gewindebohrung an der untern (oder oberen Platte) und einer Schraube, über die der Arbeitsbereich der Wägezelle eingestellt werden kann. Bei einer 100kg Wäge-Zelle erzeugt man ein Testgewicht von 110kg und man dreht die Schraube solange ein bis sie leicht an der Wägezelle aufstehen. Dadurch wird einer zerstörenden Verformung des Zellenkörpers vorgebeugt (z.B. wenn man sich auf der Beute abstützt bei aufliegendem vollen Honigraum).<br>An einer Seite schaut das 4/6 adrige Kabel heraus, welches zum A/D Wandler HX711 der Compute-Einheit führt.</p><p>Zuletzt wird die Platte durch weitere Gewindebohrungen mit kurzen M12 Schrauben mit dem Gehäusedeckel-/Boden verschraubt.</p><p>Hier nochmal das Lagebild der Wägezelleneinheit mittig zum Gehäusedeckel:</p><p><img src="images_v2/Box_WeightCell.jpg"></p><h4 id="das-anschluss-panel"><a name="das-anschluss-panel" href="#das-anschluss-panel"></a>Das Anschluss Panel</h4><p>Das Gehäuse Panel ist der einzige Anschlussbereich nach Aussen. Daher werden dort wasserfeste Stecker-Kombinationen eingesetzt:</p><ul>
-<li>Micro-USB Buchsen-Anschluss zur Akku ladung + ESP32 FW-Upload</li><li>5 pol. externer OneWire Sensor Connector für den Bienenstock Temp.Sensor</li><li>LEDs für Monitor &amp; Status</li><li>Optional: LAN Anschluss (1GB/s mit POE 48V)</li><li>Power Switch: EIn finaler Power Switch , wollte man die Stockwaage einige Zeit ungenutzt einlagern. Ansonsten bleibt die Akku-Regelung dauerhaft in Betrieb und leert die Battery.</li><li>…Platz für weitere Optionen…</li></ul><p>Als Träger dient eine korrosionsbeständige eloxierte ALU Platte (1mm). An dieser lassen sich die Buchsenlöcher gezielt herausarbeiten; sie trägt aber nicht so stark auf wie eine Holzplatte und kann daher in einen Rahmen mit ausgefrästem Grat eingesetzt werden.</p><p>Es sind 2 LEDs eingebaut, die Betriebszustände der Stromversorgung und die Betriebsaktivität anzigen können. mangels freier GPIO leitungen ist aktuell nur die rote LED angeschlossen.</p><p>Die Aussenansicht des Backpanels + ePaper Panel:<br><img src="images_v2/BackConnectors.jpg"></p><p>Die Innenansichten der Anschlussstecker und der MCU Extension-Box:<br><img src="images_v2/BoxInsideOvw.jpg"></p><h5 id="one-wire-sensoren"><a name="one-wire-sensoren" href="#one-wire-sensoren"></a>One Wire Sensoren</h5><p>One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse-GND, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.</p><p>Durch das OneWire Bus-Protokoll können somit leicht mehrere Sensoren unterschiedlichster Art/Funktion hintereinander, an demselben Anschluss verbunden werden. Bei den ESP32 GPIO Ports sind allerdings nur max. 8 Sensoren in Verbindung mit 3.3V Vcc in Kombination mit abgeschirmtem Telefonleitungen zu empfehlen.<br>Jeder Sensor hat dabei zur Erkennung eine einzigartige 64 Bit unique ID. Verwendbar sind die Sensoren an Spannungen mit 3-5V. Wir verwenden hier 5V.</p><p>Der ESP32 erlaubt mit seinem GPIO Matrix Konzept jeden beliebigen IO-Port zum OneWire Bus-Port zu erklären. Der OneWire Driver wendet das OW-Protokoll, wie vom Hersteller „Dallas“ spezifiziert, dann auf diesen Port an.<br>Die Störanfälligkeit der Messwerte ist gering, dank digitaler Übertragung. Die Datenleitung benötigt dazu allerdings einen Pullup von 4.7k Ohm einmalig (!) von der Daten- auf die 3.3V Leitung (unabhängig von der gewählten Versorgungs-Spannung!).</p><p>Neben den 2 internen Temperatursensoren habe ich über einen 7-poligen Stecker die OW-Busleitungen nach Außen zugänglich gemacht, um weitere externe Sensoren zu ermöglichen.</p><h5 id="der-ds18b20-ow-temperatur-sensor"><a name="der-ds18b20-ow-temperatur-sensor" href="#der-ds18b20-ow-temperatur-sensor"></a>Der DS18B20 OW-Temperatur-Sensor</h5><p>Der DS18B20 OneWire Sensor ist besonders praktisch für das Messen von Temperaturen in Wasser oder feuchten Umgebungen dank wasserdichtem 1,10m langem Kabel und der vergossenen 3 cm langen Metall-Messsonde.<br>Der Temperaturbereich reicht von -55 bis 100 Grad.</p><p>Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit von -10°C bis +85°C) dank einem internem vorkalibriertem 12Bit A/D Wandler und ist somit für unsere Messungen mehr als hinreichend.<br>Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.</p><p><strong>Verfügbare Ausführungen:</strong></p><ul>
+<li>Micro-USB Buchsen-Anschluss zur Akku ladung + ESP32 FW-Upload</li><li>5 pol. externer OneWire Sensor Connector für den Bienenstock Temp.Sensor</li><li>LEDs für Monitor &amp; Status</li><li>Optional: LAN Anschluss (1GB/s mit POE 48V)</li><li>Power Switch: EIn finaler Power Switch , wollte man die Stockwaage einige Zeit ungenutzt einlagern. Ansonsten bleibt die Akku-Regelung dauerhaft in Betrieb und leert die Battery.</li><li>…Platz für weitere Optionen…</li></ul><p>Als Träger dient eine korrosionsbeständige eloxierte ALU Platte (1mm). An dieser lassen sich die Buchsenlöcher gezielt herausarbeiten; sie trägt aber nicht so stark auf wie eine Holzplatte und kann daher in einen Rahmen mit ausgefrästem Grat eingesetzt werden.</p><p>Es sind 2 LEDs eingebaut, die Betriebszustände der Stromversorgung und die Betriebsaktivität anzigen können. mangels freier GPIO leitungen ist aktuell nur die rote LED angeschlossen.</p><p>Die Aussenansicht des Backpanels + ePaper Panel:<br><img src="images_v2/BackConnectors.jpg"></p><p>Die Innenansichten der Anschlussstecker und der MCU Extension-Box:<br><img src="images_v2/BoxInsideOvw.jpg"><br><img src="images_v2/BoxInsideBack.jpg"></p><h5 id="one-wire-sensoren"><a name="one-wire-sensoren" href="#one-wire-sensoren"></a>One Wire Sensoren</h5><p>One-Wire Sensoren werden über 3 pol. Anschlüsse (Masse-GND, Versorgungsspannung Vcc und Daten) parallel miteinander verbunden.</p><p>Durch das OneWire Bus-Protokoll können somit leicht mehrere Sensoren unterschiedlichster Art/Funktion hintereinander, an demselben Anschluss verbunden werden. Bei den ESP32 GPIO Ports sind allerdings nur max. 8 Sensoren in Verbindung mit 3.3V Vcc in Kombination mit abgeschirmtem Telefonleitungen zu empfehlen.<br>Jeder Sensor hat dabei zur Erkennung eine einzigartige 64 Bit unique ID. Verwendbar sind die Sensoren an Spannungen mit 3-5V. Wir verwenden hier 5V.</p><p>Der ESP32 erlaubt mit seinem GPIO Matrix Konzept jeden beliebigen IO-Port zum OneWire Bus-Port zu erklären. Der OneWire Driver wendet das OW-Protokoll, wie vom Hersteller „Dallas“ spezifiziert, dann auf diesen Port an.<br>Die Störanfälligkeit der Messwerte ist gering, dank digitaler Übertragung. Die Datenleitung benötigt dazu allerdings einen Pullup von 4.7k Ohm einmalig (!) von der Daten- auf die 3.3V Leitung (unabhängig von der gewählten Versorgungs-Spannung!).</p><p>Neben den 2 internen Temperatursensoren habe ich über einen 7-poligen Stecker die OW-Busleitungen nach Außen zugänglich gemacht, um weitere externe Sensoren zu ermöglichen.</p><h5 id="der-ds18b20-ow-temperatur-sensor"><a name="der-ds18b20-ow-temperatur-sensor" href="#der-ds18b20-ow-temperatur-sensor"></a>Der DS18B20 OW-Temperatur-Sensor</h5><p>Der DS18B20 OneWire Sensor ist besonders praktisch für das Messen von Temperaturen in Wasser oder feuchten Umgebungen dank wasserdichtem 1,10m langem Kabel und der vergossenen 3 cm langen Metall-Messsonde.<br>Der Temperaturbereich reicht von -55 bis 100 Grad.</p><p>Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit von -10°C bis +85°C) dank einem internem vorkalibriertem 12Bit A/D Wandler und ist somit für unsere Messungen mehr als hinreichend.<br>Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.</p><p><strong>Verfügbare Ausführungen:</strong></p><ul>
 <li>DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang </li><li><p>Kabellänge von etwa 90-110cm lang mit Durchmesser 4mm, unkonfektioniert</p>
 <p>  <strong>Sensor-Anschluss mit 4-adrigem Kabel:</strong></p>
 </li></ul><ol>
@@ -1383,27 +1383,33 @@ lib_deps =
 ;    LMIC-Arduino         ; <span class="hljs-preprocessor">#852 by IBM</span>
 ;    RadioHead              ; <span class="hljs-preprocessor">#124 by Mike McCauley</span>
 ;    Heltec ESP32 Dev-Boards ; <span class="hljs-preprocessor">#6051 by Heltec Automation</span>
-</code></pre><p>Diese Lbraries sollten nach einer Installation z.B. über PlatformIO unter folgendem Pfad mit ‘library Name’_ID aufgeführt sein: C:\Users\”username” \’.platformio’\lib</p><p>Zuletzt müssen eure WLAN credentials in der build_flags Zeile angepasst werden.</p><p>Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern der per upload auf den ESP32 geladen wird.</p><p>Der Dependency Graph könnte wie folgt aussehen:</p><pre><code data-origin="<pre><code>Dependency Graph
+</code></pre><p>Diese Lbraries sollten nach einer Installation z.B. über PlatformIO unter folgendem Pfad mit ‘library Name’_ID aufgeführt sein: C:\Users\”username” \’.platformio’\lib</p><p>Zuletzt müssen eure WLAN credentials in der build_flags Zeile angepasst werden.</p><p>Jetzt müsste der Build durchlaufen und ein firmware.elf File liefern, welches per upload auf den ESP32 geladen wird.</p><p>Die HW Erkennung wird in den ersten Zeilen des Build Laufs angezeigt:</p><pre><code data-origin="<pre><code>CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 1.11.1 &amp;gt; Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+</code></pre>">CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 1.11.1 &gt; Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+</code></pre><p>Der Dependency Graph sollte danach wie folgt aussehen:</p><pre><code data-origin="<pre><code>Dependency Graph
 |-- &amp;lt;GxEPD&amp;gt; 3.0.9
-|   |-- &amp;lt;Adafruit GFX Library&amp;gt; 1.6.1
+|   |-- &amp;lt;Adafruit GFX Library&amp;gt; 1.7.5
 |   |   |-- &amp;lt;SPI&amp;gt; 1.0
 |   |-- &amp;lt;SPI&amp;gt; 1.0
 |-- &amp;lt;DallasTemperature&amp;gt; 3.8.0
 |   |-- &amp;lt;OneWire&amp;gt; 2.3.5
 |-- &amp;lt;RTClib&amp;gt; 1.3.3
 |   |-- &amp;lt;Wire&amp;gt; 1.0.1
-|-- &amp;lt;U8g2&amp;gt; 2.27.2
+|-- &amp;lt;U8g2&amp;gt; 2.27.6
 |   |-- &amp;lt;SPI&amp;gt; 1.0
 |   |-- &amp;lt;Wire&amp;gt; 1.0.1
-|-- &amp;lt;Adafruit GFX Library&amp;gt; 1.6.1
+|-- &amp;lt;Adafruit GFX Library&amp;gt; 1.7.5
 |   |-- &amp;lt;SPI&amp;gt; 1.0
-|-- &amp;lt;SdFat&amp;gt; 1.1.0
+|-- &amp;lt;SdFat&amp;gt; 1.1.1
 |   |-- &amp;lt;SPI&amp;gt; 1.0
 |-- &amp;lt;HX711&amp;gt; 0.7.1
 |-- &amp;lt;LoRa&amp;gt; 0.7.0
 |   |-- &amp;lt;SPI&amp;gt; 1.0
 |-- &amp;lt;OneWire&amp;gt; 2.3.5
-|-- &amp;lt;Adafruit ADS1X15&amp;gt; 1.0.1
+|-- &amp;lt;Adafruit ADS1X15&amp;gt; 1.0.3
 |   |-- &amp;lt;Wire&amp;gt; 1.0.1
 |-- &amp;lt;FS&amp;gt; 1.0
 |-- &amp;lt;SD(esp32)&amp;gt; 1.0.5
@@ -1421,25 +1427,25 @@ lib_deps =
 |   |-- &amp;lt;FS&amp;gt; 1.0
 </code></pre>">Dependency Graph
 |-- &lt;GxEPD&gt; 3.0.9
-|   |-- &lt;Adafruit GFX Library&gt; 1.6.1
+|   |-- &lt;Adafruit GFX Library&gt; 1.7.5
 |   |   |-- &lt;SPI&gt; 1.0
 |   |-- &lt;SPI&gt; 1.0
 |-- &lt;DallasTemperature&gt; 3.8.0
 |   |-- &lt;OneWire&gt; 2.3.5
 |-- &lt;RTClib&gt; 1.3.3
 |   |-- &lt;Wire&gt; 1.0.1
-|-- &lt;U8g2&gt; 2.27.2
+|-- &lt;U8g2&gt; 2.27.6
 |   |-- &lt;SPI&gt; 1.0
 |   |-- &lt;Wire&gt; 1.0.1
-|-- &lt;Adafruit GFX Library&gt; 1.6.1
+|-- &lt;Adafruit GFX Library&gt; 1.7.5
 |   |-- &lt;SPI&gt; 1.0
-|-- &lt;SdFat&gt; 1.1.0
+|-- &lt;SdFat&gt; 1.1.1
 |   |-- &lt;SPI&gt; 1.0
 |-- &lt;HX711&gt; 0.7.1
 |-- &lt;LoRa&gt; 0.7.0
 |   |-- &lt;SPI&gt; 1.0
 |-- &lt;OneWire&gt; 2.3.5
-|-- &lt;Adafruit ADS1X15&gt; 1.0.1
+|-- &lt;Adafruit ADS1X15&gt; 1.0.3
 |   |-- &lt;Wire&gt; 1.0.1
 |-- &lt;FS&gt; 1.0
 |-- &lt;SD(esp32)&gt; 1.0.5
@@ -1455,125 +1461,319 @@ lib_deps =
 |-- &lt;WebServer&gt; 1.0
 |   |-- &lt;WiFi&gt; 1.0
 |   |-- &lt;FS&gt; 1.0
-</code></pre><h3 id="die-programm-struktur"><a name="die-programm-struktur" href="#die-programm-struktur"></a>Die Programm Struktur</h3><p>Um sich in den Source schneller zurecht zu finden, hier in paar Übersichten:</p><p>Die Client HW Modul Struktur in SW Module übertragen:<br><img src="images_v2/SWModuleSheet.jpg"></p><p>Die dazugehörige Klassen-Struktur:<br><img src="images_v2/SWClassView.jpg"></p><p>Zuletzt der Funktions-Programmflussplan der Loop() Schleife:<br><img src="images_v2/SWMainFlow.jpg"></p><h4 id="setup-phase"><a name="setup-phase" href="#setup-phase"></a>Setup Phase</h4><p>Mögliche Debugmeldungen habe ich über ein simples Macro parametrisiert:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define    BHLOG(m)    if(lflags &amp;amp; m)    // macro for Log evaluation
+</code></pre><p>Nach der Compilierung wird das FW Image via COMx Port hochgeladen.<br>Mein akt. ESP32 meldet sich wie folgt:</p><pre><code data-origin="<pre><code>Chip is ESP32D0WDQ5 (revision 1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+</code></pre>">Chip is ESP32D0WDQ5 (revision 1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+</code></pre><h3 id="die-client-programm-struktur"><a name="die-client-programm-struktur" href="#die-client-programm-struktur"></a>Die Client Programm Struktur</h3><p>Um sich in den Source schneller zurecht zu finden, hier in paar Übersichten:</p><p>Die Client HW Modul Struktur in SW Module übertragen:<br><img src="images_v2/SWModuleSheet.jpg"></p><p>Zuletzt der Funktions-Programmflussplan der Loop() Schleife:<br><img src="images_v2/SWMainFlow.jpg"></p><h4 id="setup-phase"><a name="setup-phase" href="#setup-phase"></a>Setup Phase</h4><p>Mögliche Debugmeldungen habe ich über ein simples Macro parametrisiert:</p><pre class="cpp hljs"><code class="cpp" data-origin="<pre><code class=&quot;cpp&quot;>#define    BHLOG(m)    if(lflags &amp;amp; m)    // macro for Log evaluation
 uint16_t    lflags;      // BeeIoT log flag field; for flags enter beeiot.h
 
 void setup(){
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;
-lflags = LOGBH + LOGLORA + LOGLAN;
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
+lflags = LOGBH + LOGLORAW + LOGLAN;
 </code></pre>"><span class="hljs-preprocessor">#<span class="hljs-keyword">define</span>    BHLOG(m)    <span class="hljs-keyword">if</span>(lflags &amp; m)    <span class="hljs-comment">// macro for Log evaluation</span></span>
 <span class="hljs-keyword">uint16_t</span>    lflags;      <span class="hljs-comment">// BeeIoT log flag field; for flags enter beeiot.h</span>
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">setup</span><span class="hljs-params">()</span></span>{
-<span class="hljs-comment">// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORA;</span>
-lflags = LOGBH + LOGLORA + LOGLAN;
-</code></pre><p>Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.</p><p>Mit den obigen 3 Schalter: LOGBH + LOGLORA + LOGLAN<br>könnte der Konsol-Output wie folgt aussehen:</p><pre><code data-origin="<pre><code>&amp;gt;*******************************&amp;lt;
+<span class="hljs-comment">// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;</span>
+lflags = LOGBH + LOGLORAW + LOGLAN;
+</code></pre><p>Darüber kann man nach Belieben verschiedene Funktionsbereiche in den verbose mode schalten und analysieren, so dass der Log-Output nicht von unnötigen Meldungen überschwemmt wird.</p><p>Mit den obigen 3 Schalter: LOGBH + LOGLORAW + LOGLAN erhält man den Loglevel code: 1 + 16 + 512 = 529<br>Bei allen Log Flags gesetzt (65535), könnte der Konsol-Output wie folgt aussehen:</p><pre><code data-origin="<pre><code>&amp;gt;*******************************&amp;lt;
 &amp;gt; BeeIoT - BeeHive Weight Scale &amp;lt;
-&amp;gt;       by R.Esser 10/2019      &amp;lt;
+&amp;gt;       by R.Esser (c) 10/2019  &amp;lt;
 &amp;gt;*******************************&amp;lt;
-LogLevel: 273
-Main: Start Sensor Setup ...
-  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+LogLevel: 65535
+Start Sensor Setup Phase ...
+  Setup: ESP32 DevKitC Chip ID = DCxxxxxxxxxxxx
   Setup: Init runtime config settings
   Setup: Init RTC Module DS3231
-  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: Temperature: 22.25 °C, SqarePin switched off
   RTC: STart RTC Test Output ...
-2019/12/13 (Friday) 15:15:52
- since midnight 1/1/1970 = 1576250152s = 18243d
- now + 7d + 30s: 2019/12/21 3:45:58
-
+2020/2/18 (Tuesday) 16:36:48
+ since midnight 1/1/1970 = 1582043808s = 18310d
+ now + 7d + 30s: 2020/2/26 5:6:54
+  RTC: Get RTC Time: 2020-02-18T16:36:48 - 2020-02-18 - 16:36:48
+2020-02-18T16:36:48
   Setup: SPI Devices ...
+  MSPI: VSPI port for 3 devices
+  MSPI: SPI-Init of SD card...
+  MSPI: SD Card mounted
+  MSPI: SPI-Init: ePaper EPD part1 ...
   Setup: HX711 Weight Cell
+  HX711: init Weight cell ADC port
+  HX711: Offset(raw): 297570 - Unit(raw): 44000 per kg
   Setup: ADS11x5
+  ADS: Init I2C-port incl. Alert line
   Setup: Wifi in Station Mode
-  Setup: WIFI port in station mode
+  WiFi: Init port in station mode
   Wifi: Scan started...done
-  Wifi: networks found: 3
-        1: MyNet (-45)*
-        2: YOURNet (-45)*
-        3: WLAN-Foreign (-91)*
-  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  Wifi: networks found: 1
+        1: MyNet (-66)*
+  WIFI: Connect.ed with DomNet - IP: 192.168.0.02
   WIFI: MDNS-Responder gestartet.
   Setup: Init NTP Client
-Friday, December 13 2019 15:15:56
+Tuesday, February 18 2020 16:36:51
   Setup: Get new Date &amp;amp; Time:
-  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
-  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP2RTC: set new RTC Time: 2020-02-18T16:36:51
+  RTC: Get RTC Time: 2020-02-18T16:36:51 - 2020-02-18 - 16:36:51
   NTP: BHDB updated by RTC time
   Setup: SD Card
+  SD: SD Card Type: SDSC - Size: 1938MB
+  SD: File /logdata.txt found
   Setup: LoRa SPI device &amp;amp; Base layer
-    Setup: Start Lora SPI Init
-    LoRa: init succeeded.
-  Setup: ePaper + show start frame
+  LoRa: Cfg Lora Modem V1.0.1 (868100000 Mhz)
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5,
+           LPreamble:12, SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRa: assign ISR to DIO0  - default: GWID:0x99, NodeID:0x80
+  BeeIoTJoin: Start Joining for a GW
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[255]
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12   SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRaSend: TXData &amp;lt;PkgLen= 29By&amp;gt;
+  sendMessage: Start TX
+  LoRaSend(0x80&amp;gt;0x99)[255](cmd=0) &amp;lt;FrmLen: 20By&amp;gt;
+  BeeIotJoin: JOIN-Retry: #0 (Overall retries: 0)
+  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:ooooo
+onReceive: got Pkg: len 0x11
+MSGfield at 0x3FFC13B4:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 8099 FF06 08                              &amp;lt;.....&amp;gt;
+onReceive: RX(0x99&amp;gt;0x80)[255]:(cmd=6: CONFIG) DataLen=8 Bytes
+  BeeIotJoin: RX pkg received: CONFIG
+  BeeIotJoin: RX Queue Status: SrvIdx:0, IsrIdx:1, new PkgID:255, RXFlag:1
+  BeeIoTParse[255]: cmd= CONFIG -&amp;gt; switch to new channel cfg.
+  BeeIoTParseCfg: New Configuration: BIoT-Interval: 600sec., Verbose:0, ChIndex:0, NDID:0x01, GwID:0x08, MsgCnt:255
+  Lora: Joined! New: GWID:0x08, NodeID:0x01, msgcount:255
+    DEVEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+   JOINEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+    DEVKEY: 0x-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx
+  BeeIoTSleep()
+  Lora: Sleep Mode
   Setup: OneWire Bus setup
-  Setup: Setup done
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 0 devices.
+    Device 0: Int-Address: 28201F8E1Fxxxxxx  DS18B20
+    Device 1: BH. Address: 28AAE46D18xxxxxx  DS18B20
+    Device 2: Ext.Address: 28AACA6A18xxxxxx  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00    (-&amp;gt; ext. Sensor nicht angeschlossen)
+  OWBus: Ext.Temp.Sensor (°C): 20.62
+  Setup: ePaper + show start frame
+  EPD: Start ePaper Display
+  EPD: print Welcome Display
+  EPD: Draw BitmapWaveshare
+Setup Phase done
+
+=&amp;gt; here starts the sensor read loop forever
 </code></pre>">&gt;*******************************&lt;
 &gt; BeeIoT - BeeHive Weight Scale &lt;
-&gt;       by R.Esser 10/2019      &lt;
+&gt;       by R.Esser (c) 10/2019  &lt;
 &gt;*******************************&lt;
-LogLevel: 273
-Main: Start Sensor Setup ...
-  Setup: ESP32 DevKitC Chip ID = DK8AD5386624
+LogLevel: 65535
+Start Sensor Setup Phase ...
+  Setup: ESP32 DevKitC Chip ID = DCxxxxxxxxxxxx
   Setup: Init runtime config settings
   Setup: Init RTC Module DS3231
-  RTC: Temperature: 25.00 °C, SqarePin switched off
+  RTC: Temperature: 22.25 °C, SqarePin switched off
   RTC: STart RTC Test Output ...
-2019/12/13 (Friday) 15:15:52
- since midnight 1/1/1970 = 1576250152s = 18243d
- now + 7d + 30s: 2019/12/21 3:45:58
-
+2020/2/18 (Tuesday) 16:36:48
+ since midnight 1/1/1970 = 1582043808s = 18310d
+ now + 7d + 30s: 2020/2/26 5:6:54
+  RTC: Get RTC Time: 2020-02-18T16:36:48 - 2020-02-18 - 16:36:48
+2020-02-18T16:36:48
   Setup: SPI Devices ...
+  MSPI: VSPI port for 3 devices
+  MSPI: SPI-Init of SD card...
+  MSPI: SD Card mounted
+  MSPI: SPI-Init: ePaper EPD part1 ...
   Setup: HX711 Weight Cell
+  HX711: init Weight cell ADC port
+  HX711: Offset(raw): 297570 - Unit(raw): 44000 per kg
   Setup: ADS11x5
+  ADS: Init I2C-port incl. Alert line
   Setup: Wifi in Station Mode
-  Setup: WIFI port in station mode
+  WiFi: Init port in station mode
   Wifi: Scan started...done
-  Wifi: networks found: 3
-        1: MyNet (-45)*
-        2: YOURNet (-45)*
-        3: WLAN-Foreign (-91)*
-  WIFI: Connect.ed with MyNet - IP: 192.168.10.99
+  Wifi: networks found: 1
+        1: MyNet (-66)*
+  WIFI: Connect.ed with DomNet - IP: 192.168.0.02
   WIFI: MDNS-Responder gestartet.
   Setup: Init NTP Client
-Friday, December 13 2019 15:15:56
+Tuesday, February 18 2020 16:36:51
   Setup: Get new Date &amp; Time:
-  NTP2RTC: set new RTC Time: 2019-12-13T15:15:56
-  RTC: Get RTC Time: 2019-12-13T15:15:56 - 2019-12-13 - 15:15:56
+  NTP2RTC: set new RTC Time: 2020-02-18T16:36:51
+  RTC: Get RTC Time: 2020-02-18T16:36:51 - 2020-02-18 - 16:36:51
   NTP: BHDB updated by RTC time
   Setup: SD Card
+  SD: SD Card Type: SDSC - Size: 1938MB
+  SD: File /logdata.txt found
   Setup: LoRa SPI device &amp; Base layer
-    Setup: Start Lora SPI Init
-    LoRa: init succeeded.
-  Setup: ePaper + show start frame
+  LoRa: Cfg Lora Modem V1.0.1 (868100000 Mhz)
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5,
+           LPreamble:12, SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRa: assign ISR to DIO0  - default: GWID:0x99, NodeID:0x80
+  BeeIoTJoin: Start Joining for a GW
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[255]
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12   SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  LoRaSend: TXData &lt;PkgLen= 29By&gt;
+  sendMessage: Start TX
+  LoRaSend(0x80&gt;0x99)[255](cmd=0) &lt;FrmLen: 20By&gt;
+  BeeIotJoin: JOIN-Retry: #0 (Overall retries: 0)
+  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:ooooo
+onReceive: got Pkg: len 0x11
+MSGfield at 0x3FFC13B4:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 8099 FF06 08                              &lt;.....&gt;
+onReceive: RX(0x99&gt;0x80)[255]:(cmd=6: CONFIG) DataLen=8 Bytes
+  BeeIotJoin: RX pkg received: CONFIG
+  BeeIotJoin: RX Queue Status: SrvIdx:0, IsrIdx:1, new PkgID:255, RXFlag:1
+  BeeIoTParse[255]: cmd= CONFIG -&gt; switch to new channel cfg.
+  BeeIoTParseCfg: New Configuration: BIoT-Interval: 600sec., Verbose:0, ChIndex:0, NDID:0x01, GwID:0x08, MsgCnt:255
+  Lora: Joined! New: GWID:0x08, NodeID:0x01, msgcount:255
+    DEVEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+   JOINEUI: 0x-xx-xx-xx-xx-xx-xx-xx-xx
+    DEVKEY: 0x-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx
+  BeeIoTSleep()
+  Lora: Sleep Mode
   Setup: OneWire Bus setup
-  Setup: Setup done
-</code></pre><p>Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wi si voneinander abhängig sind und wo möglich nach protokoll Klassen sortiert.<br>So liegen die SPI devices und I2C devices je intereinander, weil sie teilweise diesselbe Vorbereitung benötigen.<br>Optional resourcen (WiFi + NTP alsauch das ePaper enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Widereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.</p><p>Die Logik der Setup-Bereiche:</p><ol>
-<li>Initiaisierung des Log Flag fields</li><li>Preset des Monitoring LED IO ports auf Output mode =&gt; sonst sieht man nichts…</li><li>Aktivierung des Seriellen Ports für Debugmeldungen</li><li>Reentry detection aus dem Sleep Mode oder nach Stromausfall (not supported yet)<br> a. -&gt; Widerherstellung der Runtime Parameter aus dem residenten Bereich (RTC-EEPROM, oder ESP32-preferences-Area)<br> b. Check Grund des WakeUp Calls -&gt; ggfs. Massnahme7Aktion starten (not supported yet)</li><li>Hole interne unique BoardID aus der ESP32 Fuse-Area</li><li>Init_Cfg() Initiaisierung aller Strukturen zur Sensordatenbehandlung (interne Mini-DB: bhdb)</li><li>Init RTC Module</li><li>Init SPI port</li><li>Init HX711 ADC for Weight cell access</li><li>Init ADS1115 for Battery monitoring</li><li>Discover WiFi and NTP client service<br>a. Wenn NTP verfügbar -&gt; read new time =&gt; init RTC Modul<br>b. If no NTP: Read time from RTC Module only<br>c. Start Web-HTTP service to offer config page for firsttime init settings -&gt; wait till done </li><li>Init SD Card access -&gt; create new logfile if not detected</li><li>Init Lora Module for sending -&gt; join to gateway (if any in range)</li><li>Init ePaper Moduel -&gt; Show startframe of BeeIoT</li><li>init OneWire Bus -&gt; detect expected 3 temperatur sensors</li></ol><p>Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.<br>ToDo: =&gt; Ein Fehler im Programm oder in der Library ?</p><p>Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen, denn in der Pampa habe ich keinen WiFi-AP nötig. Für den Heimbetrieb ist es wiederum  effektiver als LoRaWan.</p><blockquote>
-<p>Hinweis:<br>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setupphase (also bis zum Welcome Screen) den Serial Monitor der IDE, wird das Programm “mitten drin” neugestartet, aber eine WiFi Connection schlägt dann meist fehl. In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect Anforderungen übel…</p>
-</blockquote><h3 id="loop-phase"><a name="loop-phase" href="#loop-phase"></a>Loop Phase</h3><p>Wie bei Arduino’s üblich, wird nach dem Ende der Setupphase automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:</p><p>Am Serial Monitor zeigt sie sich so:</p><pre><code data-origin="<pre><code>&amp;gt;&amp;gt;****************************************&amp;lt;
-&amp;gt; Main: Start BeeIoT Weight Scale
-&amp;gt; Loop: 0  (Laps: 0)
-&amp;gt;****************************************&amp;lt;
-  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 0 devices.
+    Device 0: Int-Address: 28201F8E1Fxxxxxx  DS18B20
+    Device 1: BH. Address: 28AAE46D18xxxxxx  DS18B20
+    Device 2: Ext.Address: 28AACA6A18xxxxxx  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00    (-&gt; ext. Sensor nicht angeschlossen)
+  OWBus: Ext.Temp.Sensor (°C): 20.62
+  Setup: ePaper + show start frame
+  EPD: Start ePaper Display
+  EPD: print Welcome Display
+  EPD: Draw BitmapWaveshare
+Setup Phase done
+
+=&gt; here starts the sensor read loop forever
+</code></pre><p>Im Kern durchläuft man in der Setup Phase alle Setup Routinen der einzelnen Komponenten in der Reihenfolge, wie sie voneinander abhängig sind und wo möglich nach Protokoll Klassen sortiert.<br>So liegen die SPI devices und I2C devices hintereinander, zwecks gleicher Vorbereitung. Optionale Resourcen (WiFi + NTP), als auch das ePaper, enthalten einen Error bypass, so dass der Logger auch ohne deren Initialisierung anläuft. Das ist bei einem Stromausfall wichtig, da nach Wiedereinschaltung das Programm ja munter darauflos-startet und das Logging samt Übetragung fortsetzen möchte.</p><p>Die Logik der Setup-Bereiche:</p><ol>
+<li>Initiaisierung des Log Flag fields</li><li>Preset des Monitoring LED IO ports auf Output mode =&gt; sonst sieht man nichts…</li><li>Aktivierung des Seriellen Ports für Debugmeldungen</li><li>Reentry detection aus dem Sleep Mode oder nach Stromausfall (not supported yet)<br> a. -&gt; Widerherstellung der Runtime Parameter aus dem residenten Bereich (RTC-EEPROM, oder ESP32-preferences-Area)<br> b. Check Grund des WakeUp Calls -&gt; ggfs. Massnahme7Aktion starten (not supported yet)</li><li>Hole interne unique BoardID aus der ESP32 Fuse-Area</li><li>Init_Cfg() Initiaisierung aller Strukturen zur Sensordatenbehandlung (interne Mini-DB: bhdb)</li><li>Init RTC Module</li><li>Init SPI port</li><li>Init HX711 ADC for Weight cell access</li><li>Init ADS1115 for Battery monitoring</li><li>Discover WiFi and NTP client service<br>a. Wenn NTP verfügbar -&gt; read new time =&gt; init RTC Modul<br>b. If no NTP: Read time from RTC Module only<br>c. Optional: Start Wifi in HotSpot Mode and start a Web-HTTP service to offer a config page for firsttime init settings<br>-&gt; wait till done </li><li>Init SD Card access -&gt; create new logfile if not detected</li><li>Init Lora Module for sending -&gt; join to gateway (OTAA) (if any in range)</li><li>Init ePaper Moduel -&gt; Show startframe of BeeIoT</li><li>init OneWire Bus -&gt; detect expected 3 temperatur sensors</li></ol><p>Seltsamerweise musste ich die Initialisierung des OneWireBus APIs an das Ende setzen, sonst werden die Temperatursensoren nur beim ersten mal richtig ausgelesen, und danach immer mit denselben Werten.<br>ToDo: =&gt; Ein Fehler im Programm oder in der Library ?</p><p>Die Aktionen über WiFi ( Scan + NTP + WebPage) würde ich im Normalbetrieb bei funktionierendem LoRaWAN wahrscheinlich ganz abschalten müssen, um den erwarteten Stromverbauch zu erreichen. Denn in der “Pampa” habe ich keinen WiFi-AP nötig, und die Config settings könnte ich auch statisch auf die SD Card uploaden. Für den Heimbetrieb ist es wiederum effektiver als LoRaWan.</p><blockquote>
+<p>Hinweis:<br>Es kommt vor, dass nach dem Upload das Programm schon erwartungsgemäß losläuft und der Welcome Screen gezeigt wird. In der Regel wir das WiFi auch konnektiert. Starten man in der Setup-Phase (also bis zum Welcome Screen) den Serial Monitor der IDE zu früh, wird das Programm mitten im Wifi-Setup neugestartet, aber eine WiFi Connection schlägt dann meistens fehl.<br>In dem Fall ist ein Stop (^C) und Restart des seriellen Monitors nötig um auch den WiFi Betrieb zu erhalten. Möglicherweise nimmt der WiFi Router zeitlich zu eng liegende Reconnect- Anforderungen übel…</p>
+</blockquote><h3 id="loop-phase"><a name="loop-phase" href="#loop-phase"></a>Loop Phase</h3><p>Wie bei Arduino’s üblich, wird nach dem Ende der Setupphase automatisch die Loop Routine angesprungen; diese dann aber in einer Endlosschleife:</p><p>Am Serial Monitor zeigt sie sich so:</p><pre><code data-origin="<pre><code>&amp;gt;*******************************************&amp;lt;
+&amp;gt; Start next BeeIoT Weight Scale loop
+&amp;gt; Loop# 0  (Laps: 0, BHDB[0])
+&amp;gt;*******************************************&amp;lt;
+  RTC: Get RTC Time: 2020-02-18T16:37:36 - 2020-02-18 - 16:37:36
   NTP: BHDB updated by RTC time
-  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-    LoRa[0x77]: Sent #0:&amp;lt;0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-&amp;gt; LoRaWAN package to 0x88 - 75 bytes -&amp;gt; done
-  MAIN: Enter Sleep/Wait Mode for 360 sec.
-</code></pre>">&gt;&gt;****************************************&lt;
-&gt; Main: Start BeeIoT Weight Scale
-&gt; Loop: 0  (Laps: 0)
-&gt;****************************************&lt;
-  RTC: Get RTC Time: 2019-12-13T15:16:12 - 2019-12-13 - 15:16:12
+  Loop: Weight(raw) : -234817 - Weight(unit): -5.337 kg (bei offenem Deckel ohne Gewicht)
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 3 devices.
+    Device 0: Int-Address: 28201F8E1F130185  DS18B20
+    Device 1: BH. Address: 28AAE46D1813022F  DS18B20
+    Device 2: Ext.Address: 28AACA6A181302F3  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00
+  OWBus: Ext.Temp.Sensor (°C): 20.56
+  Loop: ADSPort(0-3):
+  ADS: Single-ended read from AIN0: 3.28V -
+  ADS: Single-ended read from AIN1: 4.99V -
+  ADS: Single-ended read from AIN2: 3.95V (78%) -
+  ADS: Single-ended read from AIN3: 2.54V
+  Loop[0]: 2020-02-18 16:37:36,-5.34,20.56,20.69,-127.00,22.25,3.28,5.09,4.99,3.95,78#0 o.k.
+  SD: Appending to file: /logdata.txt...Done
+  LoRaLog: BeeIoTStatus = 6
+  BeeIoTWakeUp()
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12  SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[0]
+  LoRaSend: TXData &amp;lt;PkgLen= 92By&amp;gt;
+  sendMessage: Start TX
+  LoRaSend(0x01&amp;gt;0x08)[0](cmd=2) &amp;lt;FrmLen: 83By&amp;gt;
+MSGfield at 0x3FFC1334:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=92Byte
+  +   0: 0801 0002 5332 3032  302D 3032 2D31 3820  &amp;lt;....S2020-02-18 &amp;gt;
+  +  10: 3136 3A33 373A 3336  2C2D 352E 3334 2C32  &amp;lt;16:37:36,-5.34,2&amp;gt;
+  +  20: 302E 3536 2C32 302E  3639 2C2D 3132 372E  &amp;lt;0.56,20.69,-127.&amp;gt;
+  +  30: 3030 2C32 322E 3235  2C33 2E32 382C 352E  &amp;lt;00,22.25,3.28,5.&amp;gt;
+  +  40: 3039 2C34 2E39 392C  332E 3935 2C37 3823  &amp;lt;09,4.99,3.95,78#&amp;gt;
+  +  50: 3020 6F2E 6B2E 0D00  xxxx xxxx            &amp;lt;0 o.k.......&amp;gt;
+  LoRaLog: wait for incoming ACK in RXCont mode (Retry: #0)...
+onReceive: got Pkg: len 0x09
+MSGfield at 0x3FFC1434:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 0108 0005 00                              &amp;lt;.....&amp;gt;
+onReceive: RX(0x08&amp;gt;0x01)[0]:(cmd=5: ACK) DataLen=0 Bytes
+  LoRaLog: wait for add. RX1 Pkg. (RXCont):oooooooooo None.
+
+LoraLog: Enter Sleep Mode
+  BeeIoTSleep()
+  Lora: Sleep Mode
+  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:1, IsrIdx:1, NextMsgID:257, RXFlag:0
+  Loop: Show Sensor Data on EPD
+  Loop: Enter Sleep/Wait Mode for 600 sec.
+</code></pre>">&gt;*******************************************&lt;
+&gt; Start next BeeIoT Weight Scale loop
+&gt; Loop# 0  (Laps: 0, BHDB[0])
+&gt;*******************************************&lt;
+  RTC: Get RTC Time: 2020-02-18T16:37:36 - 2020-02-18 - 16:37:36
   NTP: BHDB updated by RTC time
-  MAIN: 0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-    LoRa[0x77]: Sent #0:&lt;0,2019-12-13,15:16:12,2.03,21.19,21.12,20.88,25.00,3.28,5.08,4.52,3.67,49
-&gt; LoRaWAN package to 0x88 - 75 bytes -&gt; done
-  MAIN: Enter Sleep/Wait Mode for 360 sec.
-</code></pre><p>Die Logik-Ablauf für die loop() Routine:</p><ol>
+  Loop: Weight(raw) : -234817 - Weight(unit): -5.337 kg (bei offenem Deckel ohne Gewicht)
+  OWBus: Init OneWire Bus
+  OWBus: Locating devices...Found 3 devices.
+    Device 0: Int-Address: 28201F8E1F130185  DS18B20
+    Device 1: BH. Address: 28AAE46D1813022F  DS18B20
+    Device 2: Ext.Address: 28AACA6A181302F3  DS18B20
+  OWBus: Current Sensor Resolution: 0
+  OWBUS: set sensor resolution: 0
+  OWBus: Requesting temperatures...
+  OWBus: Int.Temp.Sensor (°C): 20.69
+  OWBus: Bee.Temp.Sensor (°C): -127.00
+  OWBus: Ext.Temp.Sensor (°C): 20.56
+  Loop: ADSPort(0-3):
+  ADS: Single-ended read from AIN0: 3.28V -
+  ADS: Single-ended read from AIN1: 4.99V -
+  ADS: Single-ended read from AIN2: 3.95V (78%) -
+  ADS: Single-ended read from AIN3: 2.54V
+  Loop[0]: 2020-02-18 16:37:36,-5.34,20.56,20.69,-127.00,22.25,3.28,5.09,4.99,3.95,78#0 o.k.
+  SD: Appending to file: /logdata.txt...Done
+  LoRaLog: BeeIoTStatus = 6
+  BeeIoTWakeUp()
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LPreamble:12  SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
+  BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[0]
+  LoRaSend: TXData &lt;PkgLen= 92By&gt;
+  sendMessage: Start TX
+  LoRaSend(0x01&gt;0x08)[0](cmd=2) &lt;FrmLen: 83By&gt;
+MSGfield at 0x3FFC1334:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=92Byte
+  +   0: 0801 0002 5332 3032  302D 3032 2D31 3820  &lt;....S2020-02-18 &gt;
+  +  10: 3136 3A33 373A 3336  2C2D 352E 3334 2C32  &lt;16:37:36,-5.34,2&gt;
+  +  20: 302E 3536 2C32 302E  3639 2C2D 3132 372E  &lt;0.56,20.69,-127.&gt;
+  +  30: 3030 2C32 322E 3235  2C33 2E32 382C 352E  &lt;00,22.25,3.28,5.&gt;
+  +  40: 3039 2C34 2E39 392C  332E 3935 2C37 3823  &lt;09,4.99,3.95,78#&gt;
+  +  50: 3020 6F2E 6B2E 0D00  xxxx xxxx            &lt;0 o.k.......&gt;
+  LoRaLog: wait for incoming ACK in RXCont mode (Retry: #0)...
+onReceive: got Pkg: len 0x09
+MSGfield at 0x3FFC1434:
+Address:  0 1  2 3  4 5  6 7   8 9  A B  C D  E F  lenght=5Byte
+  +   0: 0108 0005 00                              &lt;.....&gt;
+onReceive: RX(0x08&gt;0x01)[0]:(cmd=5: ACK) DataLen=0 Bytes
+  LoRaLog: wait for add. RX1 Pkg. (RXCont):oooooooooo None.
+
+LoraLog: Enter Sleep Mode
+  BeeIoTSleep()
+  Lora: Sleep Mode
+  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:1, IsrIdx:1, NextMsgID:257, RXFlag:0
+  Loop: Show Sensor Data on EPD
+  Loop: Enter Sleep/Wait Mode for 600 sec.
+</code></pre><p>Der Logik-Ablauf für die loop() Routine:</p><ol>
 <li>Get round robin index of new sensor data objekt for (BHDB-Idx)</li><li>Check: Any Web request reached -&gt; take special action (not supported yet</li><li>read out time &amp; date from  RTC Module</li><li>Read new sensor data<br> a. HX711: Weigtcell value -&gt; send message if neg. weight jump within 30 min. -&gt; swarm alarm<br> b. OW-Bus: all temperature sensors<br> c. ADS1115: Power Source values -&gt; ToDo: shutdown if Battery is empty</li><li>Log Sensor Data to SDCard</li><li>Log Sensor Data via LoRa WAN / WiFi</li><li>Update epaper Display by new Sensor + Power data</li><li>Start DeepSleep mode (or just delay loop with blinking LED for test purpose) for 10Min.<br>10 back to loop()</li></ol><h3 id="kalibrierung-der-waage"><a name="kalibrierung-der-waage" href="#kalibrierung-der-waage"></a>Kalibrierung der Waage</h3><p>Nach dem Aufbau und erstem Einschalten wird die Waage noch wilde Werte anzeigen, weil der 0 kg Bezug  nicht passend ist.</p><p>Im Kapitel: <strong><a href="#ad-wandler-hx711">AD Wandler HX711</a></strong><br>haben wir folgende Richtwerte errechnet:</p><ul>
 <li>Der ADC HX711 liefert den Wert: <strong>44</strong>/Gramm.</li><li>Als 1Kg-Scale-Divider sollte man mit dem Wert: <strong>44000/kg</strong> starten.</li></ul><p>Nun gilt es noch den scale_Offset Wert zu ermitteln, wie in der header datei HX711Scale.h definiert.</p><p>Dazu dient folgende Vorgehensweise:</p><ol>
-<li>In der Datei: HX711Scale.h den Wert scale_Offset rücksetzen: <strong>#define scale_Offset 0</strong></li><li>In Setup() Routine des main.cpp das LogFlag: um LOGHX711 ergänzen, und das Programm neu bauen und starten</li><li>Ohne jedes Gewicht auf der Waage misst HX711 nun via serial Monitor den adäquaten Wert für das aktuelle Stockwaagen-Deckelgewicht (z.B. 243000 entspricht bei 44000/kg =&gt; 5.5kg).<br>-&gt; HX711: Weight(raw) : 24300 - Weight(unit): 5.523 kg</li><li>In der Datei: HX711Scale.h den Wert scale_Offset nun mit diesem ersten Raw-Wert setzen.</li><li>Programm neu bauen und starten</li><li>Jetzt sollten ca. 0.000kg angezeigt werden und im ser.Monitor der Offsetwert ausgegeben werden<br>Ideal: HX711: Weight(raw) : 0 - Weight(unit): -0.000 kg</li><li>Nun ein bekanntes hohes (&gt;50kg) Referenzgewicht auf die Waage stellen.</li><li>Den HX711-Messwert im ser. Monitor durch das bekannte Gewicht teilen. Das Ergebnis sollte in der Nähe von 44000 liegen, was dem rechnerischen kg Wert entspricht.</li><li>Diesen “neuen” Wert in HX711Scale als scale_DIVIDER Wert (statt 44000) festlegen</li><li>In der setup() Routine das LogFlag wieder rücksetzen, Programm neu bauen und starten</li></ol><p>Nun sollte ohne jedes Gewicht weiterhin 0,0kg angezeigt werden, und das rerenzgewicht mit dem richtigen kg-Wert.<br>Die Waage ist nun kalibriert und einsatzbereit</p><p>Als Refernzgewicht eignet sich auch ein gut bekanntes eigenes Körpergewicht:<br>-&gt; Aufsteigen, und Deltawert durch bekanntes Körpergewicht als REFKG angeben.</p><p><strong>Vorteil</strong>: Der Messfehler ist um die Anzahl Kg des Körpergewichts kleiner als nur bei einem kleinen Refernzgewicht.</p><p>Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.</p><p>Soweit der Aufbau der Binenstockwaage. Wenn euch noch weitere Angaben für einen erfolgreichen Aufbau fehlen, lasst es mich wissen. Ansonsten viel Spass dabei…</p><h1 id="hier-noch-ien-paar-addendums:"><a name="hier-noch-ien-paar-addendums:" href="#hier-noch-ien-paar-addendums:"></a>Hier noch ien paar Addendums:</h1><h3 id="optional:-webui-daten-service"><a name="optional:-webui-daten-service" href="#optional:-webui-daten-service"></a>Optional: WebUI Daten Service</h3><p>Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.<br>Dort werden sie über die Zeit in einer CSV Datei zeilenweise aufgesammelt und es entsteht der Bedarf, diese als Funktions-Diagramme darzustellen.<br>Will man also diese Messergebnisse als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:</p><p>Apache 2 Webserver installieren:</p><ol>
+<li>In der Datei: HX711Scale.h den Wert scale_Offset rücksetzen: <strong>#define scale_Offset 0</strong></li><li>In Setup() Routine des main.cpp das LogFlag: um LOGHX711 ergänzen, und das Programm neu bauen und starten</li><li>Ohne jedes Gewicht auf der Waage misst HX711 nun via serial Monitor den adäquaten Wert für das aktuelle Stockwaagen-Deckelgewicht (z.B. 243000 entspricht bei 44000/kg =&gt; 5.5kg).<br>-&gt; HX711: Weight(raw) : 24300 - Weight(unit): 5.523 kg</li><li>In der Datei: HX711Scale.h den Wert scale_Offset nun mit diesem ersten Raw-Wert setzen.</li><li>Programm neu bauen und starten</li><li>Jetzt sollten ca. 0.000kg angezeigt werden und im ser.Monitor der Offsetwert ausgegeben werden<br>Ideal: HX711: Weight(raw) : 0 - Weight(unit): -0.000 kg</li><li>Nun ein bekanntes hohes (&gt;50kg) Referenzgewicht auf die Waage stellen.</li><li>Den HX711-Messwert im ser. Monitor durch das bekannte Gewicht teilen. Das Ergebnis sollte in der Nähe von 44000 liegen, was dem rechnerischen kg Wert entspricht.</li><li>Diesen “neuen” Wert in HX711Scale als scale_DIVIDER Wert (statt 44000) festlegen</li><li>In der setup() Routine das LogFlag wieder rücksetzen, Programm neu bauen und starten</li></ol><p>Nun sollte ohne jedes Gewicht weiterhin 0,0kg angezeigt werden, und das rerenzgewicht mit dem richtigen kg-Wert.<br>Die Waage ist nun kalibriert und einsatzbereit</p><p>Als Refernzgewicht eignet sich auch ein gut bekanntes eigenes Körpergewicht:<br>-&gt; Aufsteigen, und Deltawert durch bekanntes Körpergewicht als REFKG angeben.</p><p><strong>Vorteil</strong>: Der Messfehler ist um die Anzahl Kg des Körpergewichts kleiner als nur bei einem kleinen Refernzgewicht.</p><p>Da man massgeblich nur an den relativen Messwerten z.B. zur Diagrammdarstellung interessiert ist, ist derartige Kalibrierung nur einmal bei der Erstaufstellung nötig. Danach reicht die relative Aussage als Messkurve.</p><p>Soweit der Aufbau der Binenstockwaage. Wenn euch noch weitere Angaben für einen erfolgreichen Aufbau fehlen, lasst es mich wissen. Ansonsten viel Spass dabei…</p><h1 id="hier-noch-ein-paar-anhänge:"><a name="hier-noch-ein-paar-anhänge:" href="#hier-noch-ein-paar-anhänge:"></a>Hier noch ein paar Anhänge:</h1><h3 id="optional:-webui-daten-service"><a name="optional:-webui-daten-service" href="#optional:-webui-daten-service"></a>Optional: WebUI Daten Service</h3><p>Die Daten werden vom Sensorclient zum RPi-Gateway z.B. über LoRaWAN verschlüsselt übermittelt.<br>Dort werden sie über die Zeit in einer CSV Datei zeilenweise aufgesammelt und es entsteht der Bedarf, diese als Funktions-Diagramme darzustellen.<br>Will man also diese Messergebnisse als Webpage darstellen (z.B. via Dygraph library) bietet sich als HTTP Service standardmäßig der Apache 2 Webserver an:</p><p>Apache 2 Webserver installieren:</p><ol>
 <li>sudo apt-get update</li><li>sudo apt-get install apache2</li><li>Test: <a href="http://localhost:80">http://localhost:80</a></li><li>WebHome: /var/www/html     (Apache 2 default)</li><li>Server Configuration: /etc/apache2/ports.conf</li></ol><p>ToDo: “Hier folgt nun die Beschreibung der Webpage Datei: index.html zur darstellung der Datendiagramme mittels Dygraph-library”</p><p>Beipiel:  <strong><a href="http://randolphesser.de/imkerei/index.html">http://randolphesser.de/imkerei/index.html</a></strong><br>=&gt; Menü: Bienenstockwaage </p><h2 id="webui-todo---liste"><a name="webui-todo---liste" href="#webui-todo---liste"></a>WebUI ToDo - Liste</h2><h3 id="ideen-liste"><a name="ideen-liste" href="#ideen-liste"></a>Ideen-Liste</h3><p>für eine WebUI Erweiterung (Farbig markierte Vorschläge sind in v1.3 schon umgesetzt):</p><ul>
 <li><mark>Header</mark><ul>
 <li>Standortangaben zur Beute: -&gt; Headline<ul>
@@ -1610,7 +1810,7 @@ Friday, December 13 2019 15:15:56
 </li><li>BeeCounter ?</li><li><mark>7.2Ah Blei Gel Akku (Panasonic)</mark></li></ul><h2 id="todo:-optional-hw-module"><a name="todo:-optional-hw-module" href="#todo:-optional-hw-module"></a>ToDo: Optional HW Module</h2><p>Wettervorhersage tool: <code>sudo apt-get install weather-util</code><br>Flughafen München „Franz Josef Strauß“ (IATA-Code: MUC, ICAO-Code: EDDM)<br>Test with <code>Weather eddm</code></p><p>Daten-Transfer und Web Anbindung per GSM Module</p><p>Bienen-Stock Aussen-Kamera mit IR: Zur Kontrolle des Volkssitz im Winter</p><p>Weitere interessante Messwerte</p><ul>
 <li>Luftfeuchtigkeit (Grundkonfiguration)</li><li><mark>Außentemperatur (Grundkonfiguration)</mark></li><li><mark>Temperatur innerhalb der Bienenstöcke</mark></li><li>Niederschlagsmenge</li><li>Luftdruck</li><li>Windstärke</li><li>Einbruchalarm</li><li>==Spannungsüberwachung der eingebauten 3.7V Batterie</li><li><mark>Spannungsüberwachung der externen 12V Batterie</mark></li></ul><p>Farbig markierte Vorschläge sind in der aktuellen Programmversion v2.0 bereits enthalten.</p><h3 id="nutzung-einer-sim-karte"><a name="nutzung-einer-sim-karte" href="#nutzung-einer-sim-karte"></a>Nutzung einer SIM-Karte</h3><p>Aus: <a href="http://www.imker-stockwaage.de/hardware/simkarte"><strong>Imker-Stockwaage.de</strong></a><br>Siehe auch unter: <em><a href="http://www.kasmocom.de">http://www.kasmocom.de</a></em><br>    und suchen dort unter: <a href="http://www.kasmocom.de/?p=2137"><strong>M2M PrePaid-SIM</strong></a><br>Ansonsten kann jede Prepaid-SIM verwendet werden.<br>Es gibt auch kostenlose SIM´s mit kostenlosem Datenvolumen.<br>Für die BeeIoT Lösung ist eine NB-LTE(IoT)SIM nötig.</p><h2 id="quellen/links"><a name="quellen/links" href="#quellen/links"></a>Quellen/Links</h2><h3 id="marktübersicht-professioneller-bienenstockwaagen"><a name="marktübersicht-professioneller-bienenstockwaagen" href="#marktübersicht-professioneller-bienenstockwaagen"></a>Marktübersicht professioneller Bienenstockwaagen</h3><p>Professionelle Anbieter digitaler Bienenstockwaagen in der EU:</p><ul>
 <li>BeeWatch (Biene &amp; Natur GmbH)</li><li>BeeWise (aus Frankreich, Hersteller nicht erkenntlich)</li><li>Capaz Bienenwaage (CAPAZ GmbH)</li><li>Funk Bienenstockwaage (WE GRO Engineering)</li><li>GSM-Monitor der Bienenstöcke (Vorlon Technology ltd.)</li><li>Kaptármérleg (auf Ungarisch)</li><li>Livelco (Livelco sp. z o.o.)</li><li>Optilog-b (Borntraeger GmbH)</li><li>Penso Bienenstockwägesystem (Emsystech Engineering)</li><li>SMS Cebelar (aktuell nur auf Slowenisch; verwendet die JShip-Plattform und ist daher nur für den Einsatz in geschützten Umgebungen zu empfehlen)</li><li>Wolf Waagen (Wilhelm Wolf e.K.)</li><li>XLOG bee (Micro El)</li></ul><p>Weitere Bienenstockwaage-Projekte im Eigenbau (Hobby- und Open Source-Projekte):</p><ul>
-<li>Beelogger (Arduino)</li><li>Fighting with Technology: Beehive scale build details (auf Englisch; Arduino)</li><li>Hackerbee.com (auf Englisch, work in progress)</li><li>Imker-stockwaage.de (Arduino)</li><li>Mois-Blog Bienenwaage (Arduino)</li><li>OpenBeeLab (auf Französisch)<br>.<br>.</li></ul><p>Das war es soweit erstmal von meiner Seite.</p><p>Viel Spass damit und einen Imkerlichen Gruss<br>wünscht Euch </p><p>Randolph Esser<br>(mail(a)RandolphEsser.de)</p><p><a href="http://www.RandolphEsser.de/Imkerei"><strong>www.RandolphEsser.de</strong></a><br>==&gt; Imkerei</p>
+<li>Beelogger (Arduino)</li><li>Fighting with Technology: Beehive scale build details (auf Englisch; Arduino)</li><li>Hackerbee.com (auf Englisch, work in progress)</li><li>Imker-stockwaage.de (Arduino)</li><li>Mois-Blog Bienenwaage (Arduino)</li><li>OpenBeeLab (auf Französisch)<br>.<br>.</li></ul><p>Das war es soweit erstmal von meiner Seite.</p><p>Viel Spass damit und einen Imkerlichen Gruss<br>wünscht Euch</p><p>Randolph Esser<br>(mail(a)RandolphEsser.de)</p><p><a href="http://www.RandolphEsser.de/Imkerei"><strong>www.RandolphEsser.de</strong></a><br>==&gt; Imkerei</p>
 
 <footer style="position:fixed; font-size:.8em; text-align:right; bottom:0px; margin-left:-25px; height:20px; width:100%;">generated by <a href="http://pad.haroopress.com" target="_blank">haroopad</a></footer>
 </body>
