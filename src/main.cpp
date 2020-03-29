@@ -244,7 +244,6 @@ int rc;		// generic return code variable
   }else{
     BHLOG(LOGLAN) rtc_test();
     getRTCtime();
-    Serial.println(bhdb.formattedDate);
   }
 
 

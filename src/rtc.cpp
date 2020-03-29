@@ -48,6 +48,7 @@ int   isrtc =0;      // =1 if RTC time discovered
 extern uint16_t	lflags;      // BeeIoT log flag field
 
 RTC_DS3231 rtc;     // Create RTC Instance
+void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour,  uint8_t min, uint8_t sec);
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
  
@@ -113,14 +114,33 @@ struct tm tinfo;      // new time source: from NTP
 
   // Convert timeinfo to DateTime Struct:
   // DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t min = 0, uint8_t sec = 0);
-  rtc.adjust(DateTime(2000+tinfo.tm_year-100, tinfo.tm_mon+1, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec));
-
-  DateTime dt = rtc.now();  // reread new time
-  BHLOG(LOGLAN) Serial.print("  NTP2RTC: set new RTC Time: ");
-  BHLOG(LOGLAN) Serial.println(String(dt.timestamp(DateTime::TIMESTAMP_FULL)));
+  setRTCtime(tinfo.tm_year-100, tinfo.tm_mon+1, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
 
   return(isrtc);
 } // end of ntp2rtc()
+
+
+//*******************************************************************
+// setRTCtime(): set current time&date of RTC
+// INPUT:
+//    yearoff 2 digits (offset to year 2000)
+//    month 1-12
+//    day   1-31
+//    hour  0-23
+//    min   0-59
+//    sec   0-59
+//*******************************************************************
+void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t min = 0, uint8_t sec = 0){
+  if(isrtc){
+    // DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t min = 0, uint8_t sec = 0);
+    rtc.adjust(DateTime(2000 + yearoff, month, day, hour, min, sec));
+
+    DateTime dt = rtc.now();  // reread new time
+    BHLOG(LOGLAN) Serial.print("  SetRTC: ");
+    BHLOG(LOGLAN) Serial.println(String(dt.timestamp(DateTime::TIMESTAMP_FULL)));
+  }
+}
+
 
 //*******************************************************************
 // getRTCtime(): read out current timeostamp and store it to global BHDB

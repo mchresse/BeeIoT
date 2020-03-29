@@ -73,6 +73,7 @@ RTC_DATA_ATTR struct LoRaRadioCfg_t{
 } LoRaCfg;
 
 RTC_DATA_ATTR byte BeeIoTStatus;	// Current Status of BeeIoT WAN protocol (not OPMode !) -> beelora.h
+extern void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec);
 
 extern int report_interval; // interval between BIoT Reports
 
@@ -894,10 +895,13 @@ int rc;
     LoRaCfg.msgCount  = pcfg->cfg.nonce;
 
 // update next Modem Config settings (gets activated at next LoRa Pckg Send via configLoraModem() call)
-    SetChannelCfg(pcfg->cfg.channelidx);  // initialize LoraCfg field by new cfg
+    SetChannelCfg(pcfg->cfg.channelidx);      // initialize LoraCfg field by new cfg
 
     report_interval = pcfg->cfg.freqsensor*60; // min -> sec. frequency of sensor reports via LoRa
-//    lflags = pcfg->cfg.verbose;             // get verbose value for BHLOG macro; needs to be int
+    lflags = (uint16_t) pcfg->cfg.verbose;             // get verbose value for BHLOG macro; needs to be 2 byte
+
+    // yearoff = offset to 2000
+    setRTCtime(pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     Serial.printf("  BeeIoTParseCfg: New Configuration: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
       report_interval, pcfg->cfg.verbose, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
@@ -907,7 +911,7 @@ int rc;
 }
 //******************************************************************************
 // SetChannelCfg() 
-// initialize LoraCfg-struct by Chnnel cfg settings by given Channel cfg id
+// initialize LoraCfg-struct by Channel cfg settings by given Channel cfg id
 // Input:
 //  channelidx   index on channelconfig table
 // Return: rc
@@ -943,11 +947,10 @@ return(0);
 //****************************************************************************************
 int sendMessage(beeiotpkg_t * TXData, int async) {
   BHLOG(LOGLORAR) Serial.printf("  LoRaSend: TXData <PkgLen= %dBy>\n", TXData->hd.frmlen+BIoT_HDRLEN+BIoT_MICLEN);
-//  configLoraModem();  // setup channel for next send action
 
   // start package creation:
-  if(!LoRa.beginPacket(0))            // reset FIFO ptr.; in explicit header Mode
-    return(0);                         // still transmitting -> have to come back later
+  if(!LoRa.beginPacket(0))                // reset FIFO ptr.; in explicit header Mode
+    return(0);                            // still transmitting -> have to come back later
 
   
 // Serial.flush(); // send all Dbg msg up to here...

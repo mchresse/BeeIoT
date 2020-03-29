@@ -65,14 +65,14 @@ typedef unsigned char bw_t;
 #define MAX_PAYLOAD_LENGTH 0x80 // length of LoRa Pkg in IHDMODE=0: BEEIOT_HDRLEN..0xFF 
 
 // BeeIoTWan Pkg Header and Flow control definitions
-#define BIoT_HDRLEN	5	// current BeeIoT-WAN Package headerLen
+#define BIoT_HDRLEN		5	// current BeeIoT-WAN Package headerLen
 #define BIoT_DLEN		MAX_PAYLOAD_LENGTH-BIoT_HDRLEN
 #define BIoT_MICLEN     4	// length of NsMIC field
 #define BIoT_FRAMELEN	BIoT_DLEN-BIoT_MICLEN	// length of BIoT App-Frame (encoded by AppKey) - MIC
 #define	MSGRESWAIT		500	// scan each 0.5 seconds the message status in a waitloop
 #define MAXRXACKWAIT	10	// # of Wait loops of MSGRESWAIT
 #define MSGMAXRETRY		5	// Do it max. n times again
-#define RXACKGRACETIME  100 // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
+#define RXACKGRACETIME  10  // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
 #define MSGRX1DELAY		500	// [ms] wait for start of RX1 window
 #define WAITRX1PKG		3	// [sec] till RX1 window is closed
 
@@ -174,15 +174,24 @@ typedef struct {
 
 typedef struct {
 	// device descriptor
+	u2_t	verbose;		// =0..0xffff verbose flags for debugging
 	byte	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
 	byte	gwid;			// LoRa Pkg target GWID of serving gateway for Status reports
 	byte	vmajor;			// major version of used/comitted BeeIoTWAN protocol
 	byte	vminor;			// minor version of used/comitted BeeIoTWAN protocol
 	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
-	byte	verbose;		// =0..0xff verbose flags for debugging
 	// LoRa Modem settings
 	byte	channelidx;		// channelidx of channeltable_t	txchntab[MAX_CHANNELS]
 	byte	nonce;			// pkg counter init value
+	byte	reserved;		// fill byte for word boundary
+	
+	// RTC DATETIME input format: YYoffs-MM-DD-HH-MM-SS
+	byte	yearoff;		// offset to 2000
+	byte	month;			// 1-12
+	byte	day;			// 1-31
+	byte	hour;			// 0-23
+	byte	min; 			// 0-59
+	byte	sec;			// 0-59
 } devcfg_t;
 
 typedef struct {

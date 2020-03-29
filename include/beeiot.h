@@ -198,7 +198,7 @@ typedef struct {				// data elements of one log line entry
 } datrow;
 
 #define datasetsize	4			// max. # of dynamic dataset buffer: each for "looptime" seconds
-#define LENFDATE 	21
+#define LENFDATE 	21			// length of ISO8601 TimeSTamp (BIoTWan.h)
 #define LENDATE		11
 #define LENTIME		9
 #define LENIPADDR	16
