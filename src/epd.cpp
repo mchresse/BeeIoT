@@ -1,5 +1,5 @@
 //*******************************************************************
-// epd.cpp  
+// epd.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -9,7 +9,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -32,11 +32,14 @@
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
-#include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
+
+// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
+// #define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
+#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
+
 #include <GxIO/GxIO_SPI/GxIO_SPI.cpp>
 #include <GxIO/GxIO.cpp>
 
-#define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
 
 // #include "BitmapGraphics.h"
 // #include "BitmapExamples.h"
@@ -85,7 +88,7 @@ if(!reentry){
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
     display.setCursor(0, 0);
-    display.setRotation(45);    // print in horizontal format
+    display.setRotation(1);    // 1 + 3: print in horizontal format
 
     display.setFont(&FreeMonoBold24pt7b);
     display.setCursor(0, 2*24);
@@ -93,27 +96,27 @@ if(!reentry){
     display.setFont(&FreeMonoBold12pt7b);
     display.println("     by R.Esser");
     display.setFont(&FreeMonoBold9pt7b);
-    display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);    
+    display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
     display.update();    //refresh display by buffer content
 
-    BHLOG(LOGEPD) delay(5000);
+    BHLOG(LOGEPD) delay(3000);
     BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
-    BHLOG(LOGEPD) display.setRotation(2);
+    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
     BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
     BHLOG(LOGEPD) display.update();
-  }  
+  }
 }
-#endif
 
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
   // EPD_KEY1 => GPIO00 == Boot Button
-  // EPD_KEY2 => EN     == Reset Button 
+  // EPD_KEY2 => EN     == Reset Button
   // Key3 reused by BEE_DIO2 -> defined there
-  // pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3 
+  // pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3
 	SetonKey(1, onKey1);
 	SetonKey(2, onKey2);
 	SetonKey(3, onKey3);
 	SetonKey(4, onKey4);
+#endif
 
   return isepd;
 }
@@ -198,21 +201,21 @@ void showdata(int sampleID){
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);
   display.setCursor(0, 0);
-  display.setRotation(45);    // print in horizontal format
+  display.setRotation(1);    // 1 + 3: print in horizontal format
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
   display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
 
   display.setFont(&FreeMonoBold9pt7b);
-  display.println();  
+  display.println();
 
 //  display.setTextColor(GxEPD_RED);
   display.printf("%s %s", bhdb.date, bhdb.time);
-  
+
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold12pt7b);
-  display.println();  
+  display.println();
 
   display.print(" Gewicht:  ");
   display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
@@ -239,7 +242,7 @@ void showdata(int sampleID){
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Status : ");
-  display.print(beeiot_StatusString[BeeIoTStatus]);  
+  display.print(beeiot_StatusString[BeeIoTStatus]);
 
 //  display.setTextColor(GxEPD_RED);
 //  display.print(HOSTNAME);
@@ -516,7 +519,7 @@ void showPartialUpdate(float data){
   String dataString = String(data,1);
   // const char* name = "FreeSansBold24pt7b";
   const GFXfont* f = &FreeSansBold24pt7b;
-  
+
   uint16_t box_x = 60;
   uint16_t box_y = 60;
   uint16_t box_w = 90;
@@ -530,7 +533,7 @@ void showPartialUpdate(float data){
   Serial.print("  Loop: Clear Screen and update partial");
   display.fillRect(box_x, box_y, box_w, box_h, GxEPD_WHITE);
   display.setCursor(box_x, cursor_y+38);
-  display.print(dataString); 
+  display.print(dataString);
   display.updateWindow(box_x, box_y, box_w, box_h, true);
 }
 

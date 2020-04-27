@@ -1,5 +1,5 @@
 //*******************************************************************
-// multiSPI.cpp  
+// multiSPI.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -10,7 +10,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -44,7 +44,8 @@
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
-#include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
+// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
+#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
 
@@ -61,7 +62,8 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 
 // ePaper IO-SPI Object: arbitrary selection of DC + RST + BUSY
 // for defaults: C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
-GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RST); // (SPIclass, EPD_CS, DC, RST, backlight=0) 
+// With defined WROVERB switch: EPD_BUSY = 39 !!!
+GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RST, EPD_BUSY); // (SPIclass, EPD_CS, DC, RST, backlight=0)
 GxEPD_Class display(io, EPD_RST, EPD_BUSY);  // (io-class GxGDEW027C44, RST, BUSY)
 
 // #define SPISPEED    2000000  // SPI speed: 2MHz
@@ -105,8 +107,10 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 // Preset SPI dev: EPD Display Module
     pinMode(EPD_RST, OUTPUT);
     digitalWrite(EPD_RST, HIGH);
-    pinMode(EPD_BUSY, INPUT_PULLUP);
- 
+    pinMode(EPD_DC, OUTPUT);
+    digitalWrite(EPD_DC, HIGH);
+    pinMode(EPD_BUSY, INPUT);
+
     #ifdef SD_CONFIG
     BHLOG(LOGSPI) Serial.print("  MSPI: SPI-Init of SD card...");
     if (!SD.begin(SD_CS)){
@@ -122,7 +126,7 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 		display.init();   // enable diagnostic output on Serial
 		// display class does not provide any feedback if dev. is available
 		// so we assume its there...
-		isepd = 1;    
+		isepd = 1;
     #endif
 
     return (issdcard);   // SD SPI port is initialized

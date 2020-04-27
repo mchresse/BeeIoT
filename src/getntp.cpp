@@ -1,5 +1,5 @@
 //*******************************************************************
-// getntp.cpp  
+// getntp.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -11,7 +11,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -97,7 +97,7 @@ isntp = 0;
 // 1. check for RTC: obtain RTC time and update BHDB
 // 2. check for NTP source -> obtain NTP time and update BHDB
 //  Return
-//     0: update RTC time to BHDB 
+//     0: update RTC time to BHDB
 //    -1: NTP access failed
 //    -2: RTC & NTP failed -> no update done
 //*******************************************************************
@@ -118,17 +118,17 @@ int getTimeStamp() {
 		sprintf(bhdb.time,      "HH:MM:SS");
 		return(-2);               // we give up
 	}
-	
+
 	// alternatively we search for NTP server via Wifi
 	if(!getLocalTime(&timeinfo)){
       BHLOG(LOGLAN) Serial.println("  NTP: Failed to obtain NTP time");
-      isntp = 0;				// remember NTP access failed
-      return(-1);             	// no RTC nor NTP Time at all, we give up.
-    }
- 
+      isntp = 0;				      // remember NTP access failed
+      return(-1);             // no RTC nor NTP Time at all, we give up.
+  }
+
 // For NTP: We need to extract date and time from timeinfo (struct tm)
 // The formattedDate should have the following format: 2018-05-28T16:00:13Z
-// sprintf(tmstring, "%4i\%2i\%2iT%2i:%2i:%2iZ", 
+// sprintf(tmstring, "%4i\%2i\%2iT%2i:%2i:%2iZ",
 //                    1900+timeinfo.tm_year,
 //                    timeinfo.tm_mon,
 //                    timeinfo.tm_mday,
@@ -145,7 +145,7 @@ int getTimeStamp() {
   strncpy(bhdb.date, tmstring, LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.print(bhdb.date);
- 
+
   // Extract time
   strftime(tmstring, 30, "%H:%M:%S", &timeinfo);
   strncpy(bhdb.time, tmstring, LENTIME);

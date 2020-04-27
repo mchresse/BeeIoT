@@ -1,5 +1,5 @@
 //*******************************************************************
-// BeeIoT - Main Header file  
+// BeeIoT - Main Header file
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -9,17 +9,17 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 //
 // This Module contains code derived from
-// - The "espressif/arduino-esp32/preferences" library, 
+// - The "espressif/arduino-esp32/preferences" library,
 //   distributed under the Apache License, Version 2.0
-// - MQTT Library distributed under the MIT-License: 
+// - MQTT Library distributed under the MIT-License:
 //   https://opensource.org/licenses/mit-license.php
-// - 
+// -
 //
 //
 //*******************************************************************
@@ -27,12 +27,13 @@
 //*******************************************************************
 // For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
+
 #include <Arduino.h>
 #include <stdio.h>
 #include "sys/types.h"
 #include <iostream>
 #include <string>
-// #include <esp_log.h> 
+// #include <esp_log.h>
 // from Espressif Systems IDF: https://github.com/espressif/esp-idf/tree/71b4768df8091a6e6d6ad3b5c2f09a058f271348/components/log
 
 #include "sdkconfig.h"   // generated from Arduino IDE
@@ -53,11 +54,12 @@
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
-#include <GxGDEW027C44/GxGDEW027C44.h>  // 2.7" b/w/r
+// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
+#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
 #include "BitmapWaveShare.h"            // from WaveShare -> FreeWare
 
 // FreeFonts from Adafruit_GFX          // from adafruit / Adafruit-GFX-Library  (BSD license)
-#include <Fonts/FreeMonoBold9pt7b.h>    
+#include <Fonts/FreeMonoBold9pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
 //#include <Fonts/FreeMonoBold18pt7b.h>
 //#include <Fonts/FreeMonoBold24pt7b.h>
@@ -95,7 +97,7 @@
 // Global data object declarations
 //************************************
 
-#define LOOPTIME    600		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    60		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   60		// RTC sleep time in seconds
 #define SLEEPMODE	  1 		// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
 							            // =3 ModemSleep Mode; =4 Active Wait Loop
@@ -104,29 +106,16 @@
 bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
 RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
 								// =3 ModemSleep Mode; =4 Active Wait Loop
-RTC_DATA_ATTR int bootCount = 0;        // Deep Sleep Boot Counter 
-
+RTC_DATA_ATTR int bootCount = 0;        // Deep Sleep Boot Counter
 
 // Define deep sleep options
 uint64_t uS_TO_S_FACTOR = 1000000;  	// Conversion factor for micro seconds to seconds
 int TIME_TO_SLEEP	= SLEEPTIME;	// RTC sleep in seconds
 
 // Central Database of all measured values and runtime parameters
-RTC_DATA_ATTR dataset		bhdb;
+RTC_DATA_ATTR dataset		    bhdb;
 RTC_DATA_ATTR unsigned int	lflags;               // BeeIoT log flag field
 Preferences preferences;        // we must generate this object of the preference library
-
-// construct the instance attMQTTClient of class MQTTClient
-MQTTClient attMQTTClient = MQTTClient();
-byte MQTTClient_Connected;
-byte CounterForMQTT;
-
-// 8 configuration values max managed by webpage
-#define CONFIGSETS    8
-String ConfigName[CONFIGSETS];     // name of the configuration value
-String ConfigValue[CONFIGSETS];    // the value itself (String)
-int    ConfigStatus[CONFIGSETS];   // status of the value    0 = not set    1 = valid   -1 = not valid
-int    ConfigType[CONFIGSETS];     // type of the value    0 = not set    1 = String (textbox)   2 = Byte (slider)
 
 extern int iswifi;              // =1 WIFI flag o.k.
 extern int isntp;               // =1 bhdb has latst timestamp
@@ -140,17 +129,29 @@ extern HX711        scale;      // managed in HX711Scale module
 extern i2c_config_t conf;       // ESP IDF I2C port configuration object
 extern RTC_DS3231   rtc;        // Create RTC Instance
 
-// construct the object attTCPClient of class TCPClient
-TCPClient attTCPClient = TCPClient();
-
-
-extern String WebRequestHostAddress;     // global variable used to store Server IP-Address of HTTP-Request
-extern byte   RouterNetworkDeviceState;
-
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
 RTC_DATA_ATTR int  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
 char LoRaBuffer[256];			// buffer for LoRa Packages
+
+// construct the object attTCPClient of class TCPClient
+TCPClient attTCPClient = TCPClient();
+
+
+// construct the instance attMQTTClient of class MQTTClient -> not used yet
+MQTTClient attMQTTClient = MQTTClient();
+byte MQTTClient_Connected;
+byte CounterForMQTT;
+
+// 8 configuration values max managed by webpage  -> not used yet
+#define CONFIGSETS    8
+String ConfigName[CONFIGSETS];     // name of the configuration value
+String ConfigValue[CONFIGSETS];    // the value itself (String)
+int    ConfigStatus[CONFIGSETS];   // status of the value    0 = not set    1 = valid   -1 = not valid
+int    ConfigType[CONFIGSETS];     // type of the value    0 = not set    1 = String (textbox)   2 = Byte (slider)
+
+extern String WebRequestHostAddress;     // global variable used to store Server IP-Address of HTTP-Request
+extern byte   RouterNetworkDeviceState;
 
 //************************************
 // Global function declarations
@@ -165,7 +166,35 @@ esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
 
+// for test purpose only incase of HW incompatibility WROOM <-> Wrover ESP32 types
+void wiretest(){
+  int gpio = 36;
+  int twait = 1000;
 
+  Serial.printf(" GPIO OUT: %i: ", gpio);
+  for (int i=0; i<10000; i++){
+    pinMode(gpio,   OUTPUT);
+    digitalWrite(gpio, LOW);
+    delay(twait);
+    digitalWrite(gpio, HIGH);
+    delay(twait);
+    Serial.printf(".");
+  }
+  Serial.printf("\n");
+
+  Serial.printf(" GPIO IN: %i: ", gpio);
+  pinMode(gpio,  INPUT);
+  for (int i=0; i<20; i++){
+    int dio = digitalRead(gpio);
+    delay(twait/2);
+    if(dio)
+      Serial.printf("1");
+    else
+      Serial.printf("0");
+  }
+  Serial.printf("   -> Done! \n");
+  while(1);
+}
 
 //*******************************************************************
 // BeeIoT Setup Routine
@@ -174,44 +203,48 @@ void BeeIoTSleep(void);
 void setup() {
 int rc;		// generic return code variable
   // put your setup code here, to run once:
-	pinMode(LED_RED,   OUTPUT); 
+	pinMode(LED_RED,   OUTPUT);
 	digitalWrite(LED_RED, LOW);     // signal Setup Phase
 	delay(500); //delay nicht entfernen wg sleep mode !
 
+  // If Ser. Diagnostic Port connected
   while(!Serial);                 // wait to connect to computer
   Serial.begin(115200);           // enable Ser. Monitor Baud rate
   delay(1000);                    // wait for console opening
 
+ //  wiretest();                // for HW incompatibility tests og GPIOs
+
 //***************************************************************
   //Print the wakeup reason for ESP32
-  BHLOG(LOGBH)Serial.printf("Evaluate Wakeup reason - BootCnt: %i - Intervall %i\n", bootCount, report_interval);  
+  BHLOG(LOGBH)Serial.printf("Evaluate Wakeup reason - BootCnt: %i - Intervall %i\n", bootCount, report_interval);
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
 //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
   		if(rc == ESP_SLEEP_WAKEUP_TIMER){
 			// increment WakeUp boot counter and check if loop wait time reached -> if not: sleep again
-			if(++bootCount < (report_interval/TIME_TO_SLEEP)){
-				// Start deep sleep again
+			if(++bootCount < (report_interval/TIME_TO_SLEEP)){  // needed in case looptime exceed std. sleep time
+				// Start deep sleep again -> split in chunks of sleep windows
 // if deep sleep time == report_interval no boot counter needed:
 //				prepare_sleep_mode(ReEntry, report_interval);
 			}
 		}else if(rc == ESP_SLEEP_WAKEUP_GPIO){
 			// GPIO shortcuts sleep wait loop: Just continue with shortcut setup phase
   			BHLOG(LOGBH)Serial.printf("Main: Sleep Wakup by GPIO (%i)\n", rc);
-  		} 
-	} else {	
+  		}
+	} else {
 	  ReEntry = 0;	// reset was pressed
 	}
 
-  	// ReEntry mode was defined at start of sleep mode already	
+  // ReEntry mode was defined at start of sleep mode already
 	// wakeup by Reset -> start initial setup code and reset counter anyway
 	bootCount = 0;
 
 //***************************************************************
-// lflags = 65535;   // Define Log level (search for Log values in beeiot.h)
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 	if(!ReEntry) {
+    // Define Log level (search for Log values in beeiot.h)
+    // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 		lflags = LOGBH + LOGLORAW + LOGLORAR;
+    lflags = 65535;
 
 		Serial.println();
 		Serial.println(">***********************************<");
@@ -220,7 +253,7 @@ int rc;		// generic return code variable
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
-		
+
 		BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
 		//***************************************************************
 		// get Board Chip ID (WiFI MAC)
@@ -234,11 +267,11 @@ int rc;		// generic return code variable
 // Preset BeeIoT runtime config values
   BHLOG(LOGBH) Serial.println("  Setup: Init runtime config settings");
   InitConfig(ReEntry);
-  
+
 //***************************************************************
-  BHLOG(LOGBH) Serial.print("  Setup: Init RTC Module DS3231 ");
+  BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
   if (!setup_rtc(ReEntry)){
-    BHLOG(LOGBH) Serial.printf("\n  Setup: RTC setup failed\n");
+    BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
     // enter exit code here, if needed (monitoring is hard without correct timestamp)
     // isrtc should be 0 here; hopefully NTP can help out later on
   }else{
@@ -249,8 +282,8 @@ int rc;		// generic return code variable
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices ...");
-  if (!setup_spi_VSPI(ReEntry)){ 
-    BHLOG(LOGBH) Serial.println("  Setup: SPI setup failed");
+  if (!setup_spi_VSPI(ReEntry)){
+    BHLOG(LOGBH) Serial.println("  Setup: SPI SD setup failed");
     // enter here exit code, if needed
   }
 
@@ -277,7 +310,7 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("  Setup: No WIFI no NTP-Time.");
     // probably we are LOOPTIME ahead ?!
     // recalc bhdb "timestamp+LOOPTIME"  here
-  }else{  // WIFI connected  
+  }else{  // WIFI connected
     if (!setup_ntp(ReEntry)){
       BHLOG(LOGBH) Serial.println("  Setup: NTP setup failed");
       isntp = 0;
@@ -290,7 +323,7 @@ int rc;		// generic return code variable
 
 // start the webserver to listen for request of clients (in LAN or own ESP32 network)
 //    BHLOG(LOGBH) Serial.println("  Setup: Start Webserver");
-//    Webserver_Start();    
+//    Webserver_Start();
   }
 
   getTimeStamp();  // get curr. time either by NTP or RTC -> update bhdb
@@ -331,7 +364,7 @@ int rc;		// generic return code variable
   BHLOG(LOGBH) Serial.println("Setup Phase done");
   Serial.println(" ");
 
-// while(1);  // for test purpose
+//while(1);  // for test purpose
 
 } // end of BeeIoT setup()
 
@@ -354,8 +387,8 @@ void loop() {
   }
 
   BHLOG(LOGBH) Serial.println(">*******************************************<");
-  BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop"); 
-  BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n", 
+  BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop");
+  BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n",
 		bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
   BHLOG(LOGBH) Serial.println(">*******************************************<");
 
@@ -376,11 +409,11 @@ void loop() {
 #ifdef HX711_CONFIG
   float weight;
   scale.power_up();  // HX711 WakeUp Device
- 
+
   // Acquire raw reading
   weight = HX711_read(0);
   BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
-  
+
   // Acquire unit reading
   weight = HX711_read(1);
   BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
@@ -437,7 +470,7 @@ float x;              // Volt calculation buffer
 
 //***************************************************************
 // save all collected sensor data to SD and/or report via LoRa/Wifi
-	Logdata();    
+	Logdata();
 
 //***************************************************************
 // Update ePaper
@@ -478,9 +511,9 @@ String dataMessage; // Global data objects
   sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
 // Create tatus Report based on the sensor readings
-  dataMessage =  
-              String(bhdb.date) + " " + 
-              String(bhdb.time) + "," + 
+  dataMessage =
+              String(bhdb.date) + " " +
+              String(bhdb.time) + "," +
               String(bhdb.dlog[bhdb.loopid].HiveWeight) + "," +
               String(bhdb.dlog[bhdb.loopid].TempExtern) + "," +
               String(bhdb.dlog[bhdb.loopid].TempIntern) + "," +
@@ -537,10 +570,10 @@ void mydelay(int32_t tval){
 }
 
 //*******************************************************************
-// this section handles configuration values which can be configured 
+// this section handles configuration values which can be configured
 // via webpage form in a webbrowser
 //*******************************************************************
-// Initalize the values 
+// Initalize the values
 void InitConfig(int reentry){
   int i;
 
@@ -567,10 +600,10 @@ void InitConfig(int reentry){
 			bhdb.dlog[i].BattLoad    =0;
 			strncpy(bhdb.dlog[i].comment, "OK", 3);
 		}
-	}  
+	}
 
 // Next settings are for Web based config Page:
-// see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino 
+// see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
   preferences.begin("MyJourney", false);
 
   // takeout 4 Strings out of the Non-volatile storage
@@ -590,19 +623,19 @@ void InitConfig(int reentry){
   // initialize config set values and set names
   ConfigName[0] = "LED";
   ConfigType[0] = 1;     // type textbox
-  
+
   ConfigName[1] = "SSID";
   ConfigType[1] = 1;
-  
+
   ConfigName[2] = "PASSWORD";
   ConfigType[2] = 1;
-  
+
   ConfigName[3] = "DEVICE ID";
-  ConfigType[3] = 1;         
-  
+  ConfigType[3] = 1;
+
   ConfigName[4] = "DEVICE TOKEN";
   ConfigType[4] = 1;
-  
+
   // put the NVS stored values in RAM for the program
   ConfigValue[1] = strSSID;
   ConfigValue[2] = strPassword;
@@ -646,7 +679,7 @@ void ProcessAndValidateConfigValues(int countValues){
   } else if (ConfigValue[0].equals("FF")){
     digitalWrite(LED_RED, LOW);
     // do something other with actors: SwitchActor(ACTOR_ON);
-  }  
+  }
 }
 
 //***********************************************************************
@@ -660,13 +693,13 @@ void ProcessAndValidateConfigValues(int countValues){
 //  sleeptime -> loop time - value in seconds
 //***********************************************************************
 void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
-
+esp_err_t  rc;
 
 	digitalWrite(LED_RED, HIGH);     // signal Sleep Phase: LED OFf
 
 
 	switch(mode){
-		case 1:		// DeepSleepMode	
+		case 1:		// DeepSleepMode
 			// backup any needed memory values at wakeup here
 //			esp_bluedroid_disable();
 //			esp_bt_controller_disable();
@@ -687,12 +720,12 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 
 			BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer only(%i sec.)\n", waittime);
 			/*
-			Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep, 
+			Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			we can now start going to deep sleep. In the case that no wake up sources were provided but
 			deep sleep was started, it will sleep forever unless hardware reset occurs.
 			*/
 			delay(500);
-			Serial.flush(); 
+			Serial.flush();
 //			esp_deep_sleep(SLEEPTIME * uS_TO_S_FACTOR);	// start sleep with RTC time trigger
 			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return here
 			BHLOG(LOGBH) Serial.println("  Main: This will never be printed");
@@ -703,16 +736,20 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 //			esp_bt_controller_disable();
 //			esp_wifi_stop();
 
-			BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO35(blue Key4)\n", waittime);
-			gpio_wakeup_enable(GPIO_NUM_35,GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
-			esp_sleep_enable_gpio_wakeup();
+        BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO35(blue Key4)\n", waittime);
+        gpio_wakeup_enable(GPIO_NUM_35,GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
+        esp_sleep_enable_gpio_wakeup();
 
-			// First we configure the wake up source
-			esp_sleep_enable_timer_wakeup(waittime * uS_TO_S_FACTOR);	// time in us
-			
-			delay(1000);
-			Serial.flush(); 
-			esp_light_sleep_start();
+        // First we configure the wake up source
+        esp_sleep_enable_timer_wakeup(waittime * uS_TO_S_FACTOR);	// time in us
+
+        delay(1000);
+        Serial.flush();
+        rc = esp_light_sleep_start();
+        if(rc!= ESP_OK){
+          BHLOG(LOGBH) Serial.printf("  Main: LightSleep failed: %i\n", rc);
+          delay(5000);
+        }
 			break;
 
 		case 3:		// ModemSleepMode
@@ -748,8 +785,8 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_ULP:        Serial.println("Wakeup caused by ULP program"); break;
 	  case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
 	  case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
-    default : 
-        Serial.printf("Wakeup caused by Deep Sleep: %d\n",wakeup_reason); 
+    default :
+        Serial.printf("Wakeup caused by Deep Sleep: %d\n",wakeup_reason);
 		    return(ESP_SLEEP_WAKEUP_UNDEFINED);
 		    break;
   }
@@ -765,37 +802,37 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 void CheckWebPage(){
   int i;
   String GETParameter = Webserver_GetRequestGETParameter();   // look for client request
-  
+
     if (GETParameter.length() > 0){        // we got a request, client connection stays open
       BHLOG(LOGLAN) i = GETParameter.length();
       BHLOG(LOGLAN) Serial.printf("  CheckWebPage: GETParameter[%i]=", i);
       BHLOG(LOGLAN) Serial.println(GETParameter);
       if (GETParameter.length() > 1){      // request contains some GET parameter
-          
+
           // decode the GET parameter and set ConfigValues
           int countValues = DecodeGETParameterAndSetConfigValues(GETParameter);
           BHLOG(LOGLAN) Serial.printf("  CheckWebPage: Interpreting <%i> parameters for %s\n", countValues, WebRequestHostAddress.c_str());
-          
+
           // the user entered this address in browser, with GET parameter values for configuration
           // default: if (WebRequestHostAddress == "192.168.4.1"){
           if (WebRequestHostAddress == bhdb.ipaddr){
-                // check and process 5 ConfigValues, switch the LED, 
+                // check and process 5 ConfigValues, switch the LED,
                 // store SSID, Password, DeviceID and DeviceToken in non-volatile storage
-                ProcessAndValidateConfigValues(5); 
+                ProcessAndValidateConfigValues(5);
 
-                // takeout SSID and Password out of non-volatile storage  
+                // takeout SSID and Password out of non-volatile storage
                 String strSSID = preferences.getString("SSID", "");
                 String strPassword = preferences.getString("Password", "");
 
                 // convert to char*: https://coderwall.com/p/zfmwsg/arduino-string-to-char
-                char* txtSSID = const_cast<char*>(strSSID.c_str()); 
+                char* txtSSID = const_cast<char*>(strSSID.c_str());
                 char* txtPassword = const_cast<char*>(strPassword.c_str());
                 BHLOG(LOGLAN) Serial.printf("  WebServer: Reconnect SSID:%s - PWD:%s\n", txtSSID, txtPassword);
 
                 // disconnect from router network
 //                int successDisconnect = wifi_disconnect();
                 delay(1000);  // wait a second
-                
+
                 // then try to connect once new with new login-data
 //                int successConnect = wifi_connect(txtSSID, txtPassword, HOSTNAME);
                   int successConnect =1; // shortcut for test purpose
@@ -804,18 +841,18 @@ void CheckWebPage(){
                     RouterNetworkDeviceState = NETWORKSTATE_LOGGED;                 // set the state
                     CounterForMQTT = 0;
                 }else{
-                    RouterNetworkDeviceState = NETWORKSTATE_NOTLOGGED;              // set the state                 
-                }   
+                    RouterNetworkDeviceState = NETWORKSTATE_NOTLOGGED;              // set the state
+                }
                 MQTTClient_Connected = false;
           }
       }
       String HTMLPage;
 
-      // the user entered this address in the browser, to get the configuration webpage               
+      // the user entered this address in the browser, to get the configuration webpage
       // default: if (WebRequestHostAddress == "192.168.4.1"){
       if (WebRequestHostAddress == bhdb.ipaddr){
           // build a new Configuration webpage with form and new ConfigValues entered in textboxes or represented by sliders
-          HTMLPage = EncodeFormHTMLFromValues("BeeIoT CONFIG Page", 5) + 
+          HTMLPage = EncodeFormHTMLFromValues("BeeIoT CONFIG Page", 5) +
                 "<br>IP Address  : " + WiFi_GetOwnIPAddressInRouterNetwork() +
                 "<br>Battery Load:";
       }
@@ -824,32 +861,32 @@ void CheckWebPage(){
 
 /* by now no MQTT account
   if (iswifi){             // if we are logged in
-    CounterForMQTT++; 
+    CounterForMQTT++;
     if (CounterForMQTT > 40){   // do this approx every 2 seconds
-      CounterForMQTT = 0;      
+      CounterForMQTT = 0;
       // not yet connected
       if (MQTTClient_Connected == false){
         // try to connect to AllThingsTalk MQTT Broker and switch RGB-LEDs
-        int NodeState = ConnectToATT();     
+        int NodeState = ConnectToATT();
         if (NodeState > 0){   //  connection and subscription established successfully
-          MQTTClient_Connected = true;            // we can go in normal mode 
+          MQTTClient_Connected = true;            // we can go in normal mode
         }
       }
-        
+
       // we successfully connected with MQTT broker and subscribed to topic and can go in normal mode
-      if (MQTTClient_Connected == true){           
+      if (MQTTClient_Connected == true){
         // generate virtual sensor data (10..40)
         CurrentSensorDate++;
         if (CurrentSensorDate > 40) {CurrentSensorDate = 10;};
-    
+
         // Send sensor data via MQTT to AllThingsTalk
-        SendSensorDateToATT("temperature", CurrentSensorDate);      
+        SendSensorDateToATT("temperature", CurrentSensorDate);
 
         // read the voltage at pin 36, divide by 64
         int analog_value = analogRead(PIN_SENSOR) >> 6;
 
         // Send sensor data via MQTT to AllThingsTalk
-        SendSensorDateToATT("light", analog_value); 
+        SendSensorDateToATT("light", analog_value);
       }
     }
   }

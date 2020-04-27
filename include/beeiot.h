@@ -1,5 +1,5 @@
 //*******************************************************************
-// beeiot.h  
+// beeiot.h
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -9,13 +9,13 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 
 /* Map of used ESP32-DevKit-C PIN Configuration:
-*  For Default board settings see also 
+*  For Default board settings see also
 *    C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
 *================================================================
 |Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
@@ -70,14 +70,20 @@
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
 //*******************************************************************
-#define HX711_CONFIG  0
-#define ADS_CONFIG    0
-#define ONEWIRE_CONFIG 0
-// #define WIFI_CONFIG   0
-// #define NTP_CONFIG    0
-#define SD_CONFIG     0
-#define EPD_CONFIG    0
-#define LORA_CONFIG	  0
+// Defiine if ESP32 WROOM32 or WROVERB is used
+// #define WROVERB				// use IO Pinning for WROVERB: IO 16+17: NC (subst. by 4 + 15)
+
+// Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
+#define EPD_BW				// Define EPD Type: Black/White only
+
+#define HX711_CONFIG
+#define ADS_CONFIG
+#define ONEWIRE_CONFIG
+//#define WIFI_CONFIG
+//#define NTP_CONFIG
+#define SD_CONFIG
+#define EPD_CONFIG
+#define LORA_CONFIG
 
 // Pin mapping when using SDCARD in SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
@@ -98,7 +104,6 @@
 #define SD_SCK      SCK   // SPI SCLK -> VSPI = 18
 #define SD_CS       2     // SD card CS line - arbitrary selection !
 
-#define LED_RED     15    // GPIO number of red LED
 // reused by BEE_RST: Green LED not used anymore
 //#define LED_GREEN   14    // GPIO number of green LED
 
@@ -116,25 +121,33 @@
 
 // WavePaper ePaper port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
-// Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5), 
+// Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
 #define EPD_MISO VSPI_MISO 	// SPI MISO -> VSPI
 #define EPD_MOSI VSPI_MOSI 	// SPI MOSI -> VSPI
 #define EPD_SCK  VSPI_SCK  	// SPI SCLK -> VSPI
 #define EPD_CS       5     	// SPI SS   -> VSPI
-#define EPD_DC      17     	// arbitrary selection of DC   > def: 17
-#define EPD_RST     16     	// arbitrary selection of RST  > def: 16
+#ifdef WROVERB				// If ESP32 WROVERB is used IO16+17 are internally used.
+#define EPD_DC      15		// DC use of LED_RED IO PIN !
+#define EPD_RST      4		// RST use of EPD_BUSY PIN !
+#define EPD_BUSY    39     	// No BUSY Mode !
+#define LED_RED     -1    	// GPIO number of red LED
+#else
+#define EPD_DC      17		// arbitrary selection of DC   > def: 17
+#define EPD_RST     16		// arbitrary selection of RST  > def: 16
 #define EPD_BUSY     4     	// arbitrary selection of BUSY > def:  4  -> if 35 -> RD only GPIO !
+#define LED_RED     15    	// GPIO number of red LED
+#endif
 #define EPD_KEY1     0     	// via 40-pin RPi slot at ePaper Pin29 (P5)
 #define EPD_KEY2    EN     	// via 40-pin RPi slot at ePaper Pin31 (P6)
 #define EPD_KEY3    34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
 #define EPD_KEY4    35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
 
 // LoRa-Bee Board
-#define BEE_MISO VSPI_MISO	// SPI MISO -> VSPI
-#define BEE_MOSI VSPI_MOSI	// SPI MOSI -> VSPI
-#define BEE_SCK  VSPI_SCK	// SPI SCLK -> VSPI
-#define BEE_CS   	12		// NSS
+#define BEE_MISO VSPI_MISO	// SPI MISO -> VSPI:	19
+#define BEE_MOSI VSPI_MOSI	// SPI MOSI -> VSPI:	23
+#define BEE_SCK  VSPI_SCK	// SPI SCLK -> VSPI: 	18
+#define BEE_CS   	12		// CS = NSS
 #define BEE_RST		14  	//
 #define BEE_DIO0	33		// RXDone, TXDone - Main Lora_Interrupt line
 #define BEE_DIO1	13		// RXTout - FSK
@@ -148,10 +161,15 @@
 #define LOGEPD		8		// 8:   ePaper init & control
 #define LOGLAN		16		// 16:  Wifi init & LAN Import/export in all formats and protocols
 #define LOGSD		32		// 32:  SD Card & local data handling
-#define LOGADS		64  	// 64:  ADS BMS monitoring routines /w ADS1115S
+#define LOGADS		64              // 64:  ADS BMS monitoring routines /w ADS1115S
 #define LOGSPI		128		// 128: SPI Init
-#define LOGLORAR	256		// 256: LoRa Init: Radio layer
-#define LOGLORAW	512		// 512: LoRa Init: BeeIoT-WAN
+#define LOGLORAR	256		// 256: LoRa Init: Radio class
+#define LOGLORAW	512		// 512: LoRa Init: BeeIoT-WAN (NwSrv class)
+#define LOGQUE		1024	//1024: MsgQueue & MsgBuffer class handling
+#define LOGJOIN		2048	//2048: JOIN service class
+#define LOGBIOT		4096	//4096: BIoT	Application class
+#define LOGGH		8192	//8192: GH		Application class
+#define LOGTURTLE  16384	//16384:Turtle	Application class
 
 #define	BHLOG(m)	if(lflags & m)	// macro for Log evaluation (type: uint)
 
@@ -170,9 +188,9 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4130 // mV 
-    #define BATTERY_MIN_LEVEL        3300 // mV
-    #define BATTERY_SHUTDOWN_LEVEL   3290 // mV
+    #define BATTERY_MAX_LEVEL        4130 // mV
+    #define BATTERY_MIN_LEVEL        3200 // mV
+    #define BATTERY_SHUTDOWN_LEVEL   3170 // mV
 #endif
 
 
@@ -191,7 +209,7 @@ typedef struct {				// data elements of one log line entry
 	float	TempRTC;			// internal temp. of RTC module
 	int16_t ESP3V;				// ESP32 DevKit 3300 mV voltage level
 	int16_t Board5V;			// Board 5000 mV Power line voltage level
-	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5000mV 
+	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5000mV
 	int16_t BattLoad;			// Battery voltage level (typ. 3700 mV)
 	int16_t BattLevel;			// Battery Level in % (3200mV (0%) - 4150mV (100%))
 	char	 comment[DROWNOTELEN];

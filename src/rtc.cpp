@@ -1,5 +1,5 @@
 //*******************************************************************
-// rtc.cpp  
+// rtc.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -12,7 +12,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -51,7 +51,7 @@ RTC_DS3231 rtc;     // Create RTC Instance
 void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour,  uint8_t min, uint8_t sec);
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
- 
+
 //*******************************************************************
 // Setup_RTC(): Initial Setup of RTC module instance
 //*******************************************************************
@@ -59,14 +59,14 @@ int setup_rtc (int mode) {
   isrtc = 0;
 
   if (! rtc.begin()) {
-    Serial.println("  RTC: Couldn't find RTC device");
+    Serial.println("  RTC: Couldn't find RTC device\n");
     return(isrtc);
   }
   isrtc = 1;  // RTC Module detected;
   //  if NTC based adjustment is needed use:
   //  static void adjust(const DateTime& dt);
   // or update by NTP: -> main() => ntp2rtc()
-  
+
   rtc.writeSqwPinMode(DS3231_OFF);  // reset Square Pin Mode to 0Hz
   bhdb.dlog[bhdb.loopid].TempRTC = rtc.getTemperature();  // RTC module temperature in celsius degree
   BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C, SqarePin switched off\n", bhdb.dlog[bhdb.loopid].TempRTC);
@@ -95,14 +95,14 @@ struct tm tinfo;      // new time source: from NTP
     BHLOG(LOGLAN) Serial.println("  NTP2RTC(-1): No NTP Server detected ");
     return(-1);       // is NTP server via Wifi active ?
   }
-  if(!isrtc) {  
+  if(!isrtc) {
     BHLOG(LOGLAN) Serial.println("  NTP2RTC(-2): No RTC Module detected ");
     return(-2);       // Need a valid RTC Module (even with powerloss status)
   }
   if(!getLocalTime(&tinfo)){ // get NTP server time
     Serial.print("  NTP2RTC(-3): Failed to obtain NTP time -> ");
     Serial.println("set time to build of sketch");
-    
+
     // following line sets the RTC to the date &amp; time this sketch was compiled
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // if we want to set it manually:
@@ -157,12 +157,12 @@ int getRTCtime(){
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
   // Extract date: YYYY-MM-DD
-  strncpy(bhdb.date, dt.timestamp(DateTime::TIMESTAMP_DATE).c_str(), LENDATE); 
+  strncpy(bhdb.date, dt.timestamp(DateTime::TIMESTAMP_DATE).c_str(), LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.print(bhdb.date);
- 
+
   // Extract time: HH:MM:SS
-  sprintf(bhdb.time, dt.timestamp(DateTime::TIMESTAMP_TIME).c_str(), LENTIME); 
+  sprintf(bhdb.time, dt.timestamp(DateTime::TIMESTAMP_TIME).c_str(), LENTIME);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.println(bhdb.time);
 
@@ -178,7 +178,7 @@ int getRTCtime(){
 void rtc_test() {
   Serial.println("  RTC: STart RTC Test Output ...");
     DateTime now = rtc.now();
-     
+
     Serial.print(now.year(), DEC);
     Serial.print('/');
     Serial.print(now.month(), DEC);
@@ -193,16 +193,16 @@ void rtc_test() {
     Serial.print(':');
     Serial.print(now.second(), DEC);
     Serial.println();
-     
+
     Serial.print(" since midnight 1/1/1970 = ");
     Serial.print(now.unixtime());
     Serial.print("s = ");
     Serial.print(now.unixtime() / 86400L);
     Serial.println("d");
-     
+
     // calculate a date which is 7 days and 30 seconds into the future
     DateTime future (now + TimeSpan(7,12,30,6));
-     
+
     Serial.print(" now + 7d + 30s: ");
     Serial.print(future.year(), DEC);
     Serial.print('/');
@@ -216,7 +216,7 @@ void rtc_test() {
     Serial.print(':');
     Serial.print(future.second(), DEC);
     Serial.println();
-     
+
     Serial.println();
 
 } // end of rtc_test()

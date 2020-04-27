@@ -1,5 +1,5 @@
 //*******************************************************************
-// BeeLora.h  
+// BeeLora.h
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -9,7 +9,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -61,7 +61,7 @@ enum {
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(int mode);
-int  LoRaLog		(const char * outgoing, byte outlen, int sync);
+int  LoRaLog		(const char * outgoing, uint16_t outlen, int sync);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
 void Printbit       (unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);

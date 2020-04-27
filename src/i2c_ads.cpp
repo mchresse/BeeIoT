@@ -137,9 +137,9 @@ void i2c_scan(void) {
 //
 //***************************************************************
 int16_t ads_read(int channel) {
+	int16_t data=0;
 #ifdef ADS_CONFIG
 	int16_t adcdata;
-	int16_t data;
 
 	BHLOG(LOGADS) Serial.printf("\n  ADS: Single-ended read from AIN%i: ", channel);
 	adcdata = ads.readADC_SingleEnded(channel);
@@ -159,9 +159,9 @@ int16_t ads_read(int channel) {
 // OUT:  data  = voltage of actual adc line
 //***************************************************************
 float ads_compare(/* channel was defined already in setup */) {
+float 	data=0;
 #ifdef ADS_CONFIG
 int16_t adcdata;
-float 	data;
 
   // Comparator will only de-assert after a read
   adcdata = ads.getLastConversionResults();
@@ -180,9 +180,9 @@ float 	data;
 // OUT:  results  = value of difference
 //***************************************************************
 int16_t ads_diff() {
+int16_t results=0;
 #ifdef ADS_CONFIG
 float   multiplier;
-int16_t results;
 
   BHLOG(LOGADS) Serial.print("  ADS: Getting differential reading from AIN0 (P) and AIN1 (N)");
   

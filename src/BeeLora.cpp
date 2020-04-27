@@ -26,7 +26,7 @@
 // #include <board.h>
 // #include <BIoTaes.h>
 
-#include <LoRa.h>         // from LoRa Sandeep Driver 
+#include <LoRa.h>         // from LoRa Sandeep Driver
 #define BEEIOT_ACTSTRINGS
 #define CHANNELTAB_EXPORT // enable channelcfg tab instance here: channeltable_t	txchntab[MAX_CHANNELS]
 #include "BeeIoTWan.h"
@@ -86,7 +86,7 @@ extern int report_interval; // interval between BIoT Reports
 RTC_DATA_ATTR  u1_t DEVEUI[8]	= { 0xCC, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
 
 // BIoT application service ID (LSBF) -> constant in (see BeeIoTWAN.h)
-RTC_DATA_ATTR  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI 
+RTC_DATA_ATTR  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI
 
 // Node-specific AES key (derived from device EUI)
 RTC_DATA_ATTR  u1_t  DEVKEY[16]	= { 0xBB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
@@ -134,33 +134,31 @@ void BIoT_getmic	(beeiotpkg_t * pkg, byte * mic);
 // Setup_LoRa(): init BEE-client object: LoRa
 //*********************************************************************
 int setup_LoRa(int reentry) {
-byte * pb;  // BytePtr for field handling
+	islora = 0;
 
+#ifdef LORA_CONFIG
 	if(!reentry){	// after PON Reset only
-		BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n", 
+		BHLOG(LOGLORAR) Serial.printf("  LoRa: Cfg Lora Modem for BIoTWAN v%d.%d (on %ld Mhz)\n",
 			(int)BIoT_VMAJOR, (int)BIoT_VMINOR, LoRaCfg.freq);
 		BeeIoTStatus = BIOT_NONE;
 	}else{
 		BHLOG(LOGLORAR) Serial.printf("  LoRa: WakeUpMode:%i in Status: %s\n", reentry, beeiot_StatusString[BeeIoTStatus]);
   }
-	islora = 0;
-
-#ifdef LORA_CONFIG
 
 	// Initial Modem & channel setup:
-	// Set GPIO(SPI) Pins, Reset device, Discover SX1276 (only by Lora.h lib) device, results in: 
+	// Set GPIO(SPI) Pins, Reset device, Discover SX1276 (only by Lora.h lib) device, results in:
 	// OM=>STDBY/Idle, AGC=On(0x04), freq = FREQ, TX/RX-Base = 0x00, LNA = BOOST(0x03), TXPwr=17
-	if (!LoRa.begin(LoRaCfg.freq)) {          // initialize ratio at LORA_FREQ [MHz] 
+	if (!LoRa.begin(LoRaCfg.freq)) {          // initialize ratio at LORA_FREQ [MHz]
 		// for SX1276 only (Version = 0x12)
 		Serial.println("  LoRa: SX1276 not detected. Check your GPIO connections.");
 		return(islora);                          // No SX1276 module found -> Stop LoRa protocol
 	}
-	// For debugging: Stream Lora-Regs:      
+	// For debugging: Stream Lora-Regs:
 	//   BHLOG(LOGLORAR) LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
 
 	// Create a unique Node DEVEUI from BoardID(only Byte 0-6 can be used) > 0xbbbbbbfffebbbbbb
-		pb = (byte*) & bhdb.BoardID;
-		DEVEUI[0] = (byte) pb[5];   // get byte stream from back to start
+		byte * pb = (byte*) & bhdb.BoardID; // get BytePtr for field handling
+		DEVEUI[0] = (byte) pb[5];           // get byte stream from back to start
 		DEVEUI[1] = (byte) pb[4];
 		DEVEUI[2] = (byte) pb[3];
 		DEVEUI[3] = 0xFF;   // fill up to 8 By.
@@ -169,7 +167,7 @@ byte * pb;  // BytePtr for field handling
 		DEVEUI[6] = (byte) pb[1];
 		DEVEUI[7] = (byte) pb[0];
 
-	if(!reentry){	// after PON Reset only	
+	if(!reentry){	// after PON Reset only
 		LoRaCfg.joinRetryCount =0;	// No JOIN yet
 		LoRaCfg.msgCount       =0;  // reset pkg counter to default
 		// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
@@ -178,7 +176,7 @@ byte * pb;  // BytePtr for field handling
   	// BeeIoT-Wan Presets to default LoRa channel (if apart from the class default)
 		SetChannelCfg(LoRaCfg.chcfgid);      // initialize LoraCfg field by assigned modem cfg
   }
-	configLoraModem(&LoRaCfg);  
+	configLoraModem(&LoRaCfg);
 
 	// lets see where we are...
 	//  BHLOG(LOGLORAR)  LoRa.dumpRegisters(Serial); // dump all SX1276 registers in 0xyy format for debugging
@@ -231,7 +229,7 @@ void configLoraModem(LoRaRadioCfg_t * pcfg) {
   long sbw = 0;
   byte coding=0;
 
-  BHLOG(LOGLORAR) Serial.printf("  LoRaCfg: Set Modem/Channel-Cfg[%i]: %ldMhz, SF=%i, TXPwr:%i", 
+  BHLOG(LOGLORAR) Serial.printf("  LoRaCfg: Set Modem/Channel-Cfg[%i]: %ldMhz, SF=%i, TXPwr:%i",
         pcfg->chcfgid, pcfg->freq, 6+(byte)pcfg->sf, (byte)pcfg->pw);
   LoRa.sleep(); // stop modem and clear FIFO
   // set frequency
@@ -241,7 +239,7 @@ void configLoraModem(LoRaRadioCfg_t * pcfg) {
   //   - RF_PACONFIG_PASELECT_PABOOST -- LoRa single output via PABOOST, maximum output 20dBm
   //   - RF_PACONFIG_PASELECT_RFO     -- LoRa single output via RFO_HF / RFO_LF, maximum output 14dBm
   LoRa.setTxPower((byte)pcfg->pw, PA_OUTPUT_PA_BOOST_PIN); // no boost mode, outputPin = default
-  
+
   // SF6: REG_DETECTION_OPTIMIZE = 0xc5
   //      REG_DETECTION_THRESHOLD= 0x0C
 
@@ -279,8 +277,8 @@ void configLoraModem(LoRaRadioCfg_t * pcfg) {
 
   LoRa.setPreambleLength(LPREAMBLE);    // def: 8Byte
   BHLOG(LOGLORAR) Serial.printf(", LPreamble:%i\n", LPREAMBLE);
-  LoRa.setSyncWord(LoRaWANSW);          // ranges from 0-0xFF, default 0x34, see API docs
-  BHLOG(LOGLORAR) Serial.printf("    SW:0x%02X", LoRaWANSW);
+  LoRa.setSyncWord(LoRaSW);          // ranges from 0-0xFF, default 0x34, see API docs
+  BHLOG(LOGLORAR) Serial.printf("    SW:0x%02X", LoRaSW);
 
   if(pcfg->nocrc){
     BHLOG(LOGLORAR) Serial.print(", NoCRC");
@@ -290,7 +288,7 @@ void configLoraModem(LoRaRadioCfg_t * pcfg) {
     LoRa.crc();                         // enable CRC
   }
 
-  if(pcfg->noRXIQinversion){          // need RX with Invert IQ 
+  if(pcfg->noRXIQinversion){          // need RX with Invert IQ
     BHLOG(LOGLORAR) Serial.print(", noInvIQ");
     LoRa.disableInvertIQ();             // REG_INVERTIQ  = 0x27, REG_INVERTIQ2 = 0x1D
   }else{
@@ -301,7 +299,7 @@ void configLoraModem(LoRaRadioCfg_t * pcfg) {
   if(pcfg->ih){
   // LoRa IH Mode initial: 0 -> explicite header Mode ! (needed fp BeeIoTWAN)
   // HeaderMode defined at LoRa.beginPacket(ih) or LoRa.receive(IH-> if size>0) function
-  // implicite recognized by LoRa.parse() and LoRa.onreceive(); 
+  // implicite recognized by LoRa.parse() and LoRa.onreceive();
   }
 
   // Optional: Over Current Protection control -> need here?
@@ -330,21 +328,21 @@ int rc;
 
 pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
- // Prepare Pkg Header 
+ // Prepare Pkg Header
   if(joinstatus == BIOT_JOIN){
     pjoin->hd.cmd    = CMD_JOIN;    // Lets Join
     pjoin->hd.sendID = NODEIDBASE;  // that's me by now but finally not checked in JOIN session
     LoRaCfg.nodeid   = NODEIDBASE;  // store "JOIN"-NodeID for onreceive() check
-    pjoin->hd.index  = 0xFF;          // ser. number of JOIN package; well, could be any ID 0..0xFF
+    pjoin->hd.pkgid  = 0xFF;          // ser. number of JOIN package; well, could be any ID 0..0xFF
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Start searching for a GW\n");
   }else{ // REJOIN of a given status
-    pjoin->hd.cmd    = CMD_REJOIN;  // Lets Join again  
+    pjoin->hd.cmd    = CMD_REJOIN;  // Lets Join again
     pjoin->hd.sendID = LoRaCfg.nodeid;   // use GW well known last node id for reactivation
-    pjoin->hd.index  = LoRaCfg.msgCount; // ser. number of JOIN package; for rejoining use std. counter
+    pjoin->hd.pkgid  = LoRaCfg.msgCount; // ser. number of JOIN package; for rejoining use std. counter
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: Connection lost - Re-Joining with default ChannelCfg\n");
   }
   pjoin->hd.destID = GWIDx;         // We start joining always with the default BeeIoT-WAN GWID
-  pjoin->hd.frmlen = sizeof(joinpar_t); // length of JOIN payload: ->info 
+  pjoin->hd.frmlen = (uint16_t)sizeof(joinpar_t); // length of JOIN payload: ->info
 
   // setup join frame ->info
   memcpy((byte*)pjoin->info.joinEUI, (byte*)JOINEUI, 8);
@@ -359,7 +357,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   // remember new Msg (for possible RETRIES)
   // have to do it before sendmessage -> is used by ISR routine in case of (fast) ACK response
   MyMsg.ack = 0;                    // no ACK expected, but a CONFIG pkg
-  MyMsg.idx = pjoin->hd.index;      // set index reference for matching CONFIG pkg
+  MyMsg.idx = pjoin->hd.pkgid;      // set index reference for matching CONFIG pkg
   MyMsg.retries = 0;
   MyMsg.pkg = (beeiotpkg_t*) & MyTXData;  // save pkg rootptr
 
@@ -374,7 +372,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   // Activate RX Contiguous flow control
   do{
     MyMsg.ack=0;                // reset ACK & Retry flags
-    LoRa.receive(0);            // Activate: RX-Continuous in expl. Header mode          
+    LoRa.receive(0);            // Activate: RX-Continuous in expl. Header mode
 
     i=0;  // reset wait counter
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
@@ -382,13 +380,13 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
         BHLOG(LOGLORAW) Serial.print("o");
         delay(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
-    } 
+    }
     // notice # of JOIN Retries
     if(LoRaCfg.joinRetryCount++ == 10){ // max. # of acceptable JOIN Requests reached ?
       report_interval *= 2;    		// wait 10-times longer to try again for saving power
       BHLOG(LOGLORAW) Serial.printf("\n  BeeIoTJoin: After %i retries: Reduce Retry frequency to every %isec.",
             LoRaCfg.joinRetryCount, report_interval);
-      LoRaCfg.joinRetryCount = 0; 
+      LoRaCfg.joinRetryCount = 0;
     };        // report_interval will be reinitialized by CONFIG with successfull JOIN request
 
     rc=0;
@@ -403,13 +401,13 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
         rc=CMD_RETRY;       // initiate JOIN request again
     }else{  // RX pkg received
       // ISR has checked Header and copied pkg into MyRXData[RXPkgSrvIdx] already -> now parse it
-      BHLOG(LOGLORAR) Serial.printf("  BeeIotJoin: RX pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]); 
+      BHLOG(LOGLORAR) Serial.printf("  BeeIotJoin: RX pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]);
       BHLOG(LOGLORAR) Serial.printf("  BeeIotJoin: RX Queue Status: SrvIdx:%i, IsrIdx:%i, new PkgID:%i, RXFlag:%i\n",
-              RXPkgSrvIdx, RXPkgIsrIdx, MyRXData[RXPkgSrvIdx].hd.index, BeeIotRXFlag); 
+              RXPkgSrvIdx, RXPkgIsrIdx, MyRXData[RXPkgSrvIdx].hd.pkgid, BeeIotRXFlag);
 
-      rc = BeeIoTParse(&MyRXData[RXPkgSrvIdx]); // parse MyRXData[RXPkgSrvIdx] for action 
+      rc = BeeIoTParse(&MyRXData[RXPkgSrvIdx]); // parse MyRXData[RXPkgSrvIdx] for action
       if(rc < 0){
-        BHLOG(LOGLORAW) Serial.printf("  BeeIotJoin: parsing of Msg[%i]failed rc=%i\n", MyRXData[RXPkgSrvIdx].hd.index, rc);
+        BHLOG(LOGLORAW) Serial.printf("  BeeIotJoin: parsing of Msg[%i]failed rc=%i\n", MyRXData[RXPkgSrvIdx].hd.pkgid, rc);
         // Detailed error analysis/message done by BeeIoTParse() already
         rc=CMD_RETRY;
       }
@@ -445,7 +443,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
           BeeIoTStatus  = BIOT_JOIN;             // remain in joining mode
           rc=-2;           // TX-timeout -> max. # of Retries reached
           return(rc);       // give up and no RX Queue check needed neither -> GW dead ?
-        } // if(Max-Retry) 
+        } // if(Max-Retry)
     } // Retry action
 
     if(rc==CMD_CONFIG){
@@ -457,11 +455,11 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   } while(rc == CMD_RETRY); // Retry JOINing again
 
   if(BeeIoTStatus==BIOT_IDLE){
-    BHLOG(LOGLORAW) Serial.printf("  Lora: Joined! New: GWID:0x%02X, NodeID:0x%02X, msgcount:%d\n", 
+    BHLOG(LOGLORAW) Serial.printf("  Lora: Joined! New: GWID:0x%02X, NodeID:0x%02X, msgcount:%d\n",
         LoRaCfg.gwid, LoRaCfg.nodeid, LoRaCfg.msgCount);
-    BHLOG(LOGLORAW) Printhex( DEVEUI,  8, "    DEVEUI: 0x-"); 
+    BHLOG(LOGLORAW) Printhex( DEVEUI,  8, "    DEVEUI: 0x-");
     BHLOG(LOGLORAW) Serial.println();
-    BHLOG(LOGLORAW) Printhex( JOINEUI, 8, "   JOINEUI: 0x-"); 
+    BHLOG(LOGLORAW) Printhex( JOINEUI, 8, "   JOINEUI: 0x-");
     BHLOG(LOGLORAW) Serial.println();   // == APPEUI
     BHLOG(LOGLORAR) Printhex( DEVKEY, 16, "    DEVKEY: 0x-", 2);
     BHLOG(LOGLORAR) Serial.println();
@@ -484,9 +482,9 @@ byte cmac[16]={0x11,0x22,0x33,0x44};
   // ToDo get MIC calculation:
   // cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
   memcpy(mic, &cmac[0], 4);   // return first 4 Byte of cmac[0..3]
-  BHLOG(LOGLORAR) Serial.printf("  BIoT_getmic: Add MIC[4] = %02X %02X %02X %02X for Msg[%d]\n", 
-      mic[0], mic[1], mic[2], mic[3], pkg->hd.index);
-  return; 
+  BHLOG(LOGLORAR) Serial.printf("  BIoT_getmic: Add MIC[4] = %02X %02X %02X %02X for Msg[%d]\n",
+      mic[0], mic[1], mic[2], mic[3], pkg->hd.pkgid);
+  return;
 }
 
 int BeeIoTWakeUp(void){
@@ -541,7 +539,7 @@ void BeeIoTSleep(void){
 //  BeeIotRXFlag  RX Queue level Semaphor >0 == Queue has (a) message(s)
 //  RXPkgSrvIdx   Index to next RX Queue buffer for parsing
 //  RXPkgISRIdx   Index to next RX Queue buffer for writing by ISR
-//  
+//
 // Return:
 //    all return codes from BeeIoTParse()
 //  0:  Send LOG successfull & all RX Queue pkgs processed
@@ -550,11 +548,11 @@ void BeeIoTSleep(void){
 // -96: no joined GW found  -> forced BeeIoTStatus = BIOT_JOIN
 // -97: modem still sleeping; can't wake up now -> retry later
 // -98: no compatible LoRa modem detected (SX127x)
-// -99: TX timed out: waiting for ACK -> max. # of retries reached 
+// -99: TX timed out: waiting for ACK -> max. # of retries reached
 //                    -> forced BeeIoTStatus = BIOT_REJOIN
 //****************************************************************************************
-int LoRaLog( const char * outgoing, byte outlen, int noack) {
-byte length;  // final length of TX msg payload
+int LoRaLog( const char * outgoing, uint16_t outlen, int noack) {
+uint16_t length;  // final length of TX msg payload
 int ackloop;  // ACK wait loop counter
 int rc;       // generic return code
 
@@ -572,7 +570,7 @@ int rc;       // generic return code
       return(-97);                // problem to wake up -> try later again
   }
   // still need a joined GW before sending anything (JOIN) or GW ought to get a new JOIN (REJOIN)
-  if((BeeIoTStatus == BIOT_JOIN) || (BeeIoTStatus == BIOT_REJOIN)){  
+  if((BeeIoTStatus == BIOT_JOIN) || (BeeIoTStatus == BIOT_REJOIN)){
     if(BeeIoTJoin(BeeIoTStatus) <= 0){
       BHLOG(LOGLORAW)  Serial.printf("  LoraLog: BeeIoT JOIN failed -> skipped LoRa Logging\n");
       return(-96);                // by now no gateway in range -> try again later
@@ -584,15 +582,15 @@ int rc;       // generic return code
   if(outlen > BIoT_FRAMELEN){      // length exceeds frame buffer space ?
     BHLOG(LOGLORAW) Serial.printf("  LoRaLog: data length exceeded, had to cut 0x%02X -> 0x%02X\n", outlen, BIoT_FRAMELEN);
     length = BIoT_FRAMELEN;        // limit payload length incl. EOL(0D0A) to max. framelen
-  }else{  
+  }else{
     length = outlen;             // get real user-payload length
   }
-  // b) Prepare BeeIoT TX package 
+  // b) Prepare BeeIoT TX package
   MyTXData.hd.cmd    = CMD_LOGSTATUS;    // define type of action: BIoTApp session Command for LogStatus Data processing
   MyTXData.hd.destID = LoRaCfg.gwid;     // remote target GW
   MyTXData.hd.sendID = LoRaCfg.nodeid;   // that's me
-  MyTXData.hd.index  = LoRaCfg.msgCount; // serial number of sent packages (sequence checked on GW side!)
-  MyTXData.hd.frmlen = length;           // length of user payload data incl. any EOL - excl. MIC
+  MyTXData.hd.pkgid  = LoRaCfg.msgCount; // serial number of sent packages (sequence checked on GW side!)
+  MyTXData.hd.frmlen = (uint16_t) length;   // length of user payload data incl. any EOL - excl. MIC
   strncpy(MyTXData.data, outgoing, length); // get BIoT-Frame payload data
   if(MyTXData.hd.cmd == CMD_LOGSTATUS)   // do we send a string ?
     MyTXData.data[length-1]=0;           // assure EOL = 0
@@ -605,27 +603,27 @@ int rc;       // generic return code
   MyMsg.idx     = LoRaCfg.msgCount;
   MyMsg.retries = 0;                  // TX retry counter in transmission error case
   MyMsg.pkg     = (beeiotpkg_t*) & MyTXData;  // remember TX Message of session
-  
+
   // 4. Initiate TX session
   // ToDo: Set up Timer watchdog for TXDone wait and act accordingly
   BeeIoTStatus = BIOT_TX;             // start TX session
   while(!sendMessage(&MyTXData, 0));  // send it in sync mode: wait for RXDone
-  
+
   // 5. Bypass FlowControl in NoAck Mode
   if(noack){ // bypass flow control -> no wait for (any) ACK requested
       // clean up TX Msg buffer
-      MyMsg.pkg     = (beeiotpkg_t *) NULL; 
+      MyMsg.pkg     = (beeiotpkg_t *) NULL;
       MyMsg.ack     = 0;
       MyMsg.idx     = 0;
       MyMsg.retries = 0;
 
-      BHLOG(LOGLORAW) Serial.printf("  LoRaLog: Msg(#%i) Done; RX Queue Status SrvIdx:%i, IsrIdx:%i, Length:%i\n", 
+      BHLOG(LOGLORAW) Serial.printf("  LoRaLog: Msg(#%i) Done; RX Queue Status SrvIdx:%i, IsrIdx:%i, Length:%i\n",
                         LoRaCfg.msgCount, RXPkgSrvIdx, RXPkgIsrIdx, BeeIotRXFlag);
       LoRaCfg.msgCount++;           // increment global sequential TX package/message ID for next session
       BeeIoTSleep();                // prepare Modem for (Deep) Sleep -> save power
                                     // ToDo: Reduce PA boost power level
       return(0);    // Assumed success: No Ack response expected and we skip waiting for further CMDs
-  } 
+  }
 
   // 6. Start of ACK wait loop:
   // Lets wait for expected ACK Msg & afterwards check RX Queue for some seconds
@@ -642,7 +640,7 @@ int rc;       // generic return code
 
       // 8. Check for ACK Wait Timeout
       if(ackloop++ > MAXRXACKWAIT){   // max # of wait loops reached ? -> yes, ACK RX timed out
-        BHLOG(LOGLORAW) Serial.printf("timed out\n"); 
+        BHLOG(LOGLORAW) Serial.printf("timed out\n");
 
         // 9. No ACK received
         // -> initiate a retry loop & and start RXCont for ACK pkg
@@ -653,14 +651,14 @@ int rc;       // generic return code
           while(!sendMessage(&MyTXData, 0));  // Send same Pkg /w same msgid (!) in sync mode again
           // Wait for ACK again
           BeeIoTStatus = BIOT_RX;             // Mark: start RX session
-          LoRa.receive(0);                    // Activate: RX-Continuous in expl. Header mode for next expected ACK         
+          LoRa.receive(0);                    // Activate: RX-Continuous in expl. Header mode for next expected ACK
           BHLOG(LOGLORAW) Serial.printf("  LoRaLog: waiting for ACK in RXCont mode (Retry: #%i)", MyMsg.retries);
           ackloop=0;                          // reset ACK wait loop counter
 
         // 10. Max. # of Retries reached
         // -> give up: goto sleep mode and clear MyMsg TX buffer
         // => Set REJOIN Status: at next TX session we first ask for a GW to avoid further ACK loops
-        }else{  
+        }else{
           BHLOG(LOGLORAW) Serial.printf("  LoRaLog: Msg(#%i) Send-TimedOut; RX Queue Status: SrvIdx:%i, IsrIdx:%i, Length:%i\n",
                   MyMsg.idx, RXPkgSrvIdx, RXPkgIsrIdx, BeeIotRXFlag);
           // clean up TX Msg buffer (ISR checks for MyMsg.idx == RXData.index only)
@@ -674,7 +672,7 @@ int rc;       // generic return code
           BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Sleep Mode\n");
           LoRa.sleep();                       // Sleep Mode: Stop modem, clear FIFO -> save power
           return(-99);                        // give up and no RX Queue check needed neither -> GW dead ?
-        } // if(ACK-TO & Max-Retry) 
+        } // if(ACK-TO & Max-Retry)
 
       } // if(ACK-TO)
     } // while(no ACK)
@@ -686,7 +684,7 @@ int rc;       // generic return code
     // We got ACK flag from ISR: But it could be from CMD_ACK, CMD_RETRY or CMD_JOIN package)
     //    if(CMD_ACK)   -> nothing to to: ISR has left RX Queue empty >= room for another RX1 package by GW
     //    if(CMD_RETRY || CMD_REJOIN) -> ISR has filled up RXQUEUE buffer and incr. BeeIotRXFlag++
-    // If RETRY or REJOIN: no RX1 job can be expected from GW 
+    // If RETRY or REJOIN: no RX1 job can be expected from GW
     //    => RX1 loop will
     //        - process current Queue pkg first: 'Ack fall through' (ACK Wait loop is shortcut by BeeIotRXFlag)
     //        - if RETRY: BIoTParse has resend last TX pkg -> RX1 loop will take over ACK wait
@@ -696,7 +694,7 @@ int rc;       // generic return code
     // 11. Start RX1 Window: TX session Done (ACK received):
     //  Give the GW an option for another Job
     BeeIoTStatus  = BIOT_RX;  // enter RX1 window session
-    LoRa.receive(0);          // Activate: RX-Continuous in expl. Header mode          
+    LoRa.receive(0);          // Activate: RX-Continuous in expl. Header mode
 
     ackloop=0;                // reset wait counter
     BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX1 Pkg. (RXCont):");
@@ -704,7 +702,7 @@ int rc;       // generic return code
         BHLOG(LOGLORAW) Serial.print("o");
         delay(500);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
         ackloop++;
-    } 
+    }
 
     // 12. ACK TO condition reached ?
     if(ackloop >= WAITRX1PKG*2){ // Yes, no RX1 pkg received -> we are done
@@ -722,14 +720,14 @@ int rc;       // generic return code
     // 13. Either RX1 job received
     // or RETRY / REJOIN as Ack from previous TX session
     }else{  // new pkg received -> process it
-      BHLOG(LOGLORAR) Serial.printf("  LoRaLog: add. Pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]); 
+      BHLOG(LOGLORAR) Serial.printf("  LoRaLog: add. Pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]);
       BHLOG(LOGLORAR) Serial.printf("  LoRaLog: RX Queue Status: SrvIdx:%i, IsrIdx:%i, new PkgID:%i, RXFlag:%i\n",
-                        RXPkgSrvIdx, RXPkgIsrIdx, MyRXData[RXPkgSrvIdx].hd.index, BeeIotRXFlag); 
+                        RXPkgSrvIdx, RXPkgIsrIdx, MyRXData[RXPkgSrvIdx].hd.pkgid, BeeIotRXFlag);
 
       // 14. Parse RX1 pkg: ISR has checked Header and copied pkg into MyRXData[RXPkgSrvIdx]
       rc = BeeIoTParse(&MyRXData[RXPkgSrvIdx]); // parse and initiate action if possible
       if(rc < 0){
-        BHLOG(LOGLORAW) Serial.printf("  LoRaLog: parsing of Msg[%i]failed rc=%i\n", MyRXData[RXPkgSrvIdx].hd.index, rc);
+        BHLOG(LOGLORAW) Serial.printf("  LoRaLog: parsing of Msg[%i]failed rc=%i\n", MyRXData[RXPkgSrvIdx].hd.pkgid, rc);
         // Detailed error analysis/message done by BeeIoTParse() already
       }
       // if rc == CMD_RETRY -> Last TX pkg payload was corrupt: BeeIoTParse has resend it again already
@@ -755,8 +753,8 @@ int rc;       // generic return code
 
   // 15. Process REJOIN Request from GW
   if(rc == CMD_REJOIN){               // For REJOIN we have to keep JOIN Request status (as set by BeeIoTParse())
-      BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Send Msg failed - New-Join requested, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
-                         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
+      BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Send Msg failed - New-Join requested, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n",
+                         RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag);
       BeeIoTStatus = BIOT_JOIN;       // RE-JOIN requested by GW -> to be process as new JOIN command
       LoRa.sleep();                   // stop modem and clear FIFO, but keep JOIN mode
       LoRaCfg.nodeid = NODEIDBASE;    // -> CONFIG response from GW will provide a new MsgID (roaming ?!) later
@@ -773,14 +771,14 @@ int rc;       // generic return code
 
   BeeIoTSleep();  // we are Done! Sleep till next command
 
-  BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n", 
-        RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag); 
+  BHLOG(LOGLORAR) Serial.printf("  LoRaLog: Msg sent done, RX Queue Status: SrvIdx:%i, IsrIdx:%i, NextMsgID:%i, RXFlag:%i\n",
+        RXPkgSrvIdx, RXPkgIsrIdx, LoRaCfg.msgCount, BeeIotRXFlag);
   return(rc);
 }
 
 
 //******************************************************************************
-// BeeIoTParse() 
+// BeeIoTParse()
 // Analyze received BeeIoT Message for action
 // Input:
 //  Msg   Pointer to next BeeIoT Message at MyRXData[RXPkgSrvIdx] for parsing
@@ -798,84 +796,84 @@ int rc;       // generic return code
 int BeeIoTParse(beeiotpkg_t * msg){
 int rc;
 
-// We have a new valid BeeIoT Package (header and data length was checked already): 
+// We have a new valid BeeIoT Package (header and data length was checked already):
 // check the "msg->cmd" for next action from GW
 	switch (msg->hd.cmd){
 	case CMD_NOP:
 		// intended to do nothing -> test message for communication check
 		// for test purpose: dump payload in hex format
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= NOP received\n", msg->hd.index); 
-		rc= CMD_NOP;	
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= NOP received\n", msg->hd.pkgid);
+		rc= CMD_NOP;
 		break;
 	case CMD_JOIN:
 		// intended to do nothing -> typically send from Node -> GW only.
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= JOIN received from sender: 0x%02X\n", msg->hd.index, msg->hd.sendID);
-		rc= CMD_JOIN;	
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= JOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
+		rc= CMD_JOIN;
 		break;
 
-	case CMD_REJOIN:  
-    // GW requested a REJOIN 
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.index, msg->hd.sendID);
+	case CMD_REJOIN:
+    // GW requested a REJOIN
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
     BeeIoTStatus = BIOT_REJOIN;  // reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-		rc= CMD_REJOIN;	
+		rc= CMD_REJOIN;
 		break;
 
 	case CMD_CONFIG:                           // new BeeIoT channel cfg received
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= CONFIG -> switch to new channel cfg.\n", msg->hd.index); 
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= CONFIG -> switch to new channel cfg.\n", msg->hd.pkgid);
     // ToDo: action: parse channel cg. data and update channel cfg. table
     rc=BeeIoTParseCfg((beeiot_cfg_t*) msg);  // lets parse received message as Switch CFG request
 		break;
 
 	case CMD_LOGSTATUS: // BeeIoT node sensor data set received
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= LOGSTATUS -> should be ACK => ignored\n", msg->hd.index); 
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= LOGSTATUS -> should be ACK => ignored\n", msg->hd.pkgid);
     // intentionally do nothing on node side
     rc=CMD_LOGSTATUS;
 		break;
 
 	case CMD_GETSDLOG:
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: SDLOG Save command: not supported yet\n", msg->hd.index); 
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: SDLOG Save command: not supported yet\n", msg->hd.pkgid);
 		// for test purpose: dump payload in hex format
 			// ToDo: read out SD card and send it package wise to GW
 		rc= CMD_GETSDLOG;                      // not supported yet
 		break;
 
 	case CMD_RETRY:
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RETRY-Request: send same message again\n", msg->hd.index); 
-    if(MyMsg.pkg->hd.index == msg->hd.index){    // do we talk about the same Node-TX message we are waiting for ?
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RETRY-Request: send same message again\n", msg->hd.pkgid);
+    if(MyMsg.pkg->hd.pkgid == msg->hd.pkgid){    // do we talk about the same Node-TX message we are waiting for ?
       BeeIoTStatus = BIOT_TX;             // Retry Msg -> in TX mode again
       while(!sendMessage(&MyTXData, 0));   // No, send same pkg /w same msgid + MIC in sync mode again
       MyMsg.retries++;                     // remember # of retries
       rc=CMD_RETRY;                        // -> wait for ACK by upper layer required
     }else{
       BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse: RETRY but new MsgID[%i] does not match to TXpkg[%i] ->ignored\n",
-             msg->hd.index, MyMsg.pkg->hd.index);
+             msg->hd.pkgid, MyMsg.pkg->hd.pkgid);
       rc = -1;  // retry requested but not for last sent message -> obsolete request
     }
 		break;
 
 	case CMD_ACK:   // we should not reach this point -> covered by ISR
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Should have been done by ISR ?!\n", msg->hd.index); 
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Should have been done by ISR ?!\n", msg->hd.pkgid);
     //  Already done by onReceive() implicitely
-      // BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Data transfer done.\n", msg->index); 
-      if(MyMsg.pkg->hd.index == msg->hd.index){    // save link to User payload data
+      // BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Data transfer done.\n", msg->index);
+      if(MyMsg.pkg->hd.pkgid == msg->hd.pkgid){    // save link to User payload data
         MyMsg.ack = 1;                        // confirm Acknowledge flag
       }
     rc = CMD_ACK;   // Message sending got acknowledged
 		break;
 
 	default:
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: unknown CMD(%d)\n", msg->hd.index, msg->hd.cmd); 
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: unknown CMD(%d)\n", msg->hd.pkgid, msg->hd.cmd);
 		// for test purpose: dump paload in hex format
-    BHLOG(LOGLORAW) hexdump((unsigned char*) msg, BIoT_HDRLEN + msg->hd.frmlen + BIoT_MICLEN);		
+    BHLOG(LOGLORAW) hexdump((unsigned char*) msg, BIoT_HDRLEN + msg->hd.frmlen + BIoT_MICLEN);
 		rc= -5;
 		break;
 	}
-	
+
 	return(rc);
 }
 
 //******************************************************************************
-// BeeIoTParseCfg() 
+// BeeIoTParseCfg()
 // Analyze received BeeIoT Message for action
 // Input:
 //  Msg   Pointer to next BeeIoT Message at MyRXData[RXPkgSrvIdx] for parsing
@@ -886,7 +884,7 @@ int rc;
 int BeeIoTParseCfg(beeiot_cfg_t * pcfg){
 int rc;
 
-    if(MyMsg.pkg->hd.index != pcfg->hd.index){    // do we talk about the same Node-TX message we are waiting for ?
+    if(MyMsg.pkg->hd.pkgid != pcfg->hd.pkgid){    // do we talk about the same Node-TX message we are waiting for ?
       return(-1);
     }
     // parse CFG struct here and configure modem
@@ -895,36 +893,38 @@ int rc;
     LoRaCfg.msgCount  = pcfg->cfg.nonce;
 
 // update next Modem Config settings (gets activated at next LoRa Pckg Send via configLoraModem() call)
-    SetChannelCfg(pcfg->cfg.channelidx);      // initialize LoraCfg field by new cfg
+    SetChannelCfg(pcfg->cfg.channelidx);          // initialize LoraCfg field by new cfg
 
-    report_interval = pcfg->cfg.freqsensor*60; // min -> sec. frequency of sensor reports via LoRa
-    lflags = (uint16_t) pcfg->cfg.verbose;             // get verbose value for BHLOG macro; needs to be 2 byte
+    report_interval = pcfg->cfg.freqsensor*60;    // min -> sec. frequency of sensor reports via LoRa
+    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
 
     // yearoff = offset to 2000
     setRTCtime(pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
-    Serial.printf("  BeeIoTParseCfg: New Configuration: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
+    Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
       report_interval, pcfg->cfg.verbose, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
+    Serial.printf("  BeeIoTParseCfg: GWTime: %i.%d.%d %d:%d:%d\n",
+      2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     rc=CMD_CONFIG;
-  return(rc);  
+  return(rc);
 }
 //******************************************************************************
-// SetChannelCfg() 
+// SetChannelCfg()
 // initialize LoraCfg-struct by Channel cfg settings by given Channel cfg id
 // Input:
 //  channelidx   index on channelconfig table
 // Return: rc
 //	0	      Channel configuration reset to given channelidx
-// 
+//
 //******************************************************************************
 int SetChannelCfg(byte  channelidx){
 channeltable_t * pchcfg;
 
 // update next Modem Config settings (gets activated at next configLoraModem() call)
-    LoRaCfg.chcfgid = channelidx; 
+    LoRaCfg.chcfgid = channelidx;
 
-	pchcfg = & txchntab[LoRaCfg.chcfgid];
+	pchcfg = & cfgchntab[LoRaCfg.chcfgid];
     LoRaCfg.freq = pchcfg->frq;
     LoRaCfg.bw   = pchcfg->band;
     LoRaCfg.sf   = pchcfg->sfbegin;
@@ -952,27 +952,28 @@ int sendMessage(beeiotpkg_t * TXData, int async) {
   if(!LoRa.beginPacket(0))                // reset FIFO ptr.; in explicit header Mode
     return(0);                            // still transmitting -> have to come back later
 
-  
+
 // Serial.flush(); // send all Dbg msg up to here...
   // now lets fill up FIFO:
   LoRa.write(TXData->hd.destID);          // add destination address
   LoRa.write(TXData->hd.sendID);          // add sender address
-  LoRa.write(TXData->hd.index);           // add message ID = package serial number
-  LoRa.write(TXData->hd.cmd);             // store function/command for GW 
+  LoRa.write(TXData->hd.pkgid);           // add message ID = package serial number
+  LoRa.write(TXData->hd.cmd);             // store function/command for GW
   LoRa.write(TXData->hd.frmlen);          // user-payload = App Frame length
+  LoRa.write(TXData->hd.res);             // user-payload = App Frame length
 
   byte len = (byte) TXData->hd.frmlen + BIoT_MICLEN;
   LoRa.write((byte*) & TXData->data, len);          // add AppFrame incl. MIC bytewise
 
 	BHLOG(LOGLORAR) Serial.println("  sendMessage: Start TX");
-  
+
   // Finish packet and send it in LoRa Mode
   // =0: sync mode: endPacket returns when TX_DONE Flag was achieved
   // =1 async: polling via LoRa.isTransmitting() needed; -> remove LoRa.idle()
   LoRa.endPacket(async);
 
-  BHLOG(LOGLORAR) Serial.printf("  LoRaSend(0x%x>0x%x)[%i](cmd=%d) <FrmLen: %iBy>\n", 
-          TXData->hd.sendID, TXData->hd.destID, TXData->hd.index, TXData->hd.cmd, 
+  BHLOG(LOGLORAR) Serial.printf("  LoRaSend(0x%x>0x%x)[%i](cmd=%d) <FrmLen: %iBy>\n",
+          TXData->hd.sendID, TXData->hd.destID, TXData->hd.pkgid, TXData->hd.cmd,
           TXData->hd.frmlen);
   BHLOG(LOGLORAR) hexdump((unsigned char*) TXData, BIoT_HDRLEN + TXData->hd.frmlen + BIoT_MICLEN);
   return(1);
@@ -980,7 +981,7 @@ int sendMessage(beeiotpkg_t * TXData, int async) {
 
 
 //******************************************************************************
-// IRQ User callback function 
+// IRQ User callback function
 // => package received (called by LoRa.handleDio0Rise() )
 // Input:
 //  packetSize  length of recognized RX package user payload in FIFO
@@ -1018,20 +1019,20 @@ byte * ptr;
   }
   msg = & MyRXData[RXPkgIsrIdx];  // Assume: BeeIoT-WAN Message received
   BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN);
-	
+
 // now check real data:
 // start the gate keeper of valid BeeIoT Package data:  ( check for known GW or JOIN GW ID)
 	if((msg->hd.sendID != LoRaCfg.gwid) && (msg->hd.sendID != GWIDx)){
-		Serial.printf("onReceive: Unknown GWID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.sendID);		
+		Serial.printf("onReceive: Unknown GWID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.sendID);
 		return;
 	}
 	if(msg->hd.destID != LoRaCfg.nodeid){
-		Serial.printf("onReceive: Wrong Target NodeID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.destID);		
+		Serial.printf("onReceive: Wrong Target NodeID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.destID);
 		BHLOG(LOGLORAR) Serial.println();
 		return;
 	}
   // Expected pkg format: Header<NODEID + GWID + index + cmd + frmlen> + AppFrame + MIC
-	if(BIoT_HDRLEN+msg->hd.frmlen+BIoT_MICLEN != packetSize){	
+	if(BIoT_HDRLEN+msg->hd.frmlen+BIoT_MICLEN != packetSize){
 		Serial.printf("onReceive: Wrong payload size detected (%i) -> package rejected\n", packetSize);
 		BHLOG(LOGLORAR) Serial.println();
 		return;
@@ -1040,26 +1041,26 @@ byte * ptr;
   // At this point we have a new header-checked BeeIoT Package
   // some debug output: assumed all is o.k.
 	BHLOG(LOGLORAW) Serial.printf("onReceive: RX(0x%02X>0x%02X)", (unsigned char)msg->hd.sendID, (unsigned char)msg->hd.destID);
-	BHLOG(LOGLORAW) Serial.printf("[%i]:(cmd=%i: %s) ", (unsigned char) msg->hd.index, (unsigned char) msg->hd.cmd, beeiot_ActString[msg->hd.cmd]);
+	BHLOG(LOGLORAW) Serial.printf("[%i]:(cmd=%i: %s) ", (unsigned char) msg->hd.pkgid, (unsigned char) msg->hd.cmd, beeiot_ActString[msg->hd.cmd]);
   BHLOG(LOGLORAW) Serial.printf("DataLen=%i Bytes\n", msg->hd.frmlen);
 
   // if it is CMD_ACK pkg -> lets commit to waiting TX-Msg
   if(msg->hd.cmd == CMD_ACK){
-    if(msg->hd.index == MyMsg.idx){  // is last TX task waiting for this ACK ?
+    if(msg->hd.pkgid == MyMsg.idx){  // is last TX task waiting for this ACK ?
       MyMsg.ack = 1;              // ACK flag hopefully still polled by waiting TX service
     }else{                        // noone is waiting for this ACK -> ignore it, but leave a note
-      BHLOG(LOGLORAR) Serial.printf("onReceive: ACK received -> with no matching msg.index: %i\n", msg->hd.index);
+      BHLOG(LOGLORAR) Serial.printf("onReceive: ACK received -> with no matching msg.index: %i\n", msg->hd.pkgid);
     } // skip RX Queue handling for ACK pkgs.
 
   }else{  // for any other CMD of RX package -> lets do it on userland side
     if((msg->hd.cmd == CMD_RETRY) || (msg->hd.cmd == CMD_REJOIN)){ // keep RETRY or REJOIN as ACK to satisfy ACK wait loop at LoRaLog()
-      if(msg->hd.index == MyMsg.idx){  // is the last TX task waiting for an ACK  but got RETRY now ?
+      if(msg->hd.pkgid == MyMsg.idx){  // is the last TX task waiting for an ACK  but got RETRY now ?
         MyMsg.ack = 1;              // fake an ACK flag hopefully still polled by waiting TX service
       }else{                        // noone is waiting for an ACK -> but we will process it anyway
-        BHLOG(LOGLORAR) Serial.printf("onReceive: RETRY/REJOIN received -> with no matching msg.index: %i\n", msg->hd.index);
+        BHLOG(LOGLORAR) Serial.printf("onReceive: RETRY/REJOIN received -> with no matching msg.index: %i\n", msg->hd.pkgid);
       } // nothing done for RETRY here, but parse routine will do the rest---
     }
-    //  Correct ISR Write pointer to next free queue buffer  
+    //  Correct ISR Write pointer to next free queue buffer
     //  in MyRXData[RXPkgIsrIdx-1] or at least at MyRXData[RXPkgSrvIdx]
     if(++RXPkgIsrIdx >= MAXRXPKG){  // no next free RX buffer left in sequential queue
       BHLOG(LOGLORAR) Serial.printf("onReceive: RX Buffer exceeded: switch back to buffer[0]\n");
@@ -1133,7 +1134,7 @@ int bytype;
       len++;            // we have to do byteloop one more time
     bytype=format;
     Serial.print(prefix);
-    for(c=(len-1)*dir; c!=(len*(1-dir)-dir); c=c+1-(2*dir)){      // byte loop forw./backw. 
+    for(c=(len-1)*dir; c!=(len*(1-dir)-dir); c=c+1-(2*dir)){      // byte loop forw./backw.
       if(!bytype){
         Serial.print("-");
         bytype=format;
@@ -1199,7 +1200,7 @@ void hexdump(unsigned char * msg, int len){
 			y++;	// compensate break condition of 'for(; ;y++)'
 		}
 		// just line end reached -> wrap the line
-		// print text representation of each line		
+		// print text representation of each line
 		Serial.printf(" <");
 		// start with regular letters
 		for (i=0; i<y; i++){
@@ -1212,5 +1213,5 @@ void hexdump(unsigned char * msg, int len){
 		}
 		Serial.printf(">\n");	// end of full text field print
 	}
-  return;	
+  return;
 }
