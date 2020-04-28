@@ -400,10 +400,11 @@ void loop() {
 #ifdef WIFI_CONFIG
   if(iswifi == 0){
 //      BHLOG(LOGLAN) Serial.println("  Loop: Check for new WebPage Client request...");
-//      CheckWebPage();
+//      CheckWebPage();	
   }
 #endif // WIFI_CONFIG
 
+//
 //***************************************************************
 // get Weight Scale values
 #ifdef HX711_CONFIG

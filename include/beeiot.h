@@ -76,6 +76,18 @@
 // Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
 
+#ifdef WROVERB
+// ESP32 WROVER-B (-> with less GPIO ->see EPD pinning)
+//#define HX711_CONFIG
+//#define ADS_CONFIG
+//#define ONEWIRE_CONFIG
+//#define WIFI_CONFIG
+//#define NTP_CONFIG
+//#define SD_CONFIG
+#define EPD_CONFIG
+#define LORA_CONFIG
+#else
+// ESP32 WROOM
 #define HX711_CONFIG
 #define ADS_CONFIG
 #define ONEWIRE_CONFIG
@@ -84,6 +96,7 @@
 #define SD_CONFIG
 #define EPD_CONFIG
 #define LORA_CONFIG
+#endif
 
 // Pin mapping when using SDCARD in SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
