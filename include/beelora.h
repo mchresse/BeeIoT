@@ -55,13 +55,15 @@ enum {
         BIOT_IDLE,      // Modem detected and joined -> channel preconfigured & active => goto BeeIoTSleep() ?
         BIOT_TX,        // in TX transmition -> poll by LoRa.isTransmitting()
         BIOT_RX,        // in RX Mode -> waiting for incomming Messages
-        BIOT_SLEEP      // Modem still in power safe status -> start BeeIoTWakeUp()
+        BIOT_SLEEP,     // Modem still in power safe status -> start BeeIoTWakeUp()
+        BIOT_DEEPSLEEP  // Modem still in deep power safe status -> start BeeIoTWakeUp()
 };
 
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(int mode);
 int  LoRaLog		(const char * outgoing, uint16_t outlen, int sync);
+int  BeeIoTBeacon   (int bcnmode);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
 void Printbit       (unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);

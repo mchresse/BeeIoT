@@ -53,6 +53,8 @@
 #include <Fonts/FreeSansBold24pt7b.h>
 
 #include <beeiot.h>
+#include <BeeIoTWan.h>
+#include <beelora.h>
 
 //************************************
 // Global data object declarations
@@ -64,6 +66,8 @@ extern uint16_t	lflags;		// BeeIoT log flag field
 extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
 extern const char * beeiot_StatusString[];
 extern byte BeeIoTStatus;
+extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep; 
+							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 
 uint16_t read16(SdFile& f);
 uint32_t read32(SdFile& f);
@@ -242,7 +246,11 @@ void showdata(int sampleID){
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Status : ");
-  display.print(beeiot_StatusString[BeeIoTStatus]);
+	if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
+  		display.print(beeiot_StatusString[BIOT_DEEPSLEEP]);
+	}else{
+  		display.print(beeiot_StatusString[BeeIoTStatus]);
+	}
 
 //  display.setTextColor(GxEPD_RED);
 //  display.print(HOSTNAME);
@@ -257,6 +265,58 @@ void showdata(int sampleID){
   display.setRotation(rotation); // restore
 } // end of ShowData()
 
+
+// show Sensor log data on epaper Display
+// Input: sampleID= Index on Sensor dataset of BHDB
+void showbeacon(int sampleID){
+  uint8_t rotation = display.getRotation();
+
+  display.fillScreen(GxEPD_WHITE);
+
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold9pt7b);
+  display.setCursor(0, 0);
+  display.setRotation(1);    // 1 + 3: print in horizontal format
+  display.println();          // adjust cursor to lower left corner of char row
+
+  display.setFont(&FreeMonoBold12pt7b);
+  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
+
+  display.setFont(&FreeMonoBold9pt7b);
+  display.println();
+
+//  display.setTextColor(GxEPD_RED);
+  display.printf("%s %s", bhdb.date, bhdb.time);
+
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold12pt7b);
+  display.println();
+
+  display.print(" Beacon Mode:  ");
+  display.println();
+  display.println();
+
+  display.printf("    RSSI: %i", bhdb.rssi);
+  display.println();
+  display.printf("    SNR : %i", bhdb.snr);
+  display.println();
+
+  display.setTextColor(GxEPD_BLACK);
+  display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+  display.println();
+  display.print("Status : ");
+  if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
+  		display.print(beeiot_StatusString[BIOT_DEEPSLEEP]);
+  }else{
+  		display.print(beeiot_StatusString[BeeIoTStatus]);
+  }
+
+  display.setTextColor(GxEPD_BLACK);
+//  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
+
+  display.update();				// WakeUp -> update display -> BusyWait -> Sleep
+  display.setRotation(rotation); // restore
+} // end of ShowBeacon()
 
 
 void drawBitmaps_200x200(){

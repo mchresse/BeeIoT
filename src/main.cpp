@@ -99,22 +99,27 @@
 
 #define LOOPTIME    60		// [sec] Loop wait time: 60 for 1 Minute
 #define SLEEPTIME   60		// RTC sleep time in seconds
+#ifdef BEACON
+#define SLEEPMODE	  BEACONSLEEP  // =0 initial startup needed(after reset); =1 after deep sleep;
+								   // =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+#else
 #define SLEEPMODE	  1 		// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
-							            // =3 ModemSleep Mode; =4 Active Wait Loop
+							    // =3 ModemSleep Mode; =4 Active Wait Loop
+#endif
 
 // WakeUp Source control
 bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
-RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
-								// =3 ModemSleep Mode; =4 Active Wait Loop
-RTC_DATA_ATTR int bootCount = 0;        // Deep Sleep Boot Counter
+RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset);   =1 after deep sleep; 
+								// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
 
 // Define deep sleep options
-uint64_t uS_TO_S_FACTOR = 1000000;  	// Conversion factor for micro seconds to seconds
+uint64_t uS_TO_S_FACTOR = 1000000;  // Conversion factor for micro seconds to seconds
 int TIME_TO_SLEEP	= SLEEPTIME;	// RTC sleep in seconds
 
 // Central Database of all measured values and runtime parameters
-RTC_DATA_ATTR dataset		    bhdb;
-RTC_DATA_ATTR unsigned int	lflags;               // BeeIoT log flag field
+RTC_DATA_ATTR dataset		bhdb;
+RTC_DATA_ATTR unsigned int	lflags; // BeeIoT log flag field
 Preferences preferences;        // we must generate this object of the preference library
 
 extern int iswifi;              // =1 WIFI flag o.k.
@@ -395,6 +400,7 @@ void loop() {
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
   strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
 
+
 //***************************************************************
 // Check for Web Config page update
 #ifdef WIFI_CONFIG
@@ -477,7 +483,11 @@ float x;              // Volt calculation buffer
 // Update ePaper
 #ifdef EPD_CONFIG
     BHLOG(LOGEPD) Serial.println("  Loop: Show Sensor Data on EPD");
+#ifdef BEACON
+    showbeacon(bhdb.loopid);
+#else
     showdata(bhdb.loopid);
+#endif
 #endif
 
 //***************************************************************
@@ -528,6 +538,8 @@ String dataMessage; // Global data objects
               String(sample) + " " +
               String(bhdb.dlog[bhdb.loopid].comment) +
               "\r\n";       // OS common EOL: 0D0A
+
+#ifndef BEACON
   Serial.printf("  Loop[%i]: ", sample);
   Serial.print(dataMessage);
 
@@ -537,10 +549,17 @@ String dataMessage; // Global data objects
   }else{
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
+#endif
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (are we joined ?)
+
+#ifdef BEACON
+    // For Test purpose of transmission quality: send a beacon to the current GW
+    BeeIoTBeacon(0);  // in Non-Joined Mode != BIOT_JOIN (assumed LoRa Log was successfull)
+#else
     LoRaLog((char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
+#endif
   }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }
@@ -760,7 +779,9 @@ esp_err_t  rc;
 		case 4:		// Active Mode
 			// NOP
 		default:
+#ifndef BEACON
     	BHLOG(LOGBH) Serial.printf("  Loop: Enter WaitLoop(%i sec.)\n", report_interval);
+#endif
 			mydelay(waittime*1000);   // time in ms - wait with blinking red LED
 			BHLOG(LOGBH) Serial.println();
 			break;
@@ -784,10 +805,10 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_TIMER:      Serial.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD:   Serial.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP:        Serial.println("Wakeup caused by ULP program"); break;
-	  case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
-	  case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
+	case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
+	case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
     default :
-        Serial.printf("Wakeup caused by Deep Sleep: %d\n",wakeup_reason);
+        Serial.printf("Sleep>Wakeup root cause: %d\n",wakeup_reason);
 		    return(ESP_SLEEP_WAKEUP_UNDEFINED);
 		    break;
   }

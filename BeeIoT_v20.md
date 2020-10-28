@@ -1069,7 +1069,7 @@ Die Anforderungsliste liest sich gut:
 | Index | Stück | Bezeichnung | Hersteller | Bezugsquelle | Preis | Kommentar |
 |-------|-------|-------------|------------|--------------|-------|-----------|
 |1|1|Plattformwägezelle H40A-C3-0100|Bosche|http://www.bosche.eu|58€|H30A v H40A 100kg|
-|2a|1|ESP32-DevKitC v4|OSS|Amazon|20€|(WROOMER32 oder WOVER32)|
+|2a|1|ESP32-DevKitC v4|OSS|Amazon|20€|(WROOM32 oder WROVER32)|
 |2b|1x|SD HC Karte 2GB|||Amazon|5€|
 |3|1x|HX711 24 Bit A/D Wandler||Amazon|10€|mit grüner Lackschicht!|
 |4|2x|Montageplatte für Wägezelle ALU 200 x 200 x 10mm|Schlosserei||200€|Keine Beschichtung|

@@ -21,7 +21,7 @@
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		2		// Minor
+#define BIoT_VMINOR		3		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -29,10 +29,16 @@
 // 1.2	24.04.2020	LoRaSW sync word switch; txchntab[] -> cfgchntab[]
 //					PkgHD: Framelen: 2 Byte -> for 16bit payload size
 //					Event CMD definition
-
+// 1.3	28.10.2020  Add Beacon CMD + Ack
+//
 //***********************************************
 // LoRa MAC Presets
 //***********************************************
+#define LENJOINEUI	8
+#define LENDEVEUI	8
+#define LENAPPSKEY	16
+#define LENNWSKEY	16
+
 // AppServer EUIDs:
 #define BIoT_EUID	0xBB, 0xEE, 0xEE, 0xBB, 0xEE, 0xEE, 0xCC, 0xEE
 #define TURTLE_EUID 0xBB, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0xAA, 0xBB
@@ -100,8 +106,8 @@ enum {
 	CMD_ACK,		// Received message complete
 	CMD_CONFIG,		// exchange new set of runtime configuration parameters
 	CMD_EVENT,		// Node Event, exceptional
-	CMD_RES7,		// reserved
-	CMD_RES8,		// reserved
+	CMD_BEACON,		// Send beacon e.g. for distance test
+	CMD_ACKBCN,		// Beacon Acknowledge -> delivers RSSI & SNR
 	CMD_TIME,		// Request curr. time values from partner side
 	CMD_NOP			// do nothing -> for xfer test purpose
 };
@@ -119,21 +125,21 @@ const char * beeiot_ActString[] = {
 	[CMD_ACK]		= "ACK",
 	[CMD_CONFIG]	= "CONFIG",
 	[CMD_EVENT]		= "EVENT",
-	[CMD_RES7]		= "NOP7",
-	[CMD_RES8]		= "NOP8",
+	[CMD_BEACON]	= "BEACON",
+	[CMD_ACKBCN]	= "ACKBEACON",
 	[CMD_TIME]		= "GETTIME",
 	[CMD_NOP]		= "NOP"
 };
 #endif
 
 #ifndef bool
-typedef bool boolean;			// C++ type: boolan
+typedef bool boolean;	// C++ type: boolan
 #endif
 #ifndef byte
-typedef unsigned char	byte;	// 8 bit Byte == unsigned char
+typedef uint8_t	byte;	// 8 bit Byte == unsigned char
 #endif
 #ifndef u2_t
-typedef unsigned short  u2_t;	// a 16 bit word = 2x byte
+typedef uint16_t  u2_t;	// a 16 bit word = 2x byte
 #endif
 
 //***************************************************************
@@ -145,18 +151,18 @@ typedef unsigned short  u2_t;	// a 16 bit word = 2x byte
 // BeeIoT LoRa Package transfer length => BIoT_HDRLEN + BIoT_FRAMELEN + BIoT_MICLEN
 // BIoT_MICLEN assures integrity of the packet range: 0..(BIoT_HDRLEN + BIoT_FRAMELEN)
 typedef struct {
-	byte	destID;		// ID of receiver
-	byte	sendID;		// ID of BeeIoT Node sending a package
-	byte	pkgid;		// package index (0..0xFF)
-	byte	cmd;		// command code from Node
-	byte	frmlen;		// 8bit length of following payload Frame: BIoT_FRAMELEN (excl. MIC)
-	byte	res;		// reserved
+	uint8_t	destID;		// ID of receiver
+	uint8_t	sendID;		// ID of BeeIoT Node sending a package
+	uint8_t	pkgid;		// package index (0..0xFF)
+	uint8_t	cmd;		// command code from Node
+	uint8_t	frmlen;		// 8bit length of following payload Frame: BIoT_FRAMELEN (excl. MIC)
+	uint8_t	res;		// reserved
 } beeiot_header_t;		// length define in BIoT_HDRLEN !!! changes must be made there as well
 
 typedef struct { // generic BeeIoT Package format
 	beeiot_header_t hd;	// BeeIoT common Header
-	char	data[BIoT_DLEN]; // remaining payload including MIC (last 4 byte)
-						// byte	BIoT_NsMIC[4] pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
+	char	data[BIoT_DLEN]; // remaining payload including MIC (last 4 uint8_t)
+						// uint8_t	BIoT_NsMIC[4] pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
 						// cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
 						// MIC = cmac[0..3]
 } beeiotpkg_t;
@@ -164,17 +170,17 @@ typedef struct { // generic BeeIoT Package format
 //***************************
 // (RE-)JOIN-CMD Pkg:
 typedef struct {
-	byte	devEUI[8];	// could be e.g. 0xFFFE + node board ID (extended from 6 -> 8Byte)
-	byte	joinEUI[8];	// ==AppEUI to address the right App service behind GW+NWserver
-	byte	frmid[2];	// Msg=Frame idx of next app session (typ.= 1); 1. join was done with frmid=0 !
-	byte	vmajor;		// supported version of BeeIoTWAN protocol MSB: Major
-	byte 	vminor;		// LSB: Minor
+	uint8_t	devEUI[LENDEVEUI];	// could be e.g. 0xFFFE + node board ID (extended from 6 -> 8Byte)
+	uint8_t	joinEUI[LENJOINEUI];	// ==AppEUI to address the right App service behind GW+NWserver
+	uint8_t	frmid[2];	// Msg=Frame idx of next app session (typ.= 1); 1. join was done with frmid=0 !
+	uint8_t	vmajor;		// supported version of BeeIoTWAN protocol MSB: Major
+	uint8_t vminor;		// LSB: Minor
 }joinpar_t;
 
 typedef struct {
 	beeiot_header_t hd;		// BeeIoT common Pkg Header
 	joinpar_t		info; 	// Join request parameters
-	byte			mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
+	uint8_t			mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_join_t' (except MIC itself)
 							// cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
 							// MIC = cmac[0..3]
 } beeiot_join_t;
@@ -187,29 +193,29 @@ typedef struct {
 typedef struct {
 	// device descriptor
 	u2_t	verbose;		// =0..0xffff verbose flags for debugging
-	byte	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
-	byte	gwid;			// LoRa Pkg target GWID of serving gateway for Status reports
-	byte	vmajor;			// major version of used/comitted BeeIoTWAN protocol
-	byte	vminor;			// minor version of used/comitted BeeIoTWAN protocol
-	byte	freqsensor;		// =1..n Sensor report frequency in [minutes]
+	uint8_t	nodeid;			// LoRa modem unique NodeID1..n used for each Pkg
+	uint8_t	gwid;			// LoRa Pkg target GWID of serving gateway for Status reports
+	uint8_t	vmajor;			// major version of used/comitted BeeIoTWAN protocol
+	uint8_t	vminor;			// minor version of used/comitted BeeIoTWAN protocol
+	uint8_t	freqsensor;		// =1..n Sensor report frequency in [minutes]
 	// LoRa Modem settings
-	byte	channelidx;		// channelidx of channeltable_t	txchntab[MAX_CHANNELS]
-	byte	nonce;			// pkg counter init value
-	byte	reserved;		// fill byte for word boundary
+	uint8_t	channelidx;		// used channelidx of channeltable_t	txchntab[MAX_CHANNELS]
+	uint8_t	nonce;			// pkg counter init value
+	uint8_t	reserved;		// fill uint8_t for word boundary
 
 	// RTC DATETIME input format: YYoffs-MM-DD-HH-MM-SS
-	byte	yearoff;		// offset to 2000
-	byte	month;			// 1-12
-	byte	day;			// 1-31
-	byte	hour;			// 0-23
-	byte	min; 			// 0-59
-	byte	sec;			// 0-59
+	uint8_t	yearoff;		// offset to 2000
+	uint8_t	month;			// 1-12
+	uint8_t	day;			// 1-31
+	uint8_t	hour;			// 0-23
+	uint8_t	min; 			// 0-59
+	uint8_t	sec;			// 0-59
 } devcfg_t;
 
 typedef struct {
 	beeiot_header_t hd;		// BeeIoT common Pkg Header
 	devcfg_t cfg;			// node config params (must be smaller than BEEIOT_DLEN!)
-	byte	mic[BIoT_MICLEN]; // pkg integrity code for complete 'beeiot_cfg_t' (except MIC itself)
+	uint8_t	mic[BIoT_MICLEN]; // pkg integrity code for complete 'beeiot_cfg_t' (except MIC itself)
 							// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
 							// MIC = cmacS[0..3]
 } beeiot_cfg_t;
@@ -229,10 +235,10 @@ typedef struct {
 // e.g. 65535 * (0x80-5-2) = 7.929.735 Byte = 7743kB max value
 typedef struct {
 	beeiot_header_t hd;			// BeeIoT common Pkg Header
-	byte	sdseq_msb;			// MSB: data package sequence number: 0-65535 * (BIoT_FRAMELEN-2)
-	byte	sdseq_lsb;			// LSB data pkg. sequ. number
+	uint8_t	sdseq_msb;			// MSB: data package sequence number: 0-65535 * (BIoT_FRAMELEN-2)
+	uint8_t	sdseq_lsb;			// LSB data pkg. sequ. number
 	char	dsd[BIoT_FRAMELEN-2];	// raw SD data per sequ. pkg - len of 2 By. sdseq counter
-	byte	mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_status_t' (except MIC itself)
+	uint8_t	mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_status_t' (except MIC itself)
 								// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
 								// MIC = cmacS[0..3]
 } beeiot_sd_t;
@@ -283,17 +289,61 @@ typedef struct {
 
 //***************************
 // beacon frame format: not used yet: t.b.d.
-enum {
-    // Beacon frame format EU SF9
-    OFF_BCN_NETID    = 0,
-    OFF_BCN_TIME     = 3,
-    OFF_BCN_CRC1     = 7,
-    OFF_BCN_INFO     = 8,
-    OFF_BCN_LAT      = 9,
-    OFF_BCN_LON      = 12,
-    OFF_BCN_CRC2     = 15,
-    LEN_BCN          = 17
+// BEACON-CMD Pkg:
+// xfer of location Info only
+// useful for distance and transmission quality tests
+typedef struct {
+	uint8_t	info;
+	uint8_t	crc1;
+	uint8_t	devEUI[LENDEVEUI];	// could be e.g. 0xFFFE + node board ID (extended from 6 -> 8Byte)
+	// RTC TIME input format: HH-MM-SS
+	uint8_t	hour;			// 0-23
+	uint8_t	min; 			// 0-59
+	uint8_t	sec;			// 0-59
+	uint8_t	crc2;
+	// GPS location
+	union{ // latitude
+		uint8_t	lat[sizeof(float)];
+		float	latf;
+	};
+	union{ // longitude
+		uint8_t lon[sizeof(float)];
+		float	lonf;
+	};
+	uint32_t	alt;	// altitude
+} beacon_t;
+
+typedef struct {
+	beeiot_header_t hd;		// BeeIoT common Pkg Header
+	beacon_t bcn;			// node config params (must be smaller than BEEIOT_DLEN!)
+	uint8_t	mic[BIoT_MICLEN]; // pkg integrity code for complete 'beeiot_beacon_t' (except MIC itself)
+							// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
+							// MIC = cmacS[0..3]
+} beeiot_beacon_t;
+
+enum {    // Beacon frame format EU SF9
+    OFF_BCN_NETID    = 0,	// 4
+    OFF_BCN_TIME     = 3,	// 4
+    OFF_BCN_CRC1     = 7,	// 1
+    OFF_BCN_INFO     = 8,	// 1
+    OFF_BCN_LAT      = 9,	// 4
+    OFF_BCN_LON      = 12,	// 4
+    OFF_BCN_CRC2     = 15,	// 2
+    LEN_BCN          = 17	// 1
 };
+
+// CMD ACKBCN:
+typedef struct {
+	int		rssi;		// remaining status array
+	int		snr;
+} ackbcn_t;
+typedef struct {
+	beeiot_header_t hd;		// BeeIoT common Pkg Header
+	ackbcn_t bcn;			// node config params (must be smaller than BEEIOT_DLEN!)
+	uint8_t	mic[BIoT_MICLEN]; // pkg integrity code for complete 'beeiot_beacon_t' (except MIC itself)
+							// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
+							// MIC = cmacS[0..3]
+} beeiot_ackbcn_t;
 
 
 //*****************************************************************************
@@ -308,8 +358,8 @@ bw_t	band;		// Bandwidth BWxxx
 sf_t	sfbegin;	// Spreading Start SFx
 sf_t	sfend;		// Spreading End   SFy
 cr_t 	cr;			// Coding Rate CR_4_x
-byte	pwr;		// TX Power level: typ. 14
-byte	dc;			// duty cycle quote: 1:0,1%, 10:1%, 100:10%
+uint8_t	pwr;		// TX Power level: typ. 14
+uint8_t	dc;			// duty cycle quote: 1:0,1%, 10:1%, 100:10%
 }channeltable_t;
 
 // Default frequency plan for EU 868MHz ISM band, based on the Semtech global_conf.json defaults,

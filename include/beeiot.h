@@ -70,12 +70,17 @@
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
 //*******************************************************************
-// Defiine if ESP32 WROOM32 or WROVERB is used
-// #define WROVERB				// use IO Pinning for WROVERB: IO 16+17: NC (subst. by 4 + 15)
+// Define if ESP32 WROOM32, or WROVER-B is used
+// (Select only one define !)
+// #define WROVERB		// use IO Pinning for WROVERB: IO 16+17: NC (subst. by 4 + 15)
+#define WROOM			// use of WROOM32 Chip type
+// #define BEACON			// Work in Beacon Mode only -> Send LoRa Beacon only.
 
 // Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
+//*******************************************************************
 
+// Specify workOn Modules of setup() and main loop()
 #ifdef WROVERB
 // ESP32 WROVER-B (-> with less GPIO ->see EPD pinning)
 //#define HX711_CONFIG
@@ -87,7 +92,20 @@
 #define EPD_CONFIG
 #define LORA_CONFIG
 #else
-// ESP32 WROOM
+#ifdef WROOM
+
+#ifdef BEACON
+// ESP32 WROOM in beacon Mode -> Frequent Lora Connect only
+#define EPD_CONFIG
+#define LORA_CONFIG
+
+#define BEACONFRQ	10		// send beacon each 10 sec.
+#define BEACONCHNCFG 0		// Set beacon channel config table Index
+// SleepModes: =0 initial startup needed(after reset),
+// =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+#define BEACONSLEEP  1		// Beacon Sleep Mode: 1 = DeepSleep, 2= Light SLeep
+
+#else	// ESP32 WROOM BeeHive Mode (Default)
 #define HX711_CONFIG
 #define ADS_CONFIG
 #define ONEWIRE_CONFIG
@@ -96,8 +114,11 @@
 #define SD_CONFIG
 #define EPD_CONFIG
 #define LORA_CONFIG
-#endif
+#endif	// Beacon
+#endif	// WROOM
+#endif	// WROVERB
 
+//*******************************************************************
 // Pin mapping when using SDCARD in SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
 
@@ -243,6 +264,9 @@ typedef struct {
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
     uint64_t  BoardID;          // unique Identifier of MUC board (6(of8) Byte effective)
 	datrow	dlog[datasetsize];	// all sensor logs till upload to server
+	// for beacon mode
+	int		rssi;
+	int		snr;
 } dataset;
 
 
@@ -305,6 +329,7 @@ void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_colo
 void drawBitmaps_200x200();
 void drawBitmaps_other(void);
 void showdata		(int sampleID);
+void showbeacon 	(int sampleID);
 
 // end of BeeIoT.h
 #endif // BeeIoT_h
