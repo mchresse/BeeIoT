@@ -263,7 +263,10 @@ typedef struct {
     char	ipaddr[LENIPADDR];	// IPv4 Address xxx:xxx:xxx:xxx
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
-    uint64_t  BoardID;          // unique Identifier of MUC board (6(of8) Byte effective)
+	// Board Identification data
+	uint64_t  BoardID;  		// unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
+	int		  chipID;			// get chiptype: 0=WROOM32, 1=WROVER-B, ...
+	esp_chip_info_t chipTYPE;	// get chip board type and revision -> relevant for sytem API vaildation
 	datrow	dlog[datasetsize];	// all sensor logs till upload to server
 	// for beacon mode
 	int		rssi;

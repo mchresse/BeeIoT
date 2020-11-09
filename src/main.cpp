@@ -35,6 +35,8 @@
 #include <string>
 // #include <esp_log.h>
 // from Espressif Systems IDF: https://github.com/espressif/esp-idf/tree/71b4768df8091a6e6d6ad3b5c2f09a058f271348/components/log
+#include "soc/efuse_reg.h"
+#include <esp_efuse.h>
 
 #include "sdkconfig.h"   // generated from Arduino IDE
 #include <Preferences.h> // from espressif-esp32 library @ GitHub
@@ -172,36 +174,9 @@ esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
+void get_efuse_ident(void);
+void wiretest();
 
-// for test purpose only incase of HW incompatibility WROOM <-> Wrover ESP32 types
-void wiretest(){
-  int gpio = 36;
-  int twait = 1000;
-
-  Serial.printf(" GPIO OUT: %i: ", gpio);
-  for (int i=0; i<10000; i++){
-    pinMode(gpio,   OUTPUT);
-    digitalWrite(gpio, LOW);
-    delay(twait);
-    digitalWrite(gpio, HIGH);
-    delay(twait);
-    Serial.printf(".");
-  }
-  Serial.printf("\n");
-
-  Serial.printf(" GPIO IN: %i: ", gpio);
-  pinMode(gpio,  INPUT);
-  for (int i=0; i<20; i++){
-    int dio = digitalRead(gpio);
-    delay(twait/2);
-    if(dio)
-      Serial.printf("1");
-    else
-      Serial.printf("0");
-  }
-  Serial.printf("   -> Done! \n");
-  while(1);
-}
 
 //*******************************************************************
 // BeeIoT Setup Routine
@@ -262,12 +237,10 @@ int rc;		// generic return code variable
 			Serial.printf ("LogLevel: %i\n", lflags);
 
 		BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
+
 		//***************************************************************
-		// get Board Chip ID (WiFI MAC)
-		bhdb.BoardID=ESP.getEfuseMac();//The chip ID is essentially its MAC address(length: 6 bytes).
-			BHLOG(LOGBH) Serial.printf("  Setup: ESP32 DevKitC Chip ID = %04X",
-			(uint16_t)(bhdb.BoardID>>32));                            //print High 2 bytes
-		BHLOG(LOGBH) Serial.printf("%08X\n",(uint32_t)bhdb.BoardID);  //print Low 4bytes.
+		// get BoardID (=WiFI MAC), ChipID and ChipREV from eFuse area
+		get_efuse_ident();
 	}
 
 //***************************************************************
@@ -398,7 +371,7 @@ void loop() {
   BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop");
   BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n",
 		bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
-  BHLOG(LOGBH) Serial.println(">*******************************************????<");
+  BHLOG(LOGBH) Serial.println(">***********************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
   strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
@@ -886,6 +859,48 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 
 
 //*******************************************************************
+// get_efuse_ident()
+// Read eFuse bitfield block 3 and extract chip identification IDs
+//
+// Global used:
+//  bhdb.BoardID  unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
+//  bhdb.Chipid   get chiptype: 0=WROOM32, 1=WROVER-B, ...
+//  bhdb.ChipType get chip board type and revision -> relevant for sytem API vaildation
+//*******************************************************************
+int getChipRevision(){
+  return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_REV1_S)) & EFUSE_RD_CHIP_VER_REV1_V);
+}
+int getChipVerPkg(){
+  return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_PKG_S)) & EFUSE_RD_CHIP_VER_PKG_V);
+}
+
+void get_efuse_ident(void) {
+
+	bhdb.BoardID = ESP.getEfuseMac();//The chip ID is essentially its MAC address(length: 6 bytes).
+	Serial.printf("  Setup: ESP32 BoardID = %04X",(uint16_t)(bhdb.BoardID>>32)); //print High 2 bytes
+	Serial.printf("%08X\n",(uint32_t)bhdb.BoardID);  //print Low 4bytes.
+
+	esp_chip_info(&bhdb.chipTYPE);
+	Serial.printf("  Setup: Detected ESP32-S-Model:%d, Rev: %i ", bhdb.chipTYPE.model, bhdb.chipTYPE.revision);
+	Serial.printf("  %s\n", esp_get_idf_version());
+	Serial.printf("  Setup: Chip Revision: %d", getChipRevision());
+
+	bhdb.chipID = getChipVerPkg();
+  Serial.printf(" -  Chip-Package ID: %d  ", bhdb.chipID);
+
+  switch(bhdb.chipID){
+		case EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ6:	Serial.println("-> ESP32D0WDQ6 (WROOM32)"); break;
+		case EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ5:	Serial.println("-> ESP32D0WDQ5 (WROVER-B)"); break;
+		case EFUSE_RD_CHIP_VER_PKG_ESP32D2WDQ5:	Serial.println("-> ESP32D2WDQ5"); break;
+		case EFUSE_RD_CHIP_VER_PKG_ESP32PICOD2:	Serial.println("-> ESP32PICOD2"); break;
+		case EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4:	Serial.println("-> ESP32PICOD4"); break;
+		default: 	Serial.println("-> unknown"); break;
+	}
+
+  //	Serial.println(esp_efuse_get_pkg_ver(), BIN);
+}
+
+//*******************************************************************
 // CheckWebPage()
 // check web space for client request
 // in case we are connected send a MQTT response
@@ -983,5 +998,40 @@ void CheckWebPage(){
   }
 */
 } // end of CheckWebPage()
+
+
+//********************************************************************************
+// for test purpose only in case of HW incompatibility
+// WROOM <-> Wrover ESP32 pin layout
+//********************************************************************************
+void wiretest(){
+  int gpio = 36;
+  int twait = 1000;
+
+  Serial.printf(" GPIO OUT: %i: ", gpio);
+  for (int i=0; i<10000; i++){
+    pinMode(gpio,   OUTPUT);
+    digitalWrite(gpio, LOW);
+    delay(twait);
+    digitalWrite(gpio, HIGH);
+    delay(twait);
+    Serial.printf(".");
+  }
+  Serial.printf("\n");
+
+  Serial.printf(" GPIO IN: %i: ", gpio);
+  pinMode(gpio,  INPUT);
+  for (int i=0; i<20; i++){
+    int dio = digitalRead(gpio);
+    delay(twait/2);
+    if(dio)
+      Serial.printf("1");
+    else
+      Serial.printf("0");
+  }
+  Serial.printf("   -> Done! \n");
+  while(1);
+}
+
 
 // end of BeeIoT main
