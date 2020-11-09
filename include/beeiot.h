@@ -98,6 +98,7 @@
 // ESP32 WROOM in beacon Mode -> Frequent Lora Connect only
 #define EPD_CONFIG
 #define LORA_CONFIG
+#define SD_CONFIG	// for test purpose only (not needed for beacon mode)
 
 #define BEACONFRQ	10		// send beacon each 10 sec.
 #define BEACONCHNCFG 0		// Set beacon channel config table Index

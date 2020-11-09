@@ -87,6 +87,9 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(SD_CS, HIGH);
     digitalWrite(BEE_CS, HIGH);
+    gpio_hold_dis(GPIO_NUM_2);   // enable SD_CS
+    gpio_hold_dis(GPIO_NUM_5);   // enable EPD_CS
+    gpio_hold_dis(GPIO_NUM_12);  // enable BEE_CS
 
 // Setup VSPI BUS
     pinMode(VSPI_MISO, INPUT_PULLUP);
@@ -98,6 +101,7 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 // Preset SPI dev: BEE-LoRa Module
     pinMode(BEE_RST, OUTPUT);
     digitalWrite(BEE_RST, HIGH);
+    gpio_hold_dis(GPIO_NUM_14);  // enable BEE_RST
     pinMode(BEE_DIO0, INPUT);
     pinMode(BEE_DIO1, INPUT);
     pinMode(BEE_DIO2, INPUT);
@@ -112,13 +116,12 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
     pinMode(EPD_BUSY, INPUT);
 
     #ifdef SD_CONFIG
-    BHLOG(LOGSPI) Serial.print("  MSPI: SPI-Init of SD card...");
-    if (!SD.begin(SD_CS)){
-        BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
-    } else {
-        BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
-        issdcard = 1;
-    }
+        if (!SD.begin(SD_CS)){
+            BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
+        } else {
+            BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
+            issdcard = 1;
+        }
     #endif
 
     #ifdef EPD_CONFIG
