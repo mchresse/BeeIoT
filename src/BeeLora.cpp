@@ -38,6 +38,7 @@
 
 #include "beelora.h"      // BeeIoT Lora Message definitions
 #include "beeiot.h"       // provides all GPIO PIN configurations of all sensor Ports !
+#include "BIotCrypto.h"   // MIC generation and En-/Decryption of Msg payload
 
 //***********************************************
 // Global Sensor Data Objects
@@ -94,7 +95,7 @@ RTC_DATA_ATTR  u1_t JOINEUI[8]	= {BIoT_EUID};   // aka AppEUI
 // Node-specific AES key (derived from device EUI)
 RTC_DATA_ATTR  u1_t  DEVKEY[16]	= { 0xBB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
-// BIoT Nws & App service Keys fro pkt and frame encryption
+// BIoT Nws & App service Keys for pkt and frame encryption
 RTC_DATA_ATTR  u1_t  AppSKey[16]	= { 0xAA, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 RTC_DATA_ATTR  u1_t  NwSKey[16]	= { 0xDD, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
@@ -133,7 +134,9 @@ int  BeeIoTParseCfg(beeiot_cfg_t * pcfg);
 int  SetChannelCfg	(byte  channelidx);
 int  sendMessage	(beeiotpkg_t * TXData, int sync);
 void onReceive		(int packetSize);
-void BIoT_getmic	(beeiotpkg_t * pkg, byte * mic);
+void BIoT_getmic  (beeiotpkg_t * pkg, int dir, byte * mic);
+extern void LoRaMacJoinComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic );
+
 
 //*********************************************************************
 // Setup_LoRa(): init BEE-client object: LoRa
@@ -358,7 +361,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
   pjoin->info.vmajor = (byte)BIoT_VMAJOR;
   pjoin->info.vminor = (byte)BIoT_VMINOR;
 
-  BIoT_getmic( & MyTXData, (byte*) pjoin->mic); // MIC generation of (pjoin-hdr + pjoin-info)
+  BIoT_getmic( & MyTXData, UP_LINK,(byte*) pjoin->mic); // MIC generation of (pjoin-hdr + pjoin-info)
 
   // remember new Msg (for possible RETRIES)
   // have to do it before sendmessage -> is used by ISR routine in case of (fast) ACK response
@@ -482,18 +485,47 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
 //***********************************************************************
 // BIoT_getmic()
-//Create pkg integrity code for pkg->hdr + pkg->data (except MIC itself)
-void BIoT_getmic(beeiotpkg_t * pkg, byte * mic) {
-byte cmac[16]={0x11,0x22,0x33,0x44};
+// Create pkg integrity code for pkg->hdr + pkg->data (except MIC itself)
+// INPUT:
+//  pkg   ptr on MSG-Buffer (HDR + payload)
+//  dir   UP_LINK(Clinet->GW), DOWN_LINK (GW->Client)
+// OUTPUT:
+//  mic   ptr. on Msg Integrity code (4 Byte field)
+//***********************************************************************
+void BIoT_getmic(beeiotpkg_t * pkg, int dir, byte * mic) {
+uint32_t bufmic = 0x11223344;
+uint32_t* pduid;
 
   // ToDo get MIC calculation:
+  // byte cmac[16]={0x11,0x22,0x33,0x44};
   // cmac = aes128_cmac(NwkKey, MHDR | JoinEUI | DevEUI | DevNonce)
-  memcpy(mic, &cmac[0], 4);   // return first 4 Byte of cmac[0..3]
-  BHLOG(LOGLORAR) Serial.printf("  BIoT_getmic: Add MIC[4] = %02X %02X %02X %02X for Msg[%d]\n",
-      mic[0], mic[1], mic[2], mic[3], pkg->hd.pkgid);
+  if(pkg->hd.cmd == CMD_JOIN || pkg->hd.cmd == CMD_REJOIN){
+    // For JoinPkg:
+    LoRaMacJoinComputeMic( (const uint8_t*) pkg, (uint16_t) pkg->hd.frmlen+BIoT_HDRLEN,
+               (const uint8_t*) &NwSKey, (uint32_t*) &bufmic );
+  }else{
+    // For Upload Pkg:
+	  pduid = (uint32_t*) &DEVEUI;
+	  BHLOG(LOGLORAW) printf("  JS_ValidateMic: duid[%i] = 0x%X\n", pkg->hd.pkgid, *pduid);
+    LoRaMacComputeMic( (const uint8_t*)pkg, (uint16_t) pkg->hd.frmlen+BIoT_HDRLEN, (const uint8_t*) &NwSKey,
+             (const uint32_t) *pduid, dir, (uint32_t) pkg->hd.pkgid, (uint32_t*) &bufmic );
+  }
+
+//  memcpy(mic, (byte *) &bufmic, 4);   // return first 4 Byte of cmac[0..3]
+  mic[0] = (bufmic >>24) & 0xFF;
+  mic[1] = (bufmic >>16) & 0xFF;
+  mic[2] = (bufmic >> 8) & 0xFF;
+  mic[3] = (bufmic) & 0xFF;
+
+  BHLOG(LOGLORAR) Serial.printf("  BIoT_getmic: (0x%X) -> Add MIC[4] = %02X %02X %02X %02X for Msg[%d]\n",
+      bufmic, mic[0], mic[1], mic[2], mic[3], pkg->hd.pkgid);
   return;
 }
 
+
+//***********************************************************************
+// BeeIoTWakeUp()
+//***********************************************************************
 int BeeIoTWakeUp(void){
   BHLOG(LOGLORAR) Serial.printf("  BeeIoTWakeUp: Enter Idle Mode\n");
   // toDo. kind of Setup_Lora here
@@ -502,6 +534,9 @@ int BeeIoTWakeUp(void){
   return(islora);
 }
 
+//***********************************************************************
+// BeeIoTSleep()
+//***********************************************************************
 void BeeIoTSleep(void){
     BHLOG(LOGLORAR) Serial.printf("  BeeIoTSleep: Enter Sleep Mode\n");
     BeeIoTStatus = BIOT_SLEEP;  // go into power safe mode
@@ -602,7 +637,7 @@ int rc;       // generic return code
   if(MyTXData.hd.cmd == CMD_LOGSTATUS)   // do we send a string ?
     MyTXData.data[length-1]=0;           // assure EOL = 0
 
-  BIoT_getmic( & MyTXData, (byte*) & MyTXData.data[length]); // MIC AES generation of (TX-hdr + TX-payload)
+  BIoT_getmic( & MyTXData, UP_LINK, (byte*) & MyTXData.data[length]); // MIC CMAC generation of (TX-hdr + TX-payload)
 
   // 3. remember new Msg (for mutual RETRIES and ACK checks)
   // have to do it before sendmessage -> used by ISR for TX-ACK response
@@ -868,7 +903,7 @@ int rc;
 		}
 		rc = CMD_ACK;   // Message sending got acknowledged
 		break;
-	
+
 	case CMD_ACKBCN:   // Beacon Ack Pack received
     	// BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Data transfer done.\n", msg->index);
 		BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN + msg->hd.frmlen + BIoT_MICLEN);
@@ -1177,7 +1212,7 @@ int rc;
   dbcn->crc2  = 22;
 
   // get MIC from pkg-start to pkg-end address
-  BIoT_getmic( & MyTXData, (byte*) & MyTXData.data[sizeof(beacon_t)]); // MIC AES generation of (TX-hdr + TX-payload)
+  BIoT_getmic( & MyTXData, UP_LINK, (byte*) & MyTXData.data[sizeof(beacon_t)]); // MIC AES generation of (TX-hdr + TX-payload)
 
   // 3. remember new Msg (for mutual RETRIES and ACK checks)
   // have to do it before sendmessage -> used by ISR for TX-ACK response

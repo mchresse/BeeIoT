@@ -58,10 +58,14 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 int setup_rtc (int mode) {
   isrtc = 0;
 
+  gpio_hold_dis((gpio_num_t) SCL);  	// enable ADS_SCL for Dig.-IO I2C Master Mode
+  gpio_hold_dis((gpio_num_t) SDA);  	// enable ADS_SDA for Dig.-IO I2C Master Mode
+
   if (! rtc.begin()) {
     Serial.println("  RTC: Couldn't find RTC device\n");
     return(isrtc);
   }
+
   isrtc = 1;  // RTC Module detected;
   //  if NTC based adjustment is needed use:
   //  static void adjust(const DateTime& dt);

@@ -36,7 +36,8 @@ typedef				  u4_t devaddr_t;		// Device address
 
 enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
 
-
+#define UP_LINK   0   // DIR: Client -> GW
+#define DOWN_LINK 1   // DIR: GW -> Client
 
 // Msg Buffer for TX package
 typedef struct {

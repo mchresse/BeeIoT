@@ -64,9 +64,9 @@
 
 #include "BIoTaes.h"
 
-//#if defined( HAVE_UINT_32T )
-//  typedef unsigned long uint32_t;
-//#endif
+#if defined( HAVE_UINT_32T )
+  typedef unsigned long uint32_t;
+#endif
 
 /* functions for finite field multiplication in the AES Galois field    */
 
@@ -86,6 +86,7 @@
 #define fb(x)   (f8(x) ^ f2(x) ^ x)
 #define fd(x)   (f8(x) ^ f4(x) ^ x)
 #define fe(x)   (f8(x) ^ f4(x) ^ f2(x))
+
 
 #if defined( USE_TABLES )
 
@@ -219,7 +220,7 @@ static const uint8_t gfmul_e[256] = mm_data(fe);
 #define gfm_d(x)     gfmul_d[(x)]
 #define gfm_e(x)     gfmul_e[(x)]
 #endif
-#else
+#else  // USE_TABLES
 
 /* this is the high bit of x right shifted by 1 */
 /* position. Since the starting polynomial has  */

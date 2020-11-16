@@ -201,13 +201,13 @@ int rc;		// generic return code variable
   BHLOG(LOGBH)Serial.printf("Evaluate Wakeup reason - BootCnt: %i - Intervall %i\n", bootCount, report_interval);
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
-//  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
+      //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
   		if(rc == ESP_SLEEP_WAKEUP_TIMER){
 			// increment WakeUp boot counter and check if loop wait time reached -> if not: sleep again
 			if(++bootCount < (report_interval/TIME_TO_SLEEP)){  // needed in case looptime exceed std. sleep time
 				// Start deep sleep again -> split in chunks of sleep windows
-// if deep sleep time == report_interval no boot counter needed:
-//				prepare_sleep_mode(ReEntry, report_interval);
+        // if deep sleep time == report_interval no boot counter needed:
+        //				prepare_sleep_mode(ReEntry, report_interval);
 			}
 		}else if(rc == ESP_SLEEP_WAKEUP_GPIO){
 			// GPIO shortcuts sleep wait loop: Just continue with shortcut setup phase
@@ -226,7 +226,6 @@ int rc;		// generic return code variable
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 		lflags = LOGBH + LOGLORAW + LOGLORAR + LOGSD;
-    lflags = 65535;
 
 		Serial.println();
 		Serial.println(">***********************************<");
@@ -239,7 +238,7 @@ int rc;		// generic return code variable
 		BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
 
 		//***************************************************************
-		// get BoardID (=WiFI MAC), ChipID and ChipREV from eFuse area
+		// get bhdb.BoardID (=WiFI MAC), .ChipID and .ChipREV from eFuse area
 		get_efuse_ident();
 	}
 
@@ -694,11 +693,12 @@ void ProcessAndValidateConfigValues(int countValues){
 //			      4 Active wait loop
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
-  BHLOG(LOGSPI) Serial.println("  MAIN: shutdown IO devices");
+  if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
+    BHLOG(LOGSPI) Serial.println("  MAIN: shutdown IO devices");
 
-// backup any needed memory values at wakeup here
-//			esp_bluedroid_disable();
-//			esp_bt_controller_disable();
+    // backup any needed memory values at wakeup here
+    //			esp_bluedroid_disable();
+    //			esp_bt_controller_disable();
 
 #ifdef WIFI_CONFIG
     if(iswifi)
@@ -714,6 +714,7 @@ void biot_ioshutdown(int sleepmode){
       SD.end();   // unmount SD card
     }
     digitalWrite(SD_CS, HIGH);
+    gpio_hold_en(SD_CS);      // SD_CS
     issdcard = 0;
 #endif
 
@@ -723,6 +724,7 @@ void biot_ioshutdown(int sleepmode){
     }
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(EPD_RST, HIGH);
+    gpio_hold_en(EPD_CS);     // EPD_CS
     isepd = 0;
 #endif
 
@@ -732,26 +734,43 @@ void biot_ioshutdown(int sleepmode){
     }
     digitalWrite(BEE_CS, HIGH);
     digitalWrite(BEE_RST, HIGH);
+    gpio_hold_en(BEE_CS);     // BEE_CS
+    gpio_hold_en(BEE_RST);    // BEE_RST
     islora = 0;
 #endif
 
 #ifdef HX711_CONFIG
+    pinMode(HX711_DT, OUTPUT);
+    pinMode(HX711_SCK, OUTPUT);
+    digitalWrite(HX711_SCK, HIGH);
+    digitalWrite(HX711_DT, HIGH);
+    gpio_hold_en(HX711_SCK);  // HX711 SCK
+    gpio_hold_en(HX711_DT);   // HX711 Data
 #endif
 
 #ifdef ADS_CONFIG
+    // Set all I2C lines to high impedance -> open collector bus
+    pinMode(ADS_SCL, OUTPUT);
+    pinMode(ADS_SDA, OUTPUT);
+    digitalWrite(ADS_SCL, HIGH);
+    digitalWrite(ADS_SDA, HIGH);
+    pinMode(ADS_ALERT, OUTPUT);
+    digitalWrite(ADS_ALERT, HIGH);
+    gpio_hold_en((gpio_num_t) ADS_SCL);    // ADS_SCL
+    gpio_hold_en((gpio_num_t) ADS_SDA);    // ADS_SDA
+    gpio_hold_en((gpio_num_t) ADS_ALERT);  // ADS_Alert
 #endif
 
 #ifdef ONEWIRE_CONFIG
+// Set OW line to high impedance -> open collector bus
+     pinMode(ONE_WIRE_BUS, OUTPUT);
+     digitalWrite(ONE_WIRE_BUS, HIGH);
+     gpio_hold_en(ONE_WIRE_BUS); // OneWire Bus line
 #endif
 
-  if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
-    // reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis()
-    gpio_hold_en(GPIO_NUM_2);   // SD_CS
-    gpio_hold_en(GPIO_NUM_5);   // EPD_CS
-    gpio_hold_en(GPIO_NUM_12);  // BEE_CS
-    gpio_hold_en(GPIO_NUM_14);  // BEE_RST
-    gpio_deep_sleep_hold_en();
-  }
+    gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
+    // reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis() needed
+  } // end of sleepmode
 } // biot_ioshutdown()
 
 
@@ -784,9 +803,9 @@ esp_err_t  rc;
       // Otherwise power it down.
       BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
       esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-      gpio_pullup_en(GPIO_NUM_35);                  // use RTC_IO pullup on GPIO 35
-      gpio_pulldown_dis(GPIO_NUM_35);               // not use pulldown on GPIO 35
-			esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
+      gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
+      gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
+			esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
       BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
@@ -799,7 +818,7 @@ esp_err_t  rc;
 
 		case 2:		// LightSleepMode
         BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
-        gpio_wakeup_enable(GPIO_NUM_35,GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
+        gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
         esp_sleep_enable_gpio_wakeup();
 
         // Configure the wake up timer source
@@ -871,6 +890,7 @@ int getChipRevision(){
   return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_REV1_S)) & EFUSE_RD_CHIP_VER_REV1_V);
 }
 int getChipVerPkg(){
+//  Serial.print(REG_READ(EFUSE_BLK0_RDATA3_REG),BIN);
   return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_PKG_S)) & EFUSE_RD_CHIP_VER_PKG_V);
 }
 
@@ -883,10 +903,10 @@ void get_efuse_ident(void) {
 	esp_chip_info(&bhdb.chipTYPE);
 	Serial.printf("  Setup: Detected ESP32-S-Model:%d, Rev: %i ", bhdb.chipTYPE.model, bhdb.chipTYPE.revision);
 	Serial.printf("  %s\n", esp_get_idf_version());
-	Serial.printf("  Setup: Chip Revision: %d", getChipRevision());
+	Serial.printf("  Setup: Chip Revision: %d -", getChipRevision());
 
 	bhdb.chipID = getChipVerPkg();
-  Serial.printf(" -  Chip-Package ID: %d  ", bhdb.chipID);
+  Serial.printf("-  Chip-Package ID: %d  ", bhdb.chipID);
 
   switch(bhdb.chipID){
 		case EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ6:	Serial.println("-> ESP32D0WDQ6 (WROOM32)"); break;

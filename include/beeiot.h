@@ -123,70 +123,71 @@
 // Pin mapping when using SDCARD in SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
 
-#define HSPI_MISO   12    // PIN_NUM_MISO
-#define HSPI_MOSI   13    // PIN_NUM_MOSI
-#define HSPI_SCK    14    // PIN_NUM_CLK
-#define HSPI_CS     15    // PIN_NUM_CS
+// HSPI not used here -> IO ports reused for STd. GPIO
+// #define HSPI_MISO   GPIO_NUM_12    // PIN_NUM_MISO
+// #define HSPI_MOSI   GPIO_NUM_13    // PIN_NUM_MOSI
+// #define HSPI_SCK    GPIO_NUM_14    // PIN_NUM_CLK
+// #define HSPI_CS     GPIO_NUM_15    // PIN_NUM_CS
 
-// ESP32 default SPI port pins:
+// ESP32 default SPI port pins for SD/EPD/BEE:
 #define VSPI_MISO   MISO  // PIN_NUM_MISO    = 19
 #define VSPI_MOSI   MOSI  // PIN_NUM_MOSI    = 23
 #define VSPI_SCK    SCK   // PIN_NUM_CLK     = 18
 #define VSPI_CS     SS    // PIN_NUM_CS      = 5
 
-#define SD_MISO     MISO  // SPI MISO -> VSPI = 19
-#define SD_MOSI     MOSI  // SPI MOSI -> VSPI = 23
-#define SD_SCK      SCK   // SPI SCLK -> VSPI = 18
-#define SD_CS       2     // SD card CS line - arbitrary selection !
+#define SD_MISO     VSPI_MISO  // SPI MISO -> VSPI = 19
+#define SD_MOSI     VSPI_MOSI  // SPI MOSI -> VSPI = 23
+#define SD_SCK      VSPI_SCK   // SPI SCLK -> VSPI = 18
+#define SD_CS       GPIO_NUM_2 // SD card CS line - arbitrary selection !
 
 // reused by BEE_RST: Green LED not used anymore
 //#define LED_GREEN   14    // GPIO number of green LED
 
 // HX711 ADC GPIO Port to Espressif 32 board
-#define HX711_DT    25    // serial dataline
-#define HX711_SCK   26    // Serial clock line
+#define HX711_DT    GPIO_NUM_25    // serial dataline
+#define HX711_SCK   GPIO_NUM_26    // Serial clock line
 
 // ADS1115 + RTC DS3231 - I2C Port
-#define ADS_ALERT   27    // arbitrary selection of ALERT line
-#define ADS_SDA     SDA    // def: SDA=21
-#define ADS_SCL     SCl    // def. SCL=22
+#define ADS_ALERT   GPIO_NUM_27    // arbitrary selection of ALERT line
+#define ADS_SDA     GPIO_NUM_21    // def: SDA=21
+#define ADS_SCL     GPIO_NUM_22    // def. SCL=22
 
 // OneWire Data Port:
-#define ONE_WIRE_BUS 32
+#define ONE_WIRE_BUS GPIO_NUM_32
 
 // WavePaper ePaper port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 // Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
-#define EPD_MISO VSPI_MISO 	// SPI MISO -> VSPI
-#define EPD_MOSI VSPI_MOSI 	// SPI MOSI -> VSPI
-#define EPD_SCK  VSPI_SCK  	// SPI SCLK -> VSPI
-#define EPD_CS       5     	// SPI SS   -> VSPI
-#ifdef WROVERB				// If ESP32 WROVERB is used IO16+17 are internally used.
-#define EPD_DC      15		// DC use of LED_RED IO PIN !
-#define EPD_RST      4		// RST use of EPD_BUSY PIN !
-#define EPD_BUSY    39     	// No BUSY Mode !
-#define LED_RED     -1    	// GPIO number of red LED
+#define EPD_MISO	VSPI_MISO 	// SPI MISO -> VSPI
+#define EPD_MOSI	VSPI_MOSI 	// SPI MOSI -> VSPI
+#define EPD_SCK		VSPI_SCK  	// SPI SCLK -> VSPI
+#define EPD_CS		GPIO_NUM_5  // SPI SS   -> VSPI
+#ifdef WROVERB					// If ESP32 WROVERB is used IO16+17 are internally used.
+#define EPD_DC    GPIO_NUM_15		// DC use of LED_RED IO PIN !
+#define EPD_RST   GPIO_NUM_4		// RST use of EPD_BUSY PIN !
+#define EPD_BUSY  GPIO_NUM_39     	// No BUSY Mode !
+#define LED_RED   -1  			  	// GPIO number of red LED
 #else
-#define EPD_DC      17		// arbitrary selection of DC   > def: 17
-#define EPD_RST     16		// arbitrary selection of RST  > def: 16
-#define EPD_BUSY     4     	// arbitrary selection of BUSY > def:  4  -> if 35 -> RD only GPIO !
-#define LED_RED     15    	// GPIO number of red LED
+#define EPD_DC    GPIO_NUM_17		// arbitrary selection of DC   > def: 17
+#define EPD_RST   GPIO_NUM_16		// arbitrary selection of RST  > def: 16
+#define EPD_BUSY  GPIO_NUM_4     	// arbitrary selection of BUSY > def:  4  -> if 35 -> RD only GPIO !
+#define LED_RED   GPIO_NUM_15    	// GPIO number of red LED
 #endif
-#define EPD_KEY1     0     	// via 40-pin RPi slot at ePaper Pin29 (P5)
-#define EPD_KEY2    EN     	// via 40-pin RPi slot at ePaper Pin31 (P6)
-#define EPD_KEY3    34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
-#define EPD_KEY4    35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
+#define EPD_KEY1  GPIO_NUM_0     	// via 40-pin RPi slot at ePaper Pin29 (P5)
+#define EPD_KEY2  EN     			// via 40-pin RPi slot at ePaper Pin31 (P6)
+#define EPD_KEY3  GPIO_NUM_34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
+#define EPD_KEY4  GPIO_NUM_35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
 
 // LoRa-Bee Board
 #define BEE_MISO VSPI_MISO	// SPI MISO -> VSPI:	19
 #define BEE_MOSI VSPI_MOSI	// SPI MOSI -> VSPI:	23
 #define BEE_SCK  VSPI_SCK	// SPI SCLK -> VSPI: 	18
-#define BEE_CS   	12		// CS = NSS
-#define BEE_RST		14  	//
-#define BEE_DIO0	33		// RXDone, TXDone - Main Lora_Interrupt line
-#define BEE_DIO1	13		// RXTout - FSK
-#define BEE_DIO2	34		// not used by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
+#define BEE_CS   GPIO_NUM_12	// CS = NSS
+#define BEE_RST	 GPIO_NUM_14  	//
+#define BEE_DIO0 GPIO_NUM_33	// RXDone, TXDone - Main Lora_Interrupt line
+#define BEE_DIO1 GPIO_NUM_13	// RXTout - FSK
+#define BEE_DIO2 GPIO_NUM_34	// not used by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)

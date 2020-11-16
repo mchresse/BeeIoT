@@ -1,5 +1,5 @@
 //*******************************************************************
-// owbus.cpp  
+// owbus.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -11,7 +11,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -44,7 +44,7 @@
 // Setup a oneWire instance to communicate with a OneWire device
 OneWire ds(ONE_WIRE_BUS);  // declare OneWire Bus Port with pullup
 
-// Pass our oneWire reference to Dallas Temperature sensor 
+// Pass our oneWire reference to Dallas Temperature sensor
 DallasTemperature OWsensors(&ds);
 
 DeviceAddress sensorInt = TEMP_0;   // Internal Temp. sensor
@@ -65,6 +65,7 @@ int setup_owbus(int reentry) {
 // ONEWIRE Constructor
 #ifdef ONEWIRE_CONFIG
   BHLOG(LOGOW) Serial.println("  OWBus: Init OneWire Bus");
+  gpio_hold_dis(ONE_WIRE_BUS);
   OWsensors.begin();    // Init OW bus devices
 
     // locate devices on the bus
@@ -72,7 +73,7 @@ int setup_owbus(int reentry) {
   BHLOG(LOGOW) Serial.print("Found ");
   BHLOG(LOGOW) Serial.print(OWsensors.getDeviceCount(), DEC);
   BHLOG(LOGOW) Serial.println(" devices.");
-  
+
  // show the addresses we found on the bus
   BHLOG(LOGOW) Serial.print("    Device 0: Int-Address: ");
   printAddress(sensorInt);
@@ -124,7 +125,7 @@ int printDSType(byte DSType){
     default:
       BHLOG(LOGOW) Serial.print("No DS18x20 family device.");
       return(type_s);
-  } 
+  }
   return(type_s);
 }
 
@@ -147,24 +148,24 @@ void printAddress(DeviceAddress deviceAddress)
 // Input: INdex of Datarow entry in bhdb
 // Return:  Number of read devices
 
-void GetOWsensor(int sample){ 
+void GetOWsensor(int sample){
 #ifdef ONEWIRE_CONFIG
   BHLOG(LOGOW) Serial.println("  OWBus: Requesting temperatures...");
   OWsensors.requestTemperatures(); // Send the command to get temperatures (all at once)
-  delay(500);  
+  delay(500);
 
   bhdb.dlog[sample].TempIntern = OWsensors.getTempC(sensorInt);
-  bhdb.dlog[sample].TempHive   = OWsensors.getTempC(sensorBH);  
+  bhdb.dlog[sample].TempHive   = OWsensors.getTempC(sensorBH);
   bhdb.dlog[sample].TempExtern = OWsensors.getTempC(sensorExt);
 
   BHLOG(LOGOW) Serial.print("  OWBus: Int.Temp.Sensor (°C): ");
-  BHLOG(LOGOW) Serial.println(bhdb.dlog[sample].TempIntern); 
+  BHLOG(LOGOW) Serial.println(bhdb.dlog[sample].TempIntern);
 
   BHLOG(LOGOW) Serial.print("  OWBus: Bee.Temp.Sensor (°C): ");
-  BHLOG(LOGOW) Serial.println(bhdb.dlog[sample].TempHive); 
-   
+  BHLOG(LOGOW) Serial.println(bhdb.dlog[sample].TempHive);
+
   BHLOG(LOGOW) Serial.print("  OWBus: Ext.Temp.Sensor (°C): ");
-  BHLOG(LOGOW) Serial.println(  bhdb.dlog[sample].TempExtern); 
+  BHLOG(LOGOW) Serial.println(  bhdb.dlog[sample].TempExtern);
 
 #endif // ONEWIRE_CONFIG
 } // end of GetOWsensor()

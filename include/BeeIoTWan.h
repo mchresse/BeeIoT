@@ -375,7 +375,7 @@ enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
        EU868_F8 = 867700000,      // g2   SF7-12
        EU868_F9 = 867900000,      // g2   SF7-12
        EU868_F10= 867900000,      // g2   SF7-12
-       EU868_DN = 869525000,      // g3   Downlink
+       EU868_DN = 869525000,      // g3   Downlink / Beacon / RX Slot#2 channel
 };
 enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
 // Bands:	g1 :   1%  14dBm
