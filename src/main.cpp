@@ -38,7 +38,7 @@
 #include "soc/efuse_reg.h"
 #include <esp_efuse.h>
 
-#include "sdkconfig.h"   // generated from Arduino IDE
+//#include "sdkconfig.h"   // generated from Arduino IDE
 #include <Preferences.h> // from espressif-esp32 library @ GitHub
 // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
 
@@ -73,12 +73,14 @@
 #include <DallasTemperature.h>  // LGPL v2.1
 #include "owbus.h"
 
-// ADS1115 I2C Library
+// Espressif I2C Library
 #include <driver/i2c.h>         // from esp-idf/components/driver/I2C.h library @ GitHub
+#include "i2cdev.h"				// I2C master Port setup
 
 // Libraries for WIFI & to get time from NTP Server
 #include <WiFi.h>               // from espressif-esp32 library @ GitHub
 #include "wificfg.h"            // local
+#include "esp_wifi.h"
 #include "RTClib.h"             // from by JeeLabs adafruit /RTClib library @ GitHub
 
 // include TCP Client library
@@ -126,16 +128,18 @@ RTC_DATA_ATTR unsigned int	lflags; // BeeIoT log flag field
 Preferences preferences;        // we must generate this object of the preference library
 
 extern int iswifi;              // =1 WIFI flag o.k.
-extern int isntp;               // =1 bhdb has latst timestamp
-extern int isrtc;               // =1 RTC Time discovered
+extern int isi2c;				// =1 I2C Master Port initialized
+extern int isrtc;               // =1 RTC device discovered and time read
+extern int isadc;				// >0 => Addr of I2C ADC dev connected
+extern int isntp;               // =1 bhdb has latest timestamp
 extern int issdcard;            // =1 SDCard found flag o.k.
 extern int isepd;               // =1 ePaper found
 extern int islora;              // =1 LoRa client is active
 
 extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
 extern HX711        scale;      // managed in HX711Scale module
-extern i2c_config_t conf;       // ESP IDF I2C port configuration object
 extern RTC_DS3231   rtc;        // Create RTC Instance
+extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -192,7 +196,7 @@ int rc;		// generic return code variable
   // If Ser. Diagnostic Port connected
   while(!Serial);                 // wait to connect to computer
   Serial.begin(115200);           // enable Ser. Monitor Baud rate
-  delay(1000);                    // wait for console opening
+  delay(500);                    // wait for console opening
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
 
@@ -225,12 +229,14 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGLORAR + LOGSD;
+		lflags = LOGBH + LOGLORAW + LOGSD + LOGADS;
+	// works only in setup phase till LoRa-JOIN received Cfg data
+	// final value will be defined in BeeIoTParseCfg() by GW config data
 
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 10/2019\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 11/2020\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -248,6 +254,14 @@ int rc;		// generic return code variable
   InitConfig(ReEntry);
 
 //***************************************************************
+  BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init/Scan");
+  isi2c = setup_i2c_master(ReEntry);
+  if (!isi2c){
+    BHLOG(LOGBH) Serial.println("  Setup: I2c Master port failed ");
+    // enter here exit code, if needed
+  }
+
+//***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
   if (!setup_rtc(ReEntry)){
     BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
@@ -257,7 +271,6 @@ int rc;		// generic return code variable
     BHLOG(LOGLAN) rtc_test();
     getRTCtime();
   }
-
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
@@ -275,12 +288,25 @@ int rc;		// generic return code variable
   }
 
 //***************************************************************
-  BHLOG(LOGBH) Serial.println("  Setup: ADS11x5");
-  if (!setup_i2c_ADS(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: ADS11x5 setup failed");
-    // enter here exit code, if needed
-  }
-
+if(isi2c){	// I2C Master Port active ?
+	if(ADC_ADDR == ADS_ADDR){
+  		BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
+		if (!setup_i2c_ADS(ReEntry)){
+    		BHLOG(LOGBH) Serial.println("  Setup: ADS11x5 setup failed");
+    		// enter here exit code, if needed
+		}
+	}
+}
+//***************************************************************
+if(isi2c){	// I2C Master Port active ?
+	if(ADC_ADDR == MAX_ADDR){
+  		BHLOG(LOGBH) Serial.println("  Setup: ADC MAX123x");
+  		if (!setup_i2c_MAX(ReEntry)){  // MAX123x constructor
+    		BHLOG(LOGBH) Serial.println("  Setup: MAX123x setup failed");
+    		// enter here exit code, if needed
+  		}
+  	}
+}
 //***************************************************************
 // setup Wifi & NTP & RTC time & Web service
   BHLOG(LOGBH) Serial.println("  Setup: Wifi in Station Mode");
@@ -424,17 +450,17 @@ float x;              // Volt calculation buffer
 
   // read out all ADS channels 0..3
   BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
-  addata = ads_read(0);         // get 3.3V line value of ESP32 devKit in mV
+  addata = adc_read(0);         // get 3.3V line value of ESP32 devKit in mV
   bhdb.dlog[bhdb.loopid].ESP3V = addata;
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  addata = ads_read(1);         // get Level of Battery Charge Input from Ext-USB port
+  addata = adc_read(1);         // get Level of Battery Charge Input from Ext-USB port
   bhdb.dlog[bhdb.loopid].BattCharge = addata*2; //  measured: 5V/2 = 2,5V value
   BHLOG(LOGADS) Serial.print((float)addata*2/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  addata = ads_read(2);         // Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+  addata = adc_read(2);         // Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
   // calculate Battery Load Level in %
   x = ((float)(addata-BATTERY_MIN_LEVEL)/
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
@@ -443,7 +469,7 @@ float x;              // Volt calculation buffer
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) Serial.print(" - ");
 
-  addata = ads_read(3);         // get level of 5V Power line of Extension board (not of ESP32 DevKit !)
+  addata = adc_read(3);         // get level of 5V Power line of Extension board (not of ESP32 DevKit !)
   bhdb.dlog[bhdb.loopid].Board5V = addata*2; //  measured: 5V/2 = 2,5V value
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
@@ -749,15 +775,16 @@ void biot_ioshutdown(int sleepmode){
 #endif
 
 #ifdef ADS_CONFIG
+//	i2c_driver_delete(i2c_master_port);
     // Set all I2C lines to high impedance -> open collector bus
-    pinMode(ADS_SCL, OUTPUT);
-    pinMode(ADS_SDA, OUTPUT);
-    digitalWrite(ADS_SCL, HIGH);
-    digitalWrite(ADS_SDA, HIGH);
+    pinMode(I2C_SCL, OUTPUT);
+    pinMode(I2C_SDA, OUTPUT);
+    digitalWrite(I2C_SCL, HIGH);
+    digitalWrite(I2C_SDA, HIGH);
     pinMode(ADS_ALERT, OUTPUT);
     digitalWrite(ADS_ALERT, HIGH);
-    gpio_hold_en((gpio_num_t) ADS_SCL);    // ADS_SCL
-    gpio_hold_en((gpio_num_t) ADS_SDA);    // ADS_SDA
+    gpio_hold_en((gpio_num_t) I2C_SCL);    // ADS_SCL
+    gpio_hold_en((gpio_num_t) I2C_SDA);    // ADS_SDA
     gpio_hold_en((gpio_num_t) ADS_ALERT);  // ADS_Alert
 #endif
 

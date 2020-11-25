@@ -66,6 +66,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+
+
 //*******************************************************************
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
@@ -147,10 +149,13 @@
 #define HX711_DT    GPIO_NUM_25    // serial dataline
 #define HX711_SCK   GPIO_NUM_26    // Serial clock line
 
-// ADS1115 + RTC DS3231 - I2C Port
+// Used I2C Port: 0
+#define I2C_PORT	I2C_NUM_0		// Default I2C port for all i2c Devices
+#define I2C_SDA		GPIO_NUM_21    // def: SDA=21	common for all I2C dev.
+#define I2C_SCL		GPIO_NUM_22    // def. SCL=22	common for all I2C dev.
+
+// for ADS only:
 #define ADS_ALERT   GPIO_NUM_27    // arbitrary selection of ALERT line
-#define ADS_SDA     GPIO_NUM_21    // def: SDA=21
-#define ADS_SCL     GPIO_NUM_22    // def. SCL=22
 
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_32
@@ -283,6 +288,7 @@ int setup_owbus		(int mode);
 int setup_wifi		(int mode);
 int setup_ntp		(int mode);
 int setup_i2c_ADS	(int mode);
+int setup_i2c_MAX	(int mode);
 int setup_rtc		(int mode);		// in rtc.cpp
 int setup_spi_VSPI	(int mode);		// in multiSPI.cpp
 int setup_sd		(int mode);		// in sdcard.cp
@@ -320,14 +326,12 @@ void	printLocalTime(void);
 // in owbus.cpp
 void 	GetOWsensor	(int sample);
 
-// in i2c_ads.cpp
-void    i2c_scan    (void);
-int16_t ads_read	(int channel);
-
 // in main.cpp
 void	Logdata     (void);
 void	mydelay		(int32_t tval);
 
+// in max123x.cpp
+uint16_t adc_read(int channel);
 
 // epd.cpp functions
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);

@@ -53,7 +53,7 @@ int setup_hx711Scale(int reentry) {
   BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
   gpio_hold_dis(HX711_SCK);             // enable HX711_SCK for Dig.-IO
   gpio_hold_dis(HX711_DT);              // enable HX711_DT for Dig.-IO
-  scale.begin(HX711_DT, HX711_SCK),128;// declare GPIO pin connection + gain factor: A128
+  scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
   scale.set_scale(scale_DIVIDER);       // define unit value per kg
   scale.set_offset(scale_OFFSET);       // define base value for 0kg
                   // (e.g. reflects weight of weight cell cover board)

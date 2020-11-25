@@ -21,7 +21,7 @@
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		3		// Minor
+#define BIoT_VMINOR		4		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -30,6 +30,11 @@
 //					PkgHD: Framelen: 2 Byte -> for 16bit payload size
 //					Event CMD definition
 // 1.3	28.10.2020  Add Beacon CMD + Ack
+// 1.4  25.11.2020	Change I2C Bus detection from Wire -> I2DDev driver lib
+//					implemented new driver for DS3231, ADS1115 & MAX123x support
+//					LoRa Protocol delivers MIC value -> checked on GW side
+//					Add ESP32 ChipID Detection by eFuse bitmap data
+//					Shorten WAITRX1PKG Window 3->1 sec.
 //
 //***********************************************
 // LoRa MAC Presets
@@ -91,7 +96,7 @@ typedef unsigned char bw_t;
 #define MSGMAXRETRY		5	// Do it max. n times again
 #define RXACKGRACETIME  10  // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
 #define MSGRX1DELAY		500	// [ms] wait for start of RX1 window
-#define WAITRX1PKG		3	// [sec] till RX1 window is closed
+#define WAITRX1PKG		1	// [sec] till RX1 window is closed
 
 //*******************************************************************
 // BeeIoT-WAN command package types

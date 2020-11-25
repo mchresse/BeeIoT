@@ -135,13 +135,13 @@ int getTimeStamp() {
 //                    timeinfo.tm_hour,
 //                    timeinfo.tm_min,
 //                    timeinfo.tm_sec);
-  strftime(tmstring, 30, "%Y\%m\%dT%H:%M:%SZ", &timeinfo);
+  strftime(tmstring, 30, "%Y\\%m\\%dT%H:%M:%SZ", &timeinfo);
   strncpy(bhdb.formattedDate, tmstring, LENFDATE);
   BHLOG(LOGLAN) Serial.print("    ");
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
   // Extract date
-  strftime(tmstring, 30, "%Y\%m\%d", &timeinfo);
+  strftime(tmstring, 30, "%Y\\%m\\%d", &timeinfo);
   strncpy(bhdb.date, tmstring, LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.print(bhdb.date);

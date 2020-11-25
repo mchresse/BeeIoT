@@ -967,8 +967,8 @@ int rc;
     setRTCtime(pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
-      report_interval, pcfg->cfg.verbose, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
-    Serial.printf("  BeeIoTParseCfg: GWTime: %i.%d.%d %d:%d:%d\n",
+      report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
+    Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%d-%d %d:%d:%d\n",
       2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     rc=CMD_CONFIG;
