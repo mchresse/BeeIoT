@@ -34,12 +34,15 @@
 #include <Adafruit_ADS1015.h>
 //Adafruit_ADS1115 ads(ADS_ADDR); 		// 16-bit ADC version, ADDR pin = Gnd
 
-extern uint16_t	lflags;      	// BeeIoT log flag field
-extern int isadc;				// in max123x.cpp
-extern int isi2c;
+extern uint16_t	lflags;      			// BeeIoT log flag field
+extern int isadc;						// in max123x.cpp
+extern int isi2c;						// in i2cdev.cpp
+extern int adcaddr;						// I2C Dev.address of detected ADC
+extern i2c_port_t i2c_master_port;		// I2C master Port ID, defined in i2cdev.cpp
+extern i2c_config_t i2ccfg;				// Configset of I2C MasterPort
 
-i2c_dev_t i2cads1115;			// Config settings of detected I2C device
-extern i2c_port_t i2c_master_port;	// defined in i2cdev.cpp
+static i2c_dev_t i2cads1115;			// Config settings of detected I2C device
+const float 	 adcfactor = 0.1875F;	// factor for 6.144V range
 
 const float ads111x_gain_values[] = {
     [ADS111X_GAIN_6V144]   = 6.144,
@@ -76,49 +79,37 @@ uint16_t ads_read(int channel);
 // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
 //*******************************************************************
 
-const float 	 adcfactor = 0.1875F;	// factor for 6.144V range
 
 int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 #ifdef  ADS_CONFIG
+	uint16_t val;
+
 	BHLOG(LOGADS) Serial.println("  ADS: Init I2C ADS device & Alert line");
 	pinMode(ADS_ALERT, INPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
 	gpio_hold_dis((gpio_num_t) ADS_ALERT);  // enable ADS_ALERT for Dig.-IO I2C Master Mode
 
-	if(!isi2c){
-		return(0);	// no I2C master port -> no ADS1115 Device
+	//	I2C should have been scanned by I2c_master_init() already
+	if (adcaddr == ADS111X_ADDR_GND || adcaddr == ADS111X_ADDR_VCC ||
+    	adcaddr == ADS111X_ADDR_SDA || adcaddr == ADS111X_ADDR_SCL){
+		BHLOG(LOGADS) Serial.printf("  ADS: ADC ADS1115 detected at port: 0x%02X\n", isadc);
 	}
-// Setup MAX I2C device statically
-// Should not be scanned by i2c_scan() all the time after each sleep-loop
-	i2cads1115.addr 	 = ADS_ADDR;
-	i2cads1115.clk_speed = I2C_FREQ_HZ;
+
+	// Setup MAX I2C device statically
+	// Should not be scanned by i2c_scan() all the time after each sleep-loop
+	i2cads1115.addr 	 = adcaddr;
+	i2cads1115.clk_speed = i2ccfg.master.clk_speed;
 	i2cads1115.port 	 = i2c_master_port;	// as defined in i2c_master_init()
-	i2cads1115.scl_io_num= I2C_SCL;
-	i2cads1115.sda_io_num= I2C_SDA;
-
-	if(!reentry){	// we started the first time
-		//	I2C should have been scanned by I2c_master_init() already
-		if (isadc == ADS111X_ADDR_GND || isadc == ADS111X_ADDR_VCC
-            || isadc == ADS111X_ADDR_SDA || isadc == ADS111X_ADDR_SCL){
-			BHLOG(LOGADS) Serial.printf("  ADS: ADC ADS1115 detected at port: 0x%02X\n", isadc);
-		}else{
-        	BHLOG(LOGADS) Serial.println("  ADS: No ADC port detected");
-    	}
-	}else{
-		isadc = ADS_ADDR;	// if i2c_master_init() has failed, we would not be here
-	}
-
-	uint16_t val;
-	read_reg(&i2cads1115, REG_CONFIG, &val);
+	i2cads1115.scl_io_num= i2ccfg.scl_io_num;
+	i2cads1115.sda_io_num= i2ccfg.sda_io_num;
 
     // change GAIN level if needed
 	if( ads111x_set_gain(&i2cads1115, ADS111X_GAIN_6V144) != ESP_OK){	// set gain to minimum
-        BHLOG(LOGADS) Serial.printf("  ADS: No reaction from ADC port (%X)\n", isadc);
+        BHLOG(LOGADS) Serial.printf("  ADS: No reaction from ADS dev(%X)\n", adcaddr);
 		isadc = 0;		// doesn't work
 		return(isadc);	// no I2C master port -> no ADS1115 Device
 	}
 
-
-	read_reg(&i2cads1115, REG_CONFIG, &val);
+	BHLOG(LOGADS) read_reg(&i2cads1115, REG_CONFIG, &val);
 	BHLOG(LOGADS) Serial.printf("  ADS: Got Default config value: 0x%04x\n", val);
 
 #endif //ADS_CONFIG
@@ -140,14 +131,13 @@ uint16_t ads_read(int channel) {
 	esp_err_t esprc=ESP_ERR_NOT_SUPPORTED;
 
 #ifdef ADS_CONFIG
-//	float data;
 	int16_t adcdata;
 	ads111x_mux_t chn;
     bool busy;
 	static float gain_val;		// Gain value
 	float voltage = 0;
 
-    BHLOG(LOGADS) Serial.printf("\n  ADS: Read ADS-Port(%d): ", channel);
+    BHLOG(LOGADS) Serial.printf("\n  ADS: Read from ADS-AIN%d: ", channel);
 	switch (channel){
 		case 0:	chn = ADS111X_MUX_0_GND; break;
 		case 1:	chn = ADS111X_MUX_1_GND; break;
@@ -192,45 +182,11 @@ uint16_t ads_read(int channel) {
 }
 
 
-//***************************************************************
-// ADS_read()
-//  Read ADS1115 I2C analog port
-//  Based on Wire-lib implementation
-//
-// 	IN:   channel = 0..3
-//  OUT:  data  = voltage of adc line [mV]
-// see also
-//  https://esp32developer.com/programming-in-c-c/i2c-programming-in-c-c/using-the-i2c-interface
-// Setup:
-// ads.setGain(GAIN_TWOTHIRDS);  +/- 6.144V  1 bit = 0.1875mV (default)
-// ads.setGain(GAIN_ONE);        +/- 4.096V  1 bit = 0.125mV
-// ads.setGain(GAIN_TWO);        +/- 2.048V  1 bit = 0.0625mV
-// ads.setGain(GAIN_FOUR);       +/- 1.024V  1 bit = 0.03125mV
-// ads.setGain(GAIN_EIGHT);      +/- 0.512V  1 bit = 0.015625mV
-// ads.setGain(GAIN_SIXTEEN);    +/- 0.256V  1 bit = 0.0078125mV
-//***************************************************************
-uint16_t ads_read_wire(int channel) {
-	int16_t data=0;
-#ifdef ADS_CONFIG
-// 	int16_t adcdata;
-
-	BHLOG(LOGADS) Serial.printf("\n  ADS: Single-ended read from AIN%i: ", channel);
-	channel &= 0x03;	// ADS1115 has only 4 channel -> 0..3
-//	adcdata = ads.readADC_SingleEnded(channel); // read once in Single-shot mode (default)
-	// Result with ADC int. Reference: +/- 6.144V
-	// ADS1015: 11bit ADC -> 6144/2048  = 3 mV / bit
-	// ADS1115: 15bit ADC -> 6144/32768 = 0.1875 mV / bit
-// 	data = adcdata * adcfactor;	// multiply by 1bit-sample in mV
-//	delay(100);
-
-#endif // ADS_CONFIG
-	return data;
-}
 
 
 //***************************************************************
 // ads Helper functions
-// 	based on espressif i2c driver lib
+// 	based on espressif i2cdev driver lib
 //***************************************************************
 static esp_err_t read_reg(i2c_dev_t *dev, uint8_t reg, uint16_t *val)
 {
@@ -267,13 +223,11 @@ static esp_err_t write_reg(i2c_dev_t *dev, uint8_t reg, uint16_t val){
 static esp_err_t read_conf_bits(i2c_dev_t *dev, uint8_t offs, uint16_t mask, uint16_t *bits){
 	esp_err_t esprc;
     uint16_t val;
-//	uint8_t buf[2];
 
  	esprc = read_reg(dev, REG_CONFIG, (uint16_t*) &val);
 
-// 	val = ((uint16_t)buf[0] << 8) || ((uint16_t) buf[1] & 0x00ff);
     *bits = (val >> offs) & mask;
-//	BHLOG(LOGADS) Serial.printf("  ADS: RD config: 0x%04x (0x%04X) (o:%i, m:0x%04x)\n", val, *bits, offs, mask);
+	//	BHLOG(LOGADS) Serial.printf("  ADS: RD config: 0x%04x (0x%04X) (o:%i, m:0x%04x)\n", val, *bits, offs, mask);
     return(esprc);
 }
 
@@ -296,6 +250,7 @@ static esp_err_t READ_CONFIG(i2c_dev_t *dev, uint8_t OFFS, uint16_t MASK, uint16
 esp_err_t ads111x_is_busy(i2c_dev_t *dev, bool *busy){
 	esp_err_t 	esprc;
 	uint16_t 	bits;
+
     esprc = read_conf_bits(dev, OS_OFFSET, OS_MASK, &bits);
 	if(bits == 0){
 		*busy = true;	// conversion still running
@@ -408,4 +363,40 @@ esp_err_t ads111x_get_comp_high_thresh(i2c_dev_t *dev, int16_t *th){
 
 esp_err_t ads111x_set_comp_high_thresh(i2c_dev_t *dev, int16_t th){
 	return( write_reg(dev, REG_THRESH_H, th));
+}
+
+
+//***************************************************************
+// ADS_read()
+//  Read ADS1115 I2C analog port
+//  Based on Wire-lib implementation
+//
+// 	IN:   channel = 0..3
+//  OUT:  data  = voltage of adc line [mV]
+// see also
+//  https://esp32developer.com/programming-in-c-c/i2c-programming-in-c-c/using-the-i2c-interface
+// Setup:
+// ads.setGain(GAIN_TWOTHIRDS);  +/- 6.144V  1 bit = 0.1875mV (default)
+// ads.setGain(GAIN_ONE);        +/- 4.096V  1 bit = 0.125mV
+// ads.setGain(GAIN_TWO);        +/- 2.048V  1 bit = 0.0625mV
+// ads.setGain(GAIN_FOUR);       +/- 1.024V  1 bit = 0.03125mV
+// ads.setGain(GAIN_EIGHT);      +/- 0.512V  1 bit = 0.015625mV
+// ads.setGain(GAIN_SIXTEEN);    +/- 0.256V  1 bit = 0.0078125mV
+//***************************************************************
+uint16_t ads_read_wire(int channel) {
+	int16_t data=0;
+#ifdef ADS_CONFIG
+// 	int16_t adcdata;
+
+	BHLOG(LOGADS) Serial.printf("\n  ADS: Single-ended read from AIN%i: ", channel);
+	channel &= 0x03;	// ADS1115 has only 4 channel -> 0..3
+//	adcdata = ads.readADC_SingleEnded(channel); // read once in Single-shot mode (default)
+	// Result with ADC int. Reference: +/- 6.144V
+	// ADS1015: 11bit ADC -> 6144/2048  = 3 mV / bit
+	// ADS1115: 15bit ADC -> 6144/32768 = 0.1875 mV / bit
+// 	data = adcdata * adcfactor;	// multiply by 1bit-sample in mV
+//	delay(100);
+
+#endif // ADS_CONFIG
+	return data;
 }

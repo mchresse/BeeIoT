@@ -48,14 +48,15 @@
 #include "beeiot.h"     	// provides all GPIO PIN configurations of all sensor Ports !
 
 
-extern uint16_t	lflags; // BeeIoT log flag field
-int		isadc=0;        // =0 no ADC found; else MAX_ADDR or ADC_ADDR
-extern int isi2c;		// in i2cdev.cpp)
+extern uint16_t	lflags; 	// BeeIoT log flag field
 
-adata_t	adata[4];		// AINx channle data field (12 bit lsb used)
-
-i2c_dev_t i2cmax123x;		// Config settings of detected I2C device
+extern int		isadc;    	// =0 no ADC found; =1 else MAX or ADS
+extern int 		isi2c;		// in i2cdev.cpp)
 extern i2c_port_t i2c_master_port;	// defined in i2cdev.cpp
+extern i2c_config_t i2ccfg;		// Configset of I2C MasterPort
+extern int 		adcaddr;	// I2C Dev.address of detected ADC
+
+i2c_dev_t i2cmax123x;		// Config settings of detected MAX device
 
 extern uint16_t ads_read(int channel);
 
@@ -67,34 +68,25 @@ extern uint16_t ads_read(int channel);
 int setup_i2c_MAX(int reentry) {  // MAX123x constructor
 
 #ifdef  ADS_CONFIG
-	BHLOG(LOGADS) Serial.printf("  MAX: Init I2C-port (addr: 0x%02X)\n", MAX_ADDR);
-	if(!isi2c){
-		return(0);	// no I2C master port -> no MAX123x Device
-	}
-// Setup MAX I2C device statically
-// Should not be scanned by i2c_scan() all the time after each sleep-loop
-	i2cmax123x.addr 	 = MAX_ADDR;
-	i2cmax123x.clk_speed = I2C_FREQ_HZ;
+	BHLOG(LOGADS) Serial.printf("  MAX: Init I2C-port (addr: 0x%02X)\n", adcaddr);
+
+	//	I2C should have been scanned by I2c_master_init() already
+	if(adcaddr != MAX_ADDR){
+       	BHLOG(LOGADS) Serial.println("  MAX: No MAX device detected");
+		return(0);
+    }
+
+	// Setup MAX I2C device statically
+	// Should not be scanned by i2c_scan() all the time after each sleep-loop
+	i2cmax123x.addr 	 = adcaddr;
+	i2cmax123x.clk_speed = i2ccfg.master.clk_speed;
 	i2cmax123x.port 	 = i2c_master_port;	// as defined in i2c_master_init()
-	i2cmax123x.scl_io_num= I2C_SCL;
-	i2cmax123x.sda_io_num= I2C_SDA;
-
-	if(!reentry){	// we started the first time
-		//	I2C should have been scanned by I2c_master_init() already
-		if(isadc == MAX_ADDR){
-			BHLOG(LOGADS) Serial.printf("  MAX: ADC MAX123x detected at port: 0x%02X\n", isadc);
-		}else{
-        	BHLOG(LOGADS) Serial.println("  MAX: No ADC port detected");
-    	}
-	}else{
-		isadc = MAX_ADDR;	// if i2c_master_init() has failed, we would not be here
-	}
-
+	i2cmax123x.scl_io_num= i2ccfg.scl_io_num;
+	i2cmax123x.sda_io_num= i2ccfg.sda_io_num;
   #endif //ADS_CONFIG
 
-  return isadc;   // MAX123x device port is initialized
+  return(1);   // MAX123x device port is initialized
 } // end of setup_i2c_MAX()
-
 
 
 
@@ -107,17 +99,18 @@ int setup_i2c_MAX(int reentry) {  // MAX123x constructor
 //
 // INPUT:
 // 	channel	0..3	Index of AINx
+// 	global adcaddr	I2C Addr of detected ADC device
+//
 // OUTPUT
-//	data	digital value -> Vref=2096V data = n x 1/2096
+//	data		ADC value in mV
+// 				-> Vref=2096V data = n x 1/Vref
 //***************************************************************
-
-
 uint16_t adc_read(int channel) {
 
-    if(isadc == MAX_ADDR){
+    if(adcaddr == MAX_ADDR){
       return(max_read(channel));
     }
-    if(isadc == ADS_ADDR){
+    if(adcaddr == ADS_ADDR){
       return(ads_read(channel));
     }
   return(-1);
@@ -173,6 +166,8 @@ uint16_t max_read(uint8_t channel) {
 
 
 //************************************************************************
+// Not used by now !!!
+
 uint16_t max_read_core(uint8_t channel) {
     int ret=0;
 #ifdef ADS_CONFIG
@@ -192,7 +187,7 @@ uint16_t max_read_core(uint8_t channel) {
 	configbyte 	= MAX1363_CONFIGREG | MAX1363_CONFIG_SCAN_SINGLE_1 				// default 0: 0x61 (1: 0x63, 2: 0x65, 3: 0x67)
 				| ((channel << 1) & MAX123x_CHANNEL_SEL_MASK)| MAX1363_CONFIG_SE;
 
-	txbuf[0]	= (MAX_ADDR << 1) | WRITE_BIT;	// device select by I2C address + Write Flag
+	txbuf[0]	= (adcaddr << 1) | WRITE_BIT;	// device select by I2C address + Write Flag
 	txbuf[1]	= setupbyte;
 	txbuf[2]	= configbyte;
     Serial.printf("  MAX-Adr(0x%02X): Write Setup 0x%02X", isadc, setupbyte);
@@ -209,7 +204,7 @@ uint16_t max_read_core(uint8_t channel) {
     i2c_master_stop(cmd);   	// end task creation
 
     // start conversion by processing cmd queue above
-    ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(i2cmax123x.port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     if (ret != ESP_OK) {
@@ -220,7 +215,7 @@ uint16_t max_read_core(uint8_t channel) {
 //    delay(100);  // wait 30ms:  vTaskDelay(30 / portTICK_RATE_MS);
 
 // Start Read Conversion data
-	txbuf[0]	= (MAX_ADDR << 1) | READ_BIT;	// device select by I2C address + Write Flag
+	txbuf[0]	= (adcaddr << 1) | READ_BIT;	// device select by I2C address + Write Flag
     cmd = i2c_cmd_link_create();				// get I2C Dev. Handle
     i2c_master_start(cmd);						// start filling task QUEUE
 
@@ -230,7 +225,7 @@ uint16_t max_read_core(uint8_t channel) {
 
 	i2c_master_stop(cmd);
 
-	ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
+	ret = i2c_master_cmd_begin(i2cmax123x.port , cmd, 1000 / portTICK_RATE_MS);
 	i2c_cmd_link_delete(cmd);
 
   	Serial.printf(" => Read data ->  RC(%i)\n",ret);

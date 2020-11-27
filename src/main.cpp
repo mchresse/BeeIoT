@@ -138,8 +138,8 @@ extern int islora;              // =1 LoRa client is active
 
 extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
 extern HX711        scale;      // managed in HX711Scale module
-extern RTC_DS3231   rtc;        // Create RTC Instance
 extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
+extern int 			adcaddr;	// I2C Dev.address of detected ADC
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -254,6 +254,7 @@ int rc;		// generic return code variable
   InitConfig(ReEntry);
 
 //***************************************************************
+// I2C_master() has to be started always before setup_rtc() and setup_i2c_ADC/MAX()
   BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init/Scan");
   isi2c = setup_i2c_master(ReEntry);
   if (!isi2c){
@@ -262,6 +263,7 @@ int rc;		// generic return code variable
   }
 
 //***************************************************************
+
   BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
   if (!setup_rtc(ReEntry)){
     BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
@@ -271,6 +273,7 @@ int rc;		// generic return code variable
     BHLOG(LOGLAN) rtc_test();
     getRTCtime();
   }
+
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
@@ -288,25 +291,22 @@ int rc;		// generic return code variable
   }
 
 //***************************************************************
-if(isi2c){	// I2C Master Port active ?
-	if(ADC_ADDR == ADS_ADDR){
-  		BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
-		if (!setup_i2c_ADS(ReEntry)){
-    		BHLOG(LOGBH) Serial.println("  Setup: ADS11x5 setup failed");
-    		// enter here exit code, if needed
-		}
+if(isadc){	// I2C Master Port active + ADC detected ?
+// only one ADC dev. type accepted -> as set by adcaddr in i2c_scan()
+  	BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
+	if (!setup_i2c_ADS(ReEntry)){
+    	BHLOG(LOGBH) Serial.println("  Setup: ADS11x5 setup failed");
+    	// enter here exit code, if needed
+	}
+	//***************************************************************
+	BHLOG(LOGBH) Serial.println("  Setup: ADC MAX123x");
+	if (!setup_i2c_MAX(ReEntry)){  // MAX123x constructor
+  		BHLOG(LOGBH) Serial.println("  Setup: MAX123x setup failed");
+   		// enter here exit code, if needed
 	}
 }
-//***************************************************************
-if(isi2c){	// I2C Master Port active ?
-	if(ADC_ADDR == MAX_ADDR){
-  		BHLOG(LOGBH) Serial.println("  Setup: ADC MAX123x");
-  		if (!setup_i2c_MAX(ReEntry)){  // MAX123x constructor
-    		BHLOG(LOGBH) Serial.println("  Setup: MAX123x setup failed");
-    		// enter here exit code, if needed
-  		}
-  	}
-}
+
+
 //***************************************************************
 // setup Wifi & NTP & RTC time & Web service
   BHLOG(LOGBH) Serial.println("  Setup: Wifi in Station Mode");

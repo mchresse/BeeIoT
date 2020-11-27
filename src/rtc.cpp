@@ -44,15 +44,14 @@
 //*******************************************************************
 extern uint16_t	lflags;      // BeeIoT log flag field
 
-extern dataset bhdb;
-extern int iswifi;  // WiFI semaphor
-extern int isntp;   // by now we do not have any NTP client
-int   isrtc =0;     // =1 if RTC time discovered
-
-i2c_dev_t i2crtc;	// Config settings of RTC I2C device
+extern dataset bhdb;			// central status DB
+extern int isi2c;				// =0 no I2C master port claimed yet
 extern i2c_port_t i2c_master_port;	// defined in i2cdev.cpp
+extern int iswifi;  			// =1 WiFI network discovered
+extern int isntp;   			// =1 NTP Server discovered
 
-// RTC_DS3231 rtc;     // Create RTC Instance
+RTC_DATA_ATTR int   isrtc;   	// =1 RTC time discovered
+i2c_dev_t i2crtc;			// Config settings of RTC I2C device
 
 void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour,  uint8_t min, uint8_t sec);
 
@@ -60,47 +59,50 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 
 //*******************************************************************
 // Setup_RTC(): Initial Setup of RTC module instance
+// Expects discovered I2C RC device by I2C_scan() -> isrtc=1
 //*******************************************************************
 int setup_rtc (int reentry) {
 	float rtctemp;
 	esp_err_t esprc;
 
-	gpio_hold_dis((gpio_num_t) SCL);  	// enable ADS_SCL for Dig.-IO I2C Master Mode
-	gpio_hold_dis((gpio_num_t) SDA);  	// enable ADS_SDA for Dig.-IO I2C Master Mode
+	// expect I2C master port was scanned one before -> set isrtc
+	if(!isi2c){	// I2C Master Port active + ADC detected ?
+		//	I2C should have been scanned by I2c_master_init() already
+		if(!isrtc){
+        	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
+			return(isrtc);
+    	}
+	}
 
+	// setup RTC Device config set
     i2crtc.port = i2c_master_port;
     i2crtc.addr = RTC_ADDR;
     i2crtc.sda_io_num = I2C_SDA;
     i2crtc.scl_io_num = I2C_SCL;
     i2crtc.clk_speed = I2C_FREQ_HZ;
 
-	if(!reentry){	// we started the first time
-		//	I2C should have been scanned by I2c_master_init() already
-		if(isrtc){
-			BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", RTC_ADDR);
-		}else{
-        	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
-			return(isrtc);
-    	}
-	}
-
+// For Wire-lib usage:
 //  if (! rtc.begin()) {
 //    Serial.println("  RTC: Couldn't find RTC device\n");
 //    return(isrtc);
 //  }
 //  rtc.writeSqwPinMode(DS3231_OFF);  // reset Square Pin Mode to 0Hz
 
+// For I2cdev-lib usage:
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
-		isrtc =0;		// RTC does not react
+		isrtc =0;		// RTC does not react anyhow
+        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp.register failed (%i)\n", esprc);
 		return(isrtc);
 	}
-	isrtc =1;	// now we are sure.
+
+	BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", RTC_ADDR);
 	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
 	BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C, SqarePin switched off\n", rtctemp);
 
   // if NTC based adjustment is needed use:  static void adjust(const DateTime& dt);
-  // or update by NTP: -> main() => ntp2rtc()
+  // or update by NTP: -> main() => ntp2rtc() automatically
+  // or update by JOIN-Cfg data from BIoT-GW time automatically
 
 //  if (rtc.lostPower()) {
 //    Serial.println("  RTC: lost power, check battery; lets set the time manually or by NTP !");
@@ -109,10 +111,8 @@ int setup_rtc (int reentry) {
     // This line sets the RTC with an explicit date &amp; time, for example to set
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-
 //    isrtc =0;  // power again but no valid time => lets hope for NTP update later on
 //  }
-//	isrtc = 0;	// shortcut for test purpose
 	return(isrtc);
 
 } // end of rtc_setup()

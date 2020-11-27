@@ -9,11 +9,11 @@
   #define VREV "01"
 #endif
 #ifndef BUILD_NUMBER
-  #define VBUILD "89"
+  #define VBUILD "95"
 #endif
 #ifndef VERSION
-  #define VERSION "v1.0.01.89 - 2020-10-28 18:45:26.085124"
+  #define VERSION "v1.0.01.95 - 2020-11-27 20:07:52.678636"
 #endif
 #ifndef VERSION_SHORT
-  #define VERSION_SHORT "v1.0.01.89"
+  #define VERSION_SHORT "v1.0.01.95"
 #endif

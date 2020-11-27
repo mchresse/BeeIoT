@@ -44,9 +44,11 @@ extern uint16_t	lflags; // BeeIoT log flag field
 // I2C Master Port: default = NUM0 using SDA/SCL = 21/22
 // to be referenced by all I2C driver routines
 i2c_port_t 	 i2c_master_port = I2C_PORT ;
+i2c_config_t i2ccfg;		// Configset of I2C MasterPort
 
-int isi2c;	// =0 no I2C master port claimed yet
-extern int isadc;	// in max123x.cpp
+int isi2c = 0;		// =0 no I2C master port claimed yet
+int adcaddr=0;		// I2C Dev.address of detected ADC
+RTC_DATA_ATTR int isadc=0;	// =0 no I2C dev found at i2c_master_port
 extern int isrtc;	// in rtc.cpp
 
 esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
@@ -54,14 +56,14 @@ esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 	i2c_config_t cfg;
 
 	// ESP IDF I2C port configuration object
-	cfg.mode = I2C_MODE_MASTER;
-	cfg.sda_io_num = sda;
-	cfg.scl_io_num = scl;
-	cfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
-	cfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
-	cfg.master.clk_speed = I2C_FREQ_HZ;
+	i2ccfg.mode 		 = I2C_MODE_MASTER;
+	i2ccfg.sda_io_num 	 = sda;
+	i2ccfg.scl_io_num 	 = scl;
+	i2ccfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
+	i2ccfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	i2ccfg.master.clk_speed = I2C_FREQ_HZ;
 
-	i2c_param_config(port, &cfg);
+	i2c_param_config(port, &i2ccfg);
 	esprc = i2c_driver_install(port, I2C_MODE_MASTER, 0, 0, 0);
 	return(esprc);
 }
@@ -69,7 +71,7 @@ esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 int setup_i2c_master(int reentry) {
 	esp_err_t	esprc;
 
-	BHLOG(LOGADS) Serial.println("  I2C: Init I2C-Master port\n");
+	BHLOG(LOGADS) Serial.printf("  I2C: Init I2C-Master port %d\n", I2C_PORT);
 	pinMode(I2C_SCL, OUTPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
     digitalWrite(I2C_SCL, HIGH);	// define default level
 
@@ -78,14 +80,12 @@ int setup_i2c_master(int reentry) {
 
 	isi2c = 0;
 	esprc=i2c_master_init(I2C_PORT, I2C_SDA, I2C_SCL);
-
 	if(esprc == ESP_OK){
-		i2c_master_port = I2C_PORT;
-		isi2c = 1;
-	}
-
-	if(!reentry){
-		i2c_scan();
+		i2c_master_port = I2C_PORT;	// I2C master Port driver initiated
+		isi2c = 1;	// we have a working I2C master port
+		if(!reentry){
+			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
+		}
 	}
 	return(isi2c);
 } // end of setup_i2c_master()
@@ -138,6 +138,8 @@ esp_err_t i2c_dev_write(const i2c_dev_t *dev, const void *out_reg, size_t out_re
 //***************************************************************
 //* I2C_Test()
 //* Test of I2C device Scanner
+//  Return: =0	No I2C dev detected
+//			=1  I2C Device(s) detected -> isadc or isrtc
 //***************************************************************
 int i2c_scan(void) {
   	isadc = 0;
@@ -147,25 +149,34 @@ int i2c_scan(void) {
 		return(0);
 
 	int i;
-	esp_err_t espRc;
+	esp_err_t esprc;
+	i2c_cmd_handle_t cmd;
 	Serial.printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
 	Serial.printf("00:         ");
 
 	for (i=3; i< 0x78; i++) {
-		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+		cmd = i2c_cmd_link_create();
 		i2c_master_start(cmd);
 		i2c_master_write_byte(cmd, (i << 1) | I2C_MASTER_WRITE, ACK_CHECK_EN /* expect ack */);
 		i2c_master_stop(cmd);
 
-		espRc = i2c_master_cmd_begin(i2c_master_port, cmd, 10/portTICK_PERIOD_MS);
+		esprc = i2c_master_cmd_begin(i2c_master_port, cmd, 10/portTICK_PERIOD_MS);
 		if (i%16 == 0) {
 			Serial.printf("\n%.2x:", i);
 		}
-		if (espRc == 0) {
+		if (esprc == 0) {
 			Serial.printf(" %.2x", i);
-      if(i==MAX_ADDR) isadc=i;    // remember I2C Port number
-      if(i==ADS_ADDR) isadc=i;    // remember I2C Port number
-      if(i==RTC_ADDR) isrtc=i;    // remember I2C Port number
+			// if ADC: ADS111x overrules MAX123x by intention asking in that order
+			if(i==MAX_ADDR) {    
+				isadc=1; adcaddr = i;	// remember ADS I2C dev.addr
+			} 
+			if (i == ADS111X_ADDR_GND || i == ADS111X_ADDR_VCC ||
+    			i == ADS111X_ADDR_SDA || i == ADS111X_ADDR_SCL){
+				isadc=1; adcaddr = i;	// remember MAX I2C dev.addr
+			}  
+			if(i==RTC_ADDR) {
+				isrtc=i;				// remember RTC Presence -> use RTC_ADDR
+			}    
 		} else {
 			Serial.printf(" --");
 		}

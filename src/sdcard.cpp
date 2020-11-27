@@ -51,6 +51,7 @@ int setup_sd(int reentry) {  // My SDCard Constructor
 	uint8_t cardType = SD.cardType();
 
 	if(cardType == CARD_NONE) {
+		
 		Serial.println("  SD: No SD card found");
 		return issdcard;
 	}
