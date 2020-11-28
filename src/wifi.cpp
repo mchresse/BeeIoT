@@ -89,7 +89,7 @@ int setup_wifi(int reentry) { // WIFI Constructor
   iswifi = 0;
 
 #ifdef WIFI_CONFIG
-		BHLOG(LOGLAN) Serial.println("  WiFi: Init port in station mode");
+		BHLOG(LOGLAN) Serial.println("  WiFi: Init port to station mode");
 
 		WiFi.mode(WIFI_STA);        // set WIFI chip to station (client) mode
 		BHLOG(LOGLAN) wifi_scan();  // show me all networks in space

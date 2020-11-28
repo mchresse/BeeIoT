@@ -35,8 +35,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#include <string.h>
+
+#include <Arduino.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <time.h>
+#include <string.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -57,6 +61,13 @@ uint8_t dec2bcd(uint8_t val)
     return ((val / 10) << 4) + (val % 10);
 }
 
+//Berechnet den Tag der Woche aus dem übergebenen Datumswerten.
+byte calcDayOfWeek(int jahr, byte monat, byte tag) {
+    static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+    jahr -= monat < 3;
+    return ((jahr + jahr/4 - jahr/100 + jahr/400 + t[monat-1] + tag) % 7); 
+}
+
 esp_err_t ds3231_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio)
 {
     CHECK_ARG(dev);
@@ -65,8 +76,10 @@ esp_err_t ds3231_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio,
     dev->addr = RTC_ADDR;
     dev->sda_io_num = sda_gpio;
     dev->scl_io_num = scl_gpio;
-    dev->clk_speed = I2C_FREQ_HZ;
-    return i2c_master_init(port, sda_gpio, scl_gpio);
+    dev->clk_speed = 400000; 	// I2C_FREQ_HZ;
+ 
+//    i2c_master_init(port, sda_gpio, scl_gpio);	// already done before
+	return(ESP_OK);
 }
 
 esp_err_t ds3231_set_time(i2c_dev_t *dev, struct tm *time)
@@ -75,6 +88,7 @@ esp_err_t ds3231_set_time(i2c_dev_t *dev, struct tm *time)
     CHECK_ARG(time);
 
     uint8_t data[7];
+//    Serial.printf("  DS3231: Set NTP-Time: %i-%02i-%02iT%02i:%02i:%02i\n",time->tm_year, time->tm_mon, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 
     /* time/date data */
     data[0] = dec2bcd(time->tm_sec);
@@ -82,10 +96,11 @@ esp_err_t ds3231_set_time(i2c_dev_t *dev, struct tm *time)
     data[2] = dec2bcd(time->tm_hour);
     /* The week data must be in the range 1 to 7, and to keep the start on the
      * same day as for tm_wday have it start at 1 on Sunday. */
-    data[3] = dec2bcd(time->tm_wday + 1);
+    data[3] = dec2bcd(calcDayOfWeek(time->tm_year+1900, time->tm_mon+1, time->tm_mday)+1);	// should be 1..7
+//    data[3] = dec2bcd(time->tm_wday + 1);
     data[4] = dec2bcd(time->tm_mday);
     data[5] = dec2bcd(time->tm_mon + 1);
-    data[6] = dec2bcd(time->tm_year - 2000);
+    data[6] = dec2bcd(time->tm_year - 100);
 
     return i2c_dev_write_reg(dev, DS3231_ADDR_TIME, data, 7);
 }
@@ -155,8 +170,10 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time)
     time->tm_wday = bcd2dec(data[3]) - 1;
     time->tm_mday = bcd2dec(data[4]);
     time->tm_mon  = bcd2dec(data[5] & DS3231_MONTH_MASK) - 1;
-    time->tm_year = bcd2dec(data[6]) + 2000;
+    time->tm_year = bcd2dec(data[6]) + 100;
     time->tm_isdst = 0;
+
+//    Serial.printf("  DS3231: Get NTP-Time: %i-%02i-%02iT%02i:%02i:%02i\n", time->tm_year, time->tm_mon, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 
     // apply a time zone (if you are not using localtime on the rtc or you want to check/apply DST)
     //applyTZ(time);

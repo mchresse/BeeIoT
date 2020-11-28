@@ -91,7 +91,9 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 	//	I2C should have been scanned by I2c_master_init() already
 	if (adcaddr == ADS111X_ADDR_GND || adcaddr == ADS111X_ADDR_VCC ||
     	adcaddr == ADS111X_ADDR_SDA || adcaddr == ADS111X_ADDR_SCL){
-		BHLOG(LOGADS) Serial.printf("  ADS: ADC ADS1115 detected at port: 0x%02X\n", isadc);
+		BHLOG(LOGADS) Serial.printf("  ADS: ADC ADS1115 detected at port: 0x%02X\n", adcaddr);
+	}else{
+		return(0);
 	}
 
 	// Setup MAX I2C device statically

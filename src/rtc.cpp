@@ -53,7 +53,7 @@ extern int isntp;   			// =1 NTP Server discovered
 RTC_DATA_ATTR int   isrtc;   	// =1 RTC time discovered
 i2c_dev_t i2crtc;			// Config settings of RTC I2C device
 
-void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour,  uint8_t min, uint8_t sec);
+void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day,  uint8_t hour,  uint8_t min, uint8_t sec);
 
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
@@ -143,8 +143,7 @@ struct tm tinfo;      // new time source: from NTP
     return(-3);       // no RTC nor NTP Time at all, we give up.
   }
 
-    BHLOG(LOGLAN) Serial.printf("  SetRTC: by NTP-Time: %04i-%02i-%02iT%02i:%02i:%02i\n",
-		tinfo.tm_year, tinfo.tm_mon, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+    BHLOG(LOGLAN) Serial.println(&tinfo, "  NTP2RTC: by NTP-Time: %A, %B  %Y-%m-%dT%H:%M:%S");
 	ds3231_set_time(&i2crtc, &tinfo);
 
 
@@ -166,18 +165,18 @@ void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, u
 	struct tm tinfo;
 
 	if(isrtc){
-		tinfo.tm_year	= 2000 + yearoff;
+		tinfo.tm_year	= yearoff+100;	// need offset to 1900
 		tinfo.tm_mon	= month;
 		tinfo.tm_mday	= day;
 		tinfo.tm_hour	= hour;
 		tinfo.tm_min	= min;
 		tinfo.tm_sec	= sec;
+		tinfo.tm_wday	= 0;
 		ds3231_set_time(&i2crtc, &tinfo);
 
 		// reread new time: DS3231 delivers time in struct TM format:
 		ds3231_get_time(&i2crtc, &tinfo);
-
-    	BHLOG(LOGLAN) Serial.printf("  SetRTC: %i-%02i-%02iT%02i:%02i:%02i\n", tinfo.tm_year, tinfo.tm_mon, tinfo.tm_mday,tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+   		BHLOG(LOGLAN) Serial.println(&tinfo, "  SetRTC: new-RTC Time: %Y-%m-%dT%H:%M:%S");
 	}
 }
 
@@ -203,22 +202,25 @@ int getRTCtime(void){
 	BHLOG(LOGLAN) Serial.print("  RTC: Get RTC Time: ");
 	// Get date and time; 2019-10-28T08:09:47Z
 	// using ISO 8601 Timestamp functions: YYYY-MM-DDTHH:MM:SS
-	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", tinfo.tm_year, tinfo.tm_mon, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo.tm_year+1900, tinfo.tm_mon, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
 	BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
 	// Extract date: YYYY-MM-DD
-	sprintf(bhdb.date,"%i-%02i-%02i", tinfo.tm_year, tinfo.tm_mon, tinfo.tm_mday);
+	sprintf(bhdb.date,"%i-%02i-%02i", tinfo.tm_year+1900, tinfo.tm_mon, tinfo.tm_mday);
 	BHLOG(LOGLAN) Serial.print(" - ");
 	BHLOG(LOGLAN) Serial.print(bhdb.date);
 
 	// Extract time: HH:MM:SS
-	sprintf(bhdb.time,"%02i:%02i:%02i", tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+	sprintf(bhdb.time,"%02i:%02i:%02i ", tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
 	BHLOG(LOGLAN) Serial.print(" - ");
-	BHLOG(LOGLAN) Serial.println(bhdb.time);
+	BHLOG(LOGLAN) Serial.print(bhdb.time);
+
+    BHLOG(LOGLAN) Serial.print(daysOfTheWeek[tinfo.tm_wday]);
 
 	// last but not least: get current RTC temperature
 	ds3231_get_temp_float(&i2crtc, &rtctemp);
 	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+	BHLOG(LOGLAN)  Serial.printf(" RTC-Temp.: %.2f °C\n", rtctemp);
 
   return 0;
 } // end of getRTCtime()
@@ -233,23 +235,6 @@ void rtc_test() {
 	// DS3231 delivers time in struct TM format:
 	ds3231_get_time(&i2crtc, &tinfo);
 
-	Serial.println("  RTC: Start RTC Test Output ...");
-
-    Serial.print(tinfo.tm_year, DEC);
-    Serial.print('/');
-    Serial.print(tinfo.tm_mon, DEC);
-    Serial.print('/');
-    Serial.print(tinfo.tm_mday, DEC);
-    Serial.print(" (");
-    Serial.print(daysOfTheWeek[tinfo.tm_wday]);
-    Serial.print(") ");
-    Serial.print(tinfo.tm_hour, DEC);
-    Serial.print(':');
-    Serial.print(tinfo.tm_min, DEC);
-    Serial.print(':');
-    Serial.print(tinfo.tm_sec, DEC);
-    Serial.println();
-
-    Serial.println();
+	BHLOG(LOGLAN) Serial.println(&tinfo, "  RTC: Test Output:  %A, %B %d %Y %H:%M:%S");
 
 } // end of rtc_test()

@@ -67,7 +67,7 @@ int setup_ntp(int reentry) { // NTP Constructor
 isntp = 0;
 #ifdef NTP_CONFIG
   if(!reentry){
-	BHLOG(LOGLAN) Serial.println("  Setup: Init NTP Client");
+	BHLOG(LOGLAN) Serial.print("  Setup: Init NTP Client: ");
 		/*
 		// Initialize a NTPClient to get time
 		timeClient.begin();
@@ -151,6 +151,8 @@ int getTimeStamp() {
   strncpy(bhdb.time, tmstring, LENTIME);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.println(bhdb.time);
+
+  BHLOG(LOGLAN) Serial.printf("  GetTimeStamp: NTC-Year %i\n", timeinfo.tm_year);
 
   return(0);
 } // end of getTimeStamp()

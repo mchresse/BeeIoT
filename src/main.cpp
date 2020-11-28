@@ -230,6 +230,7 @@ int rc;		// generic return code variable
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 		lflags = LOGBH + LOGLORAW + LOGSD + LOGADS;
+		lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
 
@@ -311,9 +312,8 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 // setup Wifi & NTP & RTC time & Web service
   BHLOG(LOGBH) Serial.println("  Setup: Wifi in Station Mode");
   if (!setup_wifi(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: Wifi setup failed");
+    BHLOG(LOGBH) Serial.println("  Setup: Wifi setup failed -> No NTP");
     // enter here exit code, if needed
-    BHLOG(LOGBH) Serial.println("  Setup: No WIFI no NTP-Time.");
     // probably we are LOOPTIME ahead ?!
     // recalc bhdb "timestamp+LOOPTIME"  here
   }else{  // WIFI connected
@@ -338,7 +338,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   BHLOG(LOGBH) Serial.println("  Setup: SD Card");
   if(issdcard){
     if (!setup_sd(ReEntry)){
-      BHLOG(LOGBH) Serial.println("  Setup: SD Card failed");
+      BHLOG(LOGBH) Serial.println("  SD: SD Card failed");
       // enter exit code here, if needed
     }
   }
@@ -727,8 +727,11 @@ void biot_ioshutdown(int sleepmode){
     //			esp_bt_controller_disable();
 
 #ifdef WIFI_CONFIG
-    if(iswifi)
-		  esp_wifi_stop();
+    if(iswifi){
+	//	esp_wifi_stop();
+  		WiFi.disconnect(true);
+  		WiFi.mode(WIFI_OFF);
+  	}
     iswifi = 0;
 #endif
 #ifdef NTP_CONFIG
@@ -815,25 +818,24 @@ void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 esp_err_t  rc;
 
 	digitalWrite(LED_RED, HIGH);    // signal Sleep Phase: LED OFf to save power
-
-  biot_ioshutdown(mode);          // disable all IO devices and disable io Ports.
+	biot_ioshutdown(mode);          // disable all IO devices and disable io Ports.
 
 	switch(mode){
 		case 1:		// DeepSleepMode
-		  // Next we decide what all peripherals to shut down/keep on.
-		  //	By default, ESP32 will automatically power down the peripherals
-		  //	not needed by the wakeup source,
-      //  Details at the API docs
-		  //	http://esp-idf.readthedocs.io/en/latest/api-reference/system/deep_sleep.html
+			// Next we decide what all peripherals to shut down/keep on.
+			//	By default, ESP32 will automatically power down the peripherals
+			//	not needed by the wakeup source,
+    		//  Details at the API docs
+			//	http://esp-idf.readthedocs.io/en/latest/api-reference/system/deep_sleep.html
 
-      // Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
-      // Otherwise power it down.
-      BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
-      esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-      gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
-      gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
+      		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
+      		// Otherwise power it down.
+    		BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
+    		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
+    		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
+    		gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
 			esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
-      BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+    		BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but
@@ -844,18 +846,20 @@ esp_err_t  rc;
 			break;
 
 		case 2:		// LightSleepMode
-        BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
-        gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
-        esp_sleep_enable_gpio_wakeup();
+			BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+			gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
+			esp_sleep_enable_gpio_wakeup();
 
-        // Configure the wake up timer source
-        esp_sleep_enable_timer_wakeup(waittime * uS_TO_S_FACTOR);	// time in us
+			// Configure the wake up timer source
+			esp_sleep_enable_timer_wakeup(waittime * uS_TO_S_FACTOR);	// time in us
 
-        rc = esp_light_sleep_start();
-        if(rc != ESP_OK){
-          BHLOG(LOGBH) Serial.printf("  Main: LightSleep failed: %i\n", rc);
-          delay(5000);
-        }
+			rc = esp_light_sleep_start();
+			if(rc != ESP_OK){
+				BHLOG(LOGBH) Serial.printf("  Main: LightSleep failed: %i\n", rc);
+				delay(5000);
+			}
+			
+			BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
 			break;
 
 		case 3:		// ModemSleepMode
@@ -868,12 +872,13 @@ esp_err_t  rc;
 
 		default:
 #ifndef BEACON
-    	BHLOG(LOGBH) Serial.printf("  Loop: Enter WaitLoop (%i sec.)\n", report_interval);
+	    	BHLOG(LOGBH) Serial.printf("  Loop: Enter WaitLoop (%i sec.)\n", report_interval);
 #endif
 			mydelay(waittime*1000);   // time in ms - wait with blinking red LED
 			BHLOG(LOGBH) Serial.println();
 			break;
-	}
+	} // switch
+
 }
 
 
