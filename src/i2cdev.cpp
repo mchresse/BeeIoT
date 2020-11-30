@@ -46,10 +46,10 @@ extern uint16_t	lflags; // BeeIoT log flag field
 i2c_port_t 	 i2c_master_port = I2C_PORT ;
 i2c_config_t i2ccfg;		// Configset of I2C MasterPort
 
-int isi2c = 0;		// =0 no I2C master port claimed yet
-int adcaddr=0;		// I2C Dev.address of detected ADC
-RTC_DATA_ATTR int isadc=0;	// =0 no I2C dev found at i2c_master_port
-extern int isrtc;	// in rtc.cpp
+int isi2c = 0;					// =0 no I2C master port claimed yet
+RTC_DATA_ATTR int adcaddr=0;	// I2C Dev.address of detected ADC
+RTC_DATA_ATTR int isadc=0;		// =0 no I2C dev found at i2c_master_port
+extern int isrtc;				// in rtc.cpp
 
 esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 	esp_err_t	esprc;
@@ -89,7 +89,6 @@ int setup_i2c_master(int reentry) {
 	}
 	return(isi2c);
 } // end of setup_i2c_master()
-
 
 esp_err_t i2c_dev_read(const i2c_dev_t *dev, const void *out_data, size_t out_size, void *in_data, size_t in_size)
 {

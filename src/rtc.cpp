@@ -51,7 +51,7 @@ extern int iswifi;  			// =1 WiFI network discovered
 extern int isntp;   			// =1 NTP Server discovered
 
 RTC_DATA_ATTR int   isrtc;   	// =1 RTC time discovered
-i2c_dev_t i2crtc;			// Config settings of RTC I2C device
+i2c_dev_t i2crtc;				// Config settings of RTC I2C device
 
 void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day,  uint8_t hour,  uint8_t min, uint8_t sec);
 

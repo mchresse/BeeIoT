@@ -191,6 +191,16 @@ int rc;		// generic return code variable
   // put your setup code here, to run once:
 	pinMode(LED_RED,   OUTPUT);
 	digitalWrite(LED_RED, LOW);     // signal Setup Phase
+	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
+    pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
+    pinMode(BEE_CS, OUTPUT);
+    digitalWrite(EPD_CS, HIGH);
+    digitalWrite(SD_CS, HIGH);
+    digitalWrite(BEE_CS, HIGH);
+    gpio_hold_dis(SD_CS);   // enable SD_CS
+    gpio_hold_dis(EPD_CS);   // enable EPD_CS
+    gpio_hold_dis(BEE_CS);  // enable BEE_CS
+
 	delay(500); //delay nicht entfernen wg sleep mode !
 
   // If Ser. Diagnostic Port connected
@@ -229,8 +239,8 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGSD + LOGADS;
-		lflags = 65535;
+		lflags = LOGBH + LOGLORAW + LOGSD;
+	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
 
@@ -445,34 +455,38 @@ void loop() {
 //***************************************************************
 // Monitor Analog Ports: e.g. of battery Control
 #ifdef ADS_CONFIG
-int16_t addata = 0;   // raw ADS Data buffer
-float x;              // Volt calculation buffer
+uint32_t addata = 0;   	// raw ADS Data buffer
+
+float x;              		// Volt calculation buffer
 
   // read out all ADS channels 0..3
   BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
-  addata = adc_read(0);         // get 3.3V line value of ESP32 devKit in mV
-  bhdb.dlog[bhdb.loopid].ESP3V = addata;
+
+  addata = (uint32_t)adc_read(0) * 306 / 100;  		// get Level of Battery Charge Input from Ext-USB port
+  bhdb.dlog[bhdb.loopid].BattCharge = addata; //  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  addata = adc_read(1);         // get Level of Battery Charge Input from Ext-USB port
-  bhdb.dlog[bhdb.loopid].BattCharge = addata*2; //  measured: 5V/2 = 2,5V value
-  BHLOG(LOGADS) Serial.print((float)addata*2/1000, 2);
+  addata = (uint32_t)adc_read(1) * 2;         			// get 3.3V line value of ESP32 devKit in mV
+  bhdb.dlog[bhdb.loopid].ESP3V = (uint16_t) addata;	// AIN1 has 2x33k -> div by 2
+  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  addata = adc_read(2);         // Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+  // addata = adc_read(2);         			
+	addata = (uint32_t) 0;				// not connected 
+  bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;		// value is useless
+  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
+  BHLOG(LOGADS) Serial.println("V");
+
+  addata = (uint32_t)adc_read(3) * 3;         			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
   // calculate Battery Load Level in %
-  x = ((float)(addata-BATTERY_MIN_LEVEL)/
+  x = ((float)(addata-BATTERY_MIN_LEVEL)/		//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
   bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
-  bhdb.dlog[bhdb.loopid].BattLoad = addata;
+  bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) Serial.print(" - ");
 
-  addata = adc_read(3);         // get level of 5V Power line of Extension board (not of ESP32 DevKit !)
-  bhdb.dlog[bhdb.loopid].Board5V = addata*2; //  measured: 5V/2 = 2,5V value
-  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  BHLOG(LOGADS) Serial.println("V");
 #endif // ADS_CONFIG
 
 

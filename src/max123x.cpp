@@ -105,13 +105,21 @@ int setup_i2c_MAX(int reentry) {  // MAX123x constructor
 //	data		ADC value in mV
 // 				-> Vref=2096V data = n x 1/Vref
 //***************************************************************
+#define MAXCAL	7		// MAX Calibrationfaktor +7% 
+#define ADSCAL	0		// ADS Calibrationfaktor +0% 
+int16_t ADCCal;			// ADC Calibrationfaktor +7% 
+
+
 uint16_t adc_read(int channel) {
 
     if(adcaddr == MAX_ADDR){
-      return(max_read(channel));
+		ADCCal = MAXCAL;
+      return(max_read(channel) * (100+ADCCal) / 100);
     }
-    if(adcaddr == ADS_ADDR){
-      return(ads_read(channel));
+    if (adcaddr == ADS111X_ADDR_GND || adcaddr == ADS111X_ADDR_VCC ||
+    	adcaddr == ADS111X_ADDR_SDA || adcaddr == ADS111X_ADDR_SCL){
+		ADCCal = ADSCAL;
+      return(ads_read(channel) * (100+ADCCal) / 100);
     }
   return(-1);
 }
@@ -158,7 +166,7 @@ uint16_t max_read(uint8_t channel) {
 		data = ((datax[0] & 0x000F)*256 + (datax[1] & 0x00FF));
 		BHLOG(LOGADS) Serial.printf("-> done: 0x%02x-%02x (%i)\n",  datax[0] &0x000F, datax[1] & 0x00FF, data);
 	}
-
+	data = data * 1000 / 2096;	// get value in mV
     return((uint16_t) data);	// get 12 bit conversion word
 
 #endif // ADS_CONFIG

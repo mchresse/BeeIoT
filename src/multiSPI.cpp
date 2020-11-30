@@ -1,3 +1,4 @@
+
 //*******************************************************************
 // multiSPI.cpp
 // from Project https://github.com/mchresse/BeeIoT
@@ -87,9 +88,9 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(SD_CS, HIGH);
     digitalWrite(BEE_CS, HIGH);
-    gpio_hold_dis(GPIO_NUM_2);   // enable SD_CS
-    gpio_hold_dis(GPIO_NUM_5);   // enable EPD_CS
-    gpio_hold_dis(GPIO_NUM_12);  // enable BEE_CS
+    gpio_hold_dis(SD_CS);   // enable SD_CS
+    gpio_hold_dis(EPD_CS);   // enable EPD_CS
+    gpio_hold_dis(BEE_CS);  // enable BEE_CS
 
 // Setup VSPI BUS
     pinMode(VSPI_MISO, INPUT_PULLUP);
@@ -101,7 +102,7 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 // Preset SPI dev: BEE-LoRa Module
     pinMode(BEE_RST, OUTPUT);
     digitalWrite(BEE_RST, HIGH);
-    gpio_hold_dis(GPIO_NUM_14);  // enable BEE_RST
+    gpio_hold_dis(BEE_RST);  // enable BEE_RST
     pinMode(BEE_DIO0, INPUT);
     pinMode(BEE_DIO1, INPUT);
     pinMode(BEE_DIO2, INPUT);
