@@ -55,7 +55,7 @@ i2c_dev_t i2crtc;				// Config settings of RTC I2C device
 
 void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day,  uint8_t hour,  uint8_t min, uint8_t sec);
 
-char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};	// 0-6
 
 //*******************************************************************
 // Setup_RTC(): Initial Setup of RTC module instance
@@ -154,8 +154,8 @@ struct tm tinfo;      // new time source: from NTP
 //*******************************************************************
 // setRTCtime(): set current time&date of RTC
 // INPUT:
-//    yearoff 2 digits (offset to year 2000)
-//    month 1-12
+//    yearoff 2 digits (offset to year 1900)
+//    month 0-11
 //    day   1-31
 //    hour  0-23
 //    min   0-59
@@ -165,13 +165,13 @@ void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, u
 	struct tm tinfo;
 
 	if(isrtc){
-		tinfo.tm_year	= yearoff+100;	// need offset to 1900
-		tinfo.tm_mon	= month;
-		tinfo.tm_mday	= day;
-		tinfo.tm_hour	= hour;
-		tinfo.tm_min	= min;
-		tinfo.tm_sec	= sec;
-		tinfo.tm_wday	= 0;
+		tinfo.tm_year	= yearoff;		// need offset to 1900  e.g.  2020 -> 120
+		tinfo.tm_mon	= month;		// 0-11
+		tinfo.tm_mday	= day;			// 1-31
+		tinfo.tm_hour	= hour;			// 0-23
+		tinfo.tm_min	= min;			// 0-59
+		tinfo.tm_sec	= sec;			// 0-59
+		tinfo.tm_wday	= 0;			// 0-6 (0=SU)
 		ds3231_set_time(&i2crtc, &tinfo);
 
 		// reread new time: DS3231 delivers time in struct TM format:
@@ -202,11 +202,11 @@ int getRTCtime(void){
 	BHLOG(LOGLAN) Serial.print("  RTC: Get RTC Time: ");
 	// Get date and time; 2019-10-28T08:09:47Z
 	// using ISO 8601 Timestamp functions: YYYY-MM-DDTHH:MM:SS
-	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo.tm_year+1900, tinfo.tm_mon, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo.tm_year+1900, tinfo.tm_mon+1, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
 	BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
 	// Extract date: YYYY-MM-DD
-	sprintf(bhdb.date,"%i-%02i-%02i", tinfo.tm_year+1900, tinfo.tm_mon, tinfo.tm_mday);
+	sprintf(bhdb.date,"%i-%02i-%02i", tinfo.tm_year+1900, tinfo.tm_mon+1, tinfo.tm_mday);
 	BHLOG(LOGLAN) Serial.print(" - ");
 	BHLOG(LOGLAN) Serial.print(bhdb.date);
 

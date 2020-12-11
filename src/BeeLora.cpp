@@ -963,12 +963,12 @@ int rc;
 #endif
     lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
 
-    // yearoff = offset to 2000
-    setRTCtime(pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
+    // yearoff = offset to 1900
+    setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
       report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
-    Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%2i-%2i %2i:%2i:%2i\n",
+    Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
       2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     rc=CMD_CONFIG;

@@ -190,23 +190,24 @@ void setup() {
 int rc;		// generic return code variable
   // put your setup code here, to run once:
 	pinMode(LED_RED,   OUTPUT);
-	digitalWrite(LED_RED, LOW);     // signal Setup Phase
+	digitalWrite(LED_RED, LOW); // signal Setup Phase
+	gpio_hold_dis(LED_RED);   	// enable SD_CS
 	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
     pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
     pinMode(BEE_CS, OUTPUT);
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(SD_CS, HIGH);
     digitalWrite(BEE_CS, HIGH);
-    gpio_hold_dis(SD_CS);   // enable SD_CS
-    gpio_hold_dis(EPD_CS);   // enable EPD_CS
-    gpio_hold_dis(BEE_CS);  // enable BEE_CS
+    gpio_hold_dis(SD_CS);   	// enable SD_CS
+    gpio_hold_dis(EPD_CS);   	// enable EPD_CS
+    gpio_hold_dis(BEE_CS);  	// enable BEE_CS
 
-	delay(500); //delay nicht entfernen wg sleep mode !
+	delay(500); //delay nicht entfernen wg Wakeup mode !
 
-  // If Ser. Diagnostic Port connected
-  while(!Serial);                 // wait to connect to computer
-  Serial.begin(115200);           // enable Ser. Monitor Baud rate
-  delay(500);                    // wait for console opening
+  // If Ser. Diagnostic Port connected	
+	while(!Serial);             // wait to connect to computer
+	Serial.begin(115200);       // enable Ser. Monitor Baud rate
+	//	delay(500);					// wait for console init
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
 
@@ -240,7 +241,7 @@ int rc;		// generic return code variable
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
 		lflags = LOGBH + LOGLORAW + LOGSD;
-	//	lflags = 65535;
+//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
 
@@ -251,7 +252,6 @@ int rc;		// generic return code variable
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
-
 		BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
 
 		//***************************************************************
@@ -334,7 +334,10 @@ if(isadc){	// I2C Master Port active + ADC detected ?
       // NTP requires connected WIFI ! -> check iswifi also
     }else{
       BHLOG(LOGLAN) Serial.println("  Setup: Get new Date & Time:");
-      ntp2rtc();       // init RTC time once at restart
+      rc = ntp2rtc();
+	  if(rc <0){       // init RTC time once at restart
+      	BHLOG(LOGLAN) Serial.printf("  ntp2rtc fails (%i)", rc);
+	  }
     }
 
 // start the webserver to listen for request of clients (in LAN or own ESP32 network)
@@ -448,7 +451,7 @@ void loop() {
 
   while(bhdb.dlog[bhdb.loopid].TempHive > 70){  // if we have just started lets do it again to get right values
     GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-    delay(500);
+    delay(100);
   }
 #endif // ONEWIRE_CONFIG
 
@@ -812,6 +815,10 @@ void biot_ioshutdown(int sleepmode){
      gpio_hold_en(ONE_WIRE_BUS); // OneWire Bus line
 #endif
 
+    pinMode(LED_RED, OUTPUT);
+	digitalWrite(LED_RED, HIGH);    // signal Sleep Phase: LED OFf to save power
+    gpio_hold_en(LED_RED); // OneWire Bus line
+
     gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
     // reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis() needed
   } // end of sleepmode
@@ -831,11 +838,12 @@ void biot_ioshutdown(int sleepmode){
 void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
 esp_err_t  rc;
 
-	digitalWrite(LED_RED, HIGH);    // signal Sleep Phase: LED OFf to save power
-	biot_ioshutdown(mode);          // disable all IO devices and disable io Ports.
+
 
 	switch(mode){
 		case 1:		// DeepSleepMode
+			biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
+			
 			// Next we decide what all peripherals to shut down/keep on.
 			//	By default, ESP32 will automatically power down the peripherals
 			//	not needed by the wakeup source,

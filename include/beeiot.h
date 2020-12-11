@@ -112,8 +112,8 @@
 #define HX711_CONFIG
 #define ADS_CONFIG
 #define ONEWIRE_CONFIG
-//#define WIFI_CONFIG
-//#define NTP_CONFIG
+// #define WIFI_CONFIG
+// #define NTP_CONFIG
 #define SD_CONFIG
 #define EPD_CONFIG
 #define LORA_CONFIG

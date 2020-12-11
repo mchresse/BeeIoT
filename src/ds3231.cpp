@@ -61,7 +61,7 @@ uint8_t dec2bcd(uint8_t val)
     return ((val / 10) << 4) + (val % 10);
 }
 
-//Berechnet den Tag der Woche aus dem übergebenen Datumswerten.
+//Berechnet den Tag der Woche aus dem übergebenen Datumswerten: 1(SU) - 7(SAT)
 byte calcDayOfWeek(int jahr, byte monat, byte tag) {
     static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
     jahr -= monat < 3;
@@ -96,11 +96,11 @@ esp_err_t ds3231_set_time(i2c_dev_t *dev, struct tm *time)
     data[2] = dec2bcd(time->tm_hour);
     /* The week data must be in the range 1 to 7, and to keep the start on the
      * same day as for tm_wday have it start at 1 on Sunday. */
-    data[3] = dec2bcd(calcDayOfWeek(time->tm_year+1900, time->tm_mon+1, time->tm_mday)+1);	// should be 1..7
+    data[3] = dec2bcd(calcDayOfWeek(time->tm_year+1900, time->tm_mon+1, time->tm_mday)-1);	// 1-7 -> 0-6
 //    data[3] = dec2bcd(time->tm_wday + 1);
-    data[4] = dec2bcd(time->tm_mday);
-    data[5] = dec2bcd(time->tm_mon + 1);
-    data[6] = dec2bcd(time->tm_year - 100);
+    data[4] = dec2bcd(time->tm_mday);		// 1-31
+    data[5] = dec2bcd(time->tm_mon + 1);	// 0-11 -> 1-12
+    data[6] = dec2bcd(time->tm_year - 100);	// base1900 -> base2000
 
     return i2c_dev_write_reg(dev, DS3231_ADDR_TIME, data, 7);
 }
@@ -166,11 +166,11 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time)
         /* AM/PM? */
         if (data[2] & DS3231_PM_FLAG) time->tm_hour += 12;
     }
-    else time->tm_hour = bcd2dec(data[2]); /* 24H */
-    time->tm_wday = bcd2dec(data[3]) - 1;
-    time->tm_mday = bcd2dec(data[4]);
-    time->tm_mon  = bcd2dec(data[5] & DS3231_MONTH_MASK) - 1;
-    time->tm_year = bcd2dec(data[6]) + 100;
+    else time->tm_hour = bcd2dec(data[2]); 			// 24H
+    time->tm_wday = bcd2dec(data[3]) - 1;			// 1-7 -> 0-6
+    time->tm_mday = bcd2dec(data[4]);				// 1-31
+    time->tm_mon  = bcd2dec(data[5] & DS3231_MONTH_MASK) - 1;	// 1-12 -> 0-11
+    time->tm_year = bcd2dec(data[6]) + 100;			// base2000 -> base1900
     time->tm_isdst = 0;
 
 //    Serial.printf("  DS3231: Get NTP-Time: %i-%02i-%02iT%02i:%02i:%02i\n", time->tm_year, time->tm_mon, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
