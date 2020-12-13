@@ -69,22 +69,26 @@ int setup_owbus(int reentry) {
   OWsensors.begin();    // Init OW bus devices
 
     // locate devices on the bus
-  BHLOG(LOGOW) Serial.print("  OWBus: Locating devices...");
-  BHLOG(LOGOW) Serial.print("Found ");
+  BHLOG(LOGOW) Serial.print("  OWBus: searching OW devices...");
+  BHLOG(LOGOW) Serial.print(OWsensors.getDS18Count(), DEC);
+  BHLOG(LOGOW) Serial.print(" of ");
   BHLOG(LOGOW) Serial.print(OWsensors.getDeviceCount(), DEC);
-  BHLOG(LOGOW) Serial.println(" devices.");
+  BHLOG(LOGOW) Serial.println(" devices found.");
 
  // show the addresses we found on the bus
   BHLOG(LOGOW) Serial.print("    Device 0: Int-Address: ");
-  printAddress(sensorInt);
+	OWsensors.getAddress((uint8_t *)&sensorInt, 0);
+  	printAddress(sensorInt);
   BHLOG(LOGOW) Serial.println();
 
   BHLOG(LOGOW) Serial.print("    Device 1: BH. Address: ");
-  printAddress(sensorBH);
+	OWsensors.getAddress((uint8_t *)&sensorBH, 1);
+  	printAddress(sensorBH);
   BHLOG(LOGOW) Serial.println();
 
   BHLOG(LOGOW) Serial.print("    Device 2: Ext.Address: ");
-  printAddress(sensorExt);
+	OWsensors.getAddress((uint8_t *)&sensorExt, 2);
+  	printAddress(sensorExt);
   BHLOG(LOGOW) Serial.println();
 
 

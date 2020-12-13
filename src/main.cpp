@@ -204,7 +204,7 @@ int rc;		// generic return code variable
 
 	delay(500); //delay nicht entfernen wg Wakeup mode !
 
-  // If Ser. Diagnostic Port connected	
+  // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect to computer
 	Serial.begin(115200);       // enable Ser. Monitor Baud rate
 	//	delay(500);					// wait for console init
@@ -240,7 +240,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGSD;
+		lflags = LOGBH + LOGLORAW + LOGSD + LOGOW;
 //	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -475,8 +475,8 @@ float x;              		// Volt calculation buffer
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  // addata = adc_read(2);         			
-	addata = (uint32_t) 0;				// not connected 
+  // addata = adc_read(2);
+	addata = (uint32_t) 0;				// not connected
   bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;		// value is useless
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
@@ -843,7 +843,7 @@ esp_err_t  rc;
 	switch(mode){
 		case 1:		// DeepSleepMode
 			biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
-			
+
 			// Next we decide what all peripherals to shut down/keep on.
 			//	By default, ESP32 will automatically power down the peripherals
 			//	not needed by the wakeup source,
@@ -880,7 +880,7 @@ esp_err_t  rc;
 				BHLOG(LOGBH) Serial.printf("  Main: LightSleep failed: %i\n", rc);
 				delay(5000);
 			}
-			
+
 			BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
 			break;
 
