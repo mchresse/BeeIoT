@@ -1,5 +1,9 @@
 //*******************************************************************
-// BeeIoT - Main Header file
+/// @file   MAIN.cpp
+/// @brief  BeeIoT - Main Header file
+/// @author MchResse
+/// @date   2020-12-18
+/// @details
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -183,8 +187,11 @@ void wiretest();
 
 
 //*******************************************************************
-// BeeIoT Setup Routine
-//
+/// @brief BeeIoT Setup Routine - Probe for all expected IO/Sensor devices
+/// Detect and check functionality incl. test output where applicable
+/// IO ports will be enabled depending on the wakeup mode.
+/// @param none
+/// @return void
 //*******************************************************************
 void setup() {
 int rc;		// generic return code variable
@@ -240,7 +247,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGSD + LOGOW;
+		lflags = LOGBH + LOGLORAW + LOGSD;
 //	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -390,8 +397,8 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 
 
 //*******************************************************************
-// BeeIoT Main Routine: Loop()
-// endless loop
+/// @brief  BeeIoT Main Routine: Loop() as endless loop
+/// @param none
 //*******************************************************************
 void loop() {
 
@@ -529,9 +536,9 @@ float x;              		// Volt calculation buffer
 
 
 //*******************************************************************
-// Logdata()
-// Append current sensor data set to SD card -> logdata file
-// and send it via LoRaWAN
+/// @brief Logdata() Append current sensor data set to SD card -> logdata file
+/// and send it via LoRaWAN
+/// @param none
 //*******************************************************************
 void Logdata(void) {
 uint16_t sample;
@@ -607,10 +614,16 @@ void mydelay(int32_t tval){
 }
 
 //*******************************************************************
-// this section handles configuration values which can be configured
-// via webpage form in a webbrowser
+/// @brief initialize static configuration settings of housekeeping data
+/// @param reentry 0..4 wakeup mode
+/// @details
+///		=0 initial startup needed(after reset)
+/// 	=1 after deep sleep /Ram destroyed, except RTC Mem)
+/// 	=2 after light sleep (Ram up to date)
+///		=3 ModemSleep Mode (not used)
+///		=4 Active Wait Loop using delay()
+/// @return void
 //*******************************************************************
-// Initalize the values
 void InitConfig(int reentry){
   int i;
 
@@ -685,8 +698,10 @@ void InitConfig(int reentry){
 } // end of InitConfig()
 
 //*******************************************************************
-// check the ConfigValues and set ConfigStatus
-// process the first ConfigValue to switch something like LED=ON/OFF
+/// @brief check the ConfigValues and set ConfigStatus;
+/// process 4 config sets for LAN permission settings
+/// @param countValues Number of processed configsets
+/// @return void
 //*******************************************************************
 void ProcessAndValidateConfigValues(int countValues){
   BHLOG(LOGLAN) Serial.printf("  Webserver: ProcessConfigValues(%i)\n", countValues);
@@ -726,14 +741,12 @@ void ProcessAndValidateConfigValues(int countValues){
 
 
 //*******************************************************************
-// biot_ioshutdown()
-// disable all hi level IO protocol devices (e.g. SPI)
-// and prepare IO ports for sleep mode accordingly,
-//  INPUT:
-//  sleepmode	1 DeepSleep Mode
-//  		      2 LightSleep Mode
-// 			      3 ModemSleep
-//			      4 Active wait loop
+/// @brief biot_ioshutdown()
+/// disable all hi level IO protocol devices (e.g. SPI)
+/// and prepare IO ports for sleep mode accordingly,
+/// @param sleepmode	wakeup mode
+/// @details 1 DeepSleep Mode; 2 LightSleep Mode; 3 ModemSleep; 4 Active wait loop
+/// @return void
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
   if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
@@ -826,19 +839,16 @@ void biot_ioshutdown(int sleepmode){
 
 
 //***********************************************************************
-// Method to print the reason by which ESP32
-// has been awaken from sleep
-// Input:
-//  Mode	1 DeepSleep Mode
-//  		2 LightSleep Mode
-// 			3 ModemSleep
-//			4 Active wait loop
-//  sleeptime -> loop time - value in seconds
+/// @brief Method to print the reason by which ESP32
+/// has been awaken from sleep
+/// @param Mode	1=DeepSleep Mode; 2=LightSleep Mode;
+/// 		3=ModemSleep;
+/// 		4=Active wait loop sleeptime -> loop time - value in seconds
+/// @param waittime sleep/wait time in seconds
+/// @return void
 //***********************************************************************
-void prepare_sleep_mode(int mode, int waittime){ // sleeptime in seconds
+void prepare_sleep_mode(int mode, int waittime){
 esp_err_t  rc;
-
-
 
 	switch(mode){
 		case 1:		// DeepSleepMode
@@ -905,16 +915,17 @@ esp_err_t  rc;
 
 
 //***********************************************************************
-// Method to print the reason by which ESP32
-// has been awaken from sleep
+/// @brief Method to print the reason by which ESP32
+/// has been awaken from sleep
+/// @param none
+/// @return esp_sleep_wakeup_cause_t wakeup_reason
 //***********************************************************************
 esp_sleep_wakeup_cause_t print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
 
   wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch(wakeup_reason)
-  {
+  switch(wakeup_reason)  {
     case ESP_SLEEP_WAKEUP_EXT0:       Serial.println("Wakeup caused by external signal using RTC_IO"); break;
     case ESP_SLEEP_WAKEUP_EXT1:       Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
     case ESP_SLEEP_WAKEUP_TIMER:      Serial.println("Wakeup caused by timer"); break;
@@ -932,22 +943,34 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 
 
 //*******************************************************************
-// get_efuse_ident()
-// Read eFuse bitfield block 3 and extract chip identification IDs
-//
-// Global used:
-//  bhdb.BoardID  unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
-//  bhdb.Chipid   get chiptype: 0=WROOM32, 1=WROVER-B, ...
-//  bhdb.ChipType get chip board type and revision -> relevant for sytem API vaildation
+// getChipRevision()
+/// @brief Read eFuse bitfield block 3 and extract chip identification IDs
+/// Global used:
+///  bhdb.BoardID  unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
+///  bhdb.Chipid   get chiptype: 0=WROOM32, 1=WROVER-B, ...
+///  bhdb.ChipType get chip board type and revision -> relevant for sytem API vaildation
+/// @param none
+/// @return Chip ID from eFUse bitfield block 3
 //*******************************************************************
 int getChipRevision(){
   return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_REV1_S)) & EFUSE_RD_CHIP_VER_REV1_V);
 }
+
+//*******************************************************************
+/// @brief Read eFuse bitfiels block 3 and extract chipt ID package version
+/// @return ChipIdPkgVer - chip ID package version
+//*******************************************************************
 int getChipVerPkg(){
-//  Serial.print(REG_READ(EFUSE_BLK0_RDATA3_REG),BIN);
+  //  Serial.print(REG_READ(EFUSE_BLK0_RDATA3_REG),BIN);
   return ((REG_READ(EFUSE_BLK0_RDATA3_REG) >> (EFUSE_RD_CHIP_VER_PKG_S)) & EFUSE_RD_CHIP_VER_PKG_V);
 }
 
+//*******************************************************************
+/// @brief Read eFuse bitfiels block 3 using ESP.getEfuseMAC() and
+/// print formatted values as one line
+/// @param	global: update bhdb-struct by detected values of eFUse field
+/// @return version
+//*******************************************************************
 void get_efuse_ident(void) {
 
 	bhdb.BoardID = ESP.getEfuseMac();//The chip ID is essentially its MAC address(length: 6 bytes).
@@ -976,8 +999,9 @@ void get_efuse_ident(void) {
 
 //*******************************************************************
 // CheckWebPage()
-// check web space for client request
-// in case we are connected send a MQTT response
+/// @brief check web space for client request in case we are connected
+/// send a MQTT response
+/// @return void
 //*******************************************************************
 void CheckWebPage(){
   int i;
@@ -1075,8 +1099,10 @@ void CheckWebPage(){
 
 
 //********************************************************************************
-// for test purpose only in case of HW incompatibility
-// WROOM <-> Wrover ESP32 pin layout
+// wiretest()
+/// @brief For test purpose only in case of HW incompatibility
+/// Check for WROOM <-> Wrover ESP32 pin layout
+/// @return void
 //********************************************************************************
 void wiretest(){
   int gpio = 36;
