@@ -55,6 +55,7 @@
 #include <beeiot.h>
 #include <BeeIoTWan.h>
 #include <beelora.h>
+#include <beelora.h>
 
 //************************************
 // Global data object declarations
@@ -66,7 +67,7 @@ extern uint16_t	lflags;		// BeeIoT log flag field
 extern bool GetData;		// =1 -> manual trigger by blue key to do next sensor loop
 extern const char * beeiot_StatusString[];
 extern byte BeeIoTStatus;
-extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep; 
+extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
 							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 
 uint16_t read16(SdFile& f);
@@ -209,7 +210,7 @@ void showdata(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
+  display.printf("BeeIoT.v2  #%i Chn%i", (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();

@@ -212,7 +212,12 @@
 #define LOGGH		8192	//8192: GH		Application class
 #define LOGTURTLE  16384	//16384:Turtle	Application class
 
-#define	BHLOG(m)	if(lflags & m)	// macro for Log evaluation (type: uint)
+//#define RELMODE
+#ifdef RELMODE
+#define	BHLOG(m)	if(lflags & 0)	// Skip any  Log printing
+#else
+#define	BHLOG(m)	if(lflags & m)	// macro for Log prints (type: uint)
+#endif
 
 #define NETWORKSTATE_LOGGED       1
 #define NETWORKSTATE_NOTLOGGED    0
@@ -267,6 +272,7 @@ typedef struct {
     char	date[LENDATE];  	// stamp of the day: 2019\10\28
     char	time[LENTIME]; 		// Timestamp: 08:10:15
     char	ipaddr[LENIPADDR];	// IPv4 Address xxx:xxx:xxx:xxx
+	char	chcfgid;			// channel cfg ID of initialzed ChannelTab[]-config set -> struct LoRaCfg
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
 	// Board Identification data

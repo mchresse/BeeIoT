@@ -247,7 +247,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGSD;
+		lflags = LOGBH + LOGLORAR + LOGLORAW + LOGSD;
 //	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -634,6 +634,7 @@ void InitConfig(int reentry){
 		bhdb.date[0]      = 0;
 		bhdb.time[0]      = 0;
 		bhdb.ipaddr[0]    = 0;
+		bhdb.chcfgid	  = 0;
 		// bhdb.BoardID      = 0;  already defined
 		for(i=0; i<datasetsize;i++){
 			bhdb.dlog[i].index       =0;
