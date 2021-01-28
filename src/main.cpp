@@ -183,6 +183,7 @@ void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
 void get_efuse_ident(void);
+void ResetNode(void);
 void wiretest();
 
 
@@ -247,7 +248,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAR + LOGLORAW + LOGSD;
+		lflags = LOGBH + LOGLORAW + LOGSD;
 //	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -997,6 +998,20 @@ void get_efuse_ident(void) {
 
   //	Serial.println(esp_efuse_get_pkg_ver(), BIN);
 }
+
+
+//*******************************************************************
+/// @brief Reset Node
+/// @brief - Reset statistic counter
+/// @brief - clear SD 
+/// @brief - initiate JOIN for new cfg. data
+/// @return void	But GW expects JOIN request  on defjoin channel
+//*******************************************************************
+void ResetNode(void){
+
+}
+
+
 
 //*******************************************************************
 // CheckWebPage()

@@ -18,6 +18,8 @@
 #ifndef BEEIOTWAN_H
 #define BEEIOTWAN_H
 
+using namespace std;
+
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
@@ -29,12 +31,13 @@
 // 1.2	24.04.2020	LoRaSW sync word switch; txchntab[] -> cfgchntab[]
 //					PkgHD: Framelen: 2 Byte -> for 16bit payload size
 //					Event CMD definition
-// 1.3	28.10.2020  Add Beacon CMD + Ack
+// 1.3	02.05.2020  Add Beacon CMD + Ack
 // 1.4  25.11.2020	Change I2C Bus detection from Wire -> I2DDev driver lib
 //					implemented new driver for DS3231, ADS1115 & MAX123x support
 //					LoRa Protocol delivers MIC value -> checked on GW side
 //					Add ESP32 ChipID Detection by eFuse bitmap data
 //					Shorten WAITRX1PKG Window 3->1 sec.
+// 1.5  28.01.2021  Add new RESET command
 //
 //***********************************************
 // LoRa MAC Presets
@@ -95,7 +98,7 @@ typedef unsigned char bw_t;
 #define MAXRXACKWAIT	10	// # of Wait loops of MSGRESWAIT
 #define MSGMAXRETRY		5	// Do it max. n times again
 #define RXACKGRACETIME  10  // in ms: time to wait for sending Ack after RX pkg in BeeIoTParse()
-#define MSGRX1DELAY		500	// [ms] wait for start of RX1 window
+#define MSGRX1DELAY		500	// [ms] wait for start of RX1/Cfg. window
 #define WAITRX1PKG		1	// [sec] till RX1 window is closed
 
 //*******************************************************************
@@ -114,6 +117,7 @@ enum {
 	CMD_BEACON,		// Send beacon e.g. for distance test
 	CMD_ACKBCN,		// Beacon Acknowledge -> delivers RSSI & SNR
 	CMD_TIME,		// Request curr. time values from partner side
+	CMD_RESET,		// Reset GW->Node: reset counter, clear SD, initiate JOIN
 	CMD_NOP			// do nothing -> for xfer test purpose
 };
 #ifndef BEEIOT_ACTSTRINGS
@@ -133,12 +137,13 @@ const char * beeiot_ActString[] = {
 	[CMD_BEACON]	= "BEACON",
 	[CMD_ACKBCN]	= "ACKBEACON",
 	[CMD_TIME]		= "GETTIME",
+	[CMD_RESET]		= "RESET",
 	[CMD_NOP]		= "NOP"
 };
 #endif
 
 #ifndef bool
-typedef bool boolean;	// C++ type: boolan
+typedef bool boolean;			// C++ type: boolan
 #endif
 #ifndef byte
 typedef uint8_t	byte;	// 8 bit Byte == unsigned char
@@ -251,12 +256,13 @@ typedef struct {
 #define BEEIOT_MAXDSD		BEEIOT_DLEN-1	// length of raw data
 
 //***************************
-// ACK & RETRY & NOP - CMD Pkg:
+// ACK & RETRY & NOP & RESET - CMD Pkg:
 // use always std. header type: "beeiot_header_t" only with length=0
 
 //***************************
 // EVENT-CMD Pkg:
-// for exceptional events; but normally event status is derived from LogSTatus on GW/AppSrv side
+// for exceptional events; 
+// but normally event status is derived from LogSTatus on GW/AppSrv side
 enum {
 	EV_BATTERY = 0,
 	EV_WEIGHT,
@@ -296,7 +302,7 @@ typedef struct {
 // beacon frame format: not used yet: t.b.d.
 // BEACON-CMD Pkg:
 // xfer of location Info only
-// useful for distance and transmission quality tests
+// useful for distance and transmission quality tests 
 typedef struct {
 	uint8_t	info;
 	uint8_t	crc1;
@@ -308,11 +314,11 @@ typedef struct {
 	uint8_t	crc2;
 	// GPS location
 	union{ // latitude
-		uint8_t	lat[sizeof(float)];
+		uint8_t	lat[sizeof(float)];	
 		float	latf;
 	};
 	union{ // longitude
-		uint8_t lon[sizeof(float)];
+		uint8_t lon[sizeof(float)];	
 		float	lonf;
 	};
 	uint32_t	alt;	// altitude
@@ -350,7 +356,6 @@ typedef struct {
 							// MIC = cmacS[0..3]
 } beeiot_ackbcn_t;
 
-
 //*****************************************************************************
 // ChannelTable[]:
 enum { MAX_CHANNELS = 16 };      //!< Max supported channels
@@ -380,7 +385,7 @@ enum { EU868_F1 = 868100000,      // g1   SF7-12           used during join
        EU868_F8 = 867700000,      // g2   SF7-12
        EU868_F9 = 867900000,      // g2   SF7-12
        EU868_F10= 867900000,      // g2   SF7-12
-       EU868_DN = 869525000,      // g3   Downlink / Beacon / RX Slot#2 channel
+       EU868_DN = 869525000,      // g3   Downlink
 };
 enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
 // Bands:	g1 :   1%  14dBm

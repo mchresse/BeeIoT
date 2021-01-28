@@ -136,6 +136,7 @@ int  sendMessage	(beeiotpkg_t * TXData, int sync);
 void onReceive		(int packetSize);
 void BIoT_getmic  (beeiotpkg_t * pkg, int dir, byte * mic);
 extern void LoRaMacJoinComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic );
+extern void ResetNode(void);
 
 
 //*********************************************************************
@@ -892,6 +893,23 @@ int rc;
 				msg->hd.pkgid, MyMsg.pkg->hd.pkgid);
 		rc = -1;  // retry requested but not for last sent message -> obsolete request
 		}
+		break;
+
+	case CMD_RESET:
+	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RESET Node\n", msg->hd.pkgid);
+		// ToDo: Reset all statistic counter, clear SD and initiate JOIN for new cfg. data
+		// Setup RX Queue management
+		BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
+		RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
+		RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
+		LoRaCfg.joinCount = 0;
+		LoRaCfg.joinRetryCount = 0;
+		LoRaCfg.msgCount = 0;
+
+		BeeIoTStatus = BIOT_JOIN;	  // start new GW join again.
+		
+		ResetNode();		// do everything on sensor node side here...
+		rc= CMD_RESET;
 		break;
 
 	case CMD_ACK:   // we should not reach this point -> covered by ISR
