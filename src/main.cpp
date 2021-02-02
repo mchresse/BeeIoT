@@ -248,15 +248,15 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGLORAW + LOGSD;
-//	lflags = 65535;
+		lflags = LOGBH + LOGSD + LOGADS;
+	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
 
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 11/2020\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 01/2021\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -282,17 +282,20 @@ int rc;		// generic return code variable
   }
 
 //***************************************************************
-
-  BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
-  if (!setup_rtc(ReEntry)){
-    BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
-    // enter exit code here, if needed (monitoring is hard without correct timestamp)
-    // isrtc should be 0 here; hopefully NTP can help out later on
-  }else{
-    BHLOG(LOGLAN) rtc_test();
-    getRTCtime();
-  }
-
+	BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
+		if (!setup_rtc(ReEntry)){
+			BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
+			// enter exit code here, if needed (monitoring is hard without correct timestamp)
+			// isrtc should be 0 here; hopefully NTP can help out later on
+		}else{
+			BHLOG(LOGLAN) rtc_test();
+//			while(1){
+//				digitalWrite(LED_RED, LOW);
+			getRTCtime();
+//				digitalWrite(LED_RED, HIGH);
+//				delay(10);
+//			}
+		}	
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
@@ -330,8 +333,8 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 // setup Wifi & NTP & RTC time & Web service
   BHLOG(LOGBH) Serial.println("  Setup: Wifi in Station Mode");
   if (!setup_wifi(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: Wifi setup failed -> No NTP");
-    // enter here exit code, if needed
+    BHLOG(LOGBH) Serial.println("  Setup: Wifi setup failed -> Skip NTP");
+    // enter exit code here, if needed
     // probably we are LOOPTIME ahead ?!
     // recalc bhdb "timestamp+LOOPTIME"  here
   }else{  // WIFI connected
@@ -344,7 +347,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
       BHLOG(LOGLAN) Serial.println("  Setup: Get new Date & Time:");
       rc = ntp2rtc();
 	  if(rc <0){       // init RTC time once at restart
-      	BHLOG(LOGLAN) Serial.printf("  ntp2rtc fails (%i)", rc);
+      	BHLOG(LOGLAN) Serial.printf("  ntp2rtc failed (%i)", rc);
 	  }
     }
 
@@ -467,37 +470,45 @@ void loop() {
 // Monitor Analog Ports: e.g. of battery Control
 #ifdef ADS_CONFIG
 uint32_t addata = 0;   	// raw ADS Data buffer
-
+uint32_t addata1 = 0;   	// raw ADS Data buffer1
+uint32_t addata2 = 0;   	// raw ADS Data buffer2
+uint32_t addata3 = 0;   	// raw ADS Data buffer3
 float x;              		// Volt calculation buffer
 
   // read out all ADS channels 0..3
   BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
 
-  addata = (uint32_t)adc_read(0) * 306 / 100;  		// get Level of Battery Charge Input from Ext-USB port
-  bhdb.dlog[bhdb.loopid].BattCharge = addata; //  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+  addata = (uint32_t)adc_read(0) * 306 / 100;  			// get Level of Battery Charge Input from Ext-USB port
+  bhdb.dlog[bhdb.loopid].BattCharge = addata; 			//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
   addata = (uint32_t)adc_read(1) * 2;         			// get 3.3V line value of ESP32 devKit in mV
-  bhdb.dlog[bhdb.loopid].ESP3V = (uint16_t) addata;	// AIN1 has 2x33k -> div by 2
+  bhdb.dlog[bhdb.loopid].ESP3V = (uint16_t) addata;		// AIN1 has 2x33k -> div by 2
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
   // addata = adc_read(2);
-	addata = (uint32_t) 0;				// not connected
-  bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;		// value is useless
+	addata = (uint32_t) 0;								// not connected
+  bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;	// value is useless
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
 
-  addata = (uint32_t)adc_read(3) * 3;         			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+  	addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+// debouncing easier on HW side: by 100nF at AINx against Gnd -> we sample just static voltage levels
+//  	addata1 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+//  	addata2 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+//  	addata3 = (uint32_t)adc_read(3) * 3;     			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+//	addata = (addata + addata1 + addata2 + addata3)/4;	// get avg. of 4 samples
+
   // calculate Battery Load Level in %
-  x = ((float)(addata-BATTERY_MIN_LEVEL)/		//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
+  x = ((float)(addata-BATTERY_MIN_LEVEL)/				//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
   bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) Serial.print(" - ");
-
+  BHLOG(LOGADS) Serial.println();
+  BHLOG(LOGADS) delay(1000);
 #endif // ADS_CONFIG
 
 

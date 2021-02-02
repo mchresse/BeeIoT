@@ -65,9 +65,10 @@ int setup_rtc (int reentry) {
 	float rtctemp;
 	esp_err_t esprc;
 
-	// expect I2C master port was scanned one before -> set isrtc
+	// expect I2C master port was scanned once before -> isrtc set
 	if(!isi2c){	// I2C Master Port active + ADC detected ?
-		//	I2C should have been scanned by I2c_master_init() already
+		// I2C should have been scanned by I2c_master_init() already
+		// if i2c problems occurs -> should have been reported there
 		if(!isrtc){
         	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
 			return(isrtc);
@@ -88,7 +89,7 @@ int setup_rtc (int reentry) {
 //  }
 //  rtc.writeSqwPinMode(DS3231_OFF);  // reset Square Pin Mode to 0Hz
 
-// For I2cdev-lib usage:
+// For I2cdev-lib access test:
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
 		isrtc =0;		// RTC does not react anyhow

@@ -154,11 +154,11 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time)
 
     /* read time */
     esp_err_t res = i2c_dev_read_reg(dev, DS3231_ADDR_TIME, data, 7);
-        if (res != ESP_OK) return res;
+	if (res != ESP_OK) return res;
 
     /* convert to unix time structure */
     time->tm_sec = bcd2dec(data[0]);
-    time->tm_min = bcd2dec(data[1]);
+    time->tm_min = bcd2dec(data[1]);					
     if (data[2] & DS3231_12HOUR_FLAG)
     {
         /* 12H */

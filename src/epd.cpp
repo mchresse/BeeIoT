@@ -210,7 +210,7 @@ void showdata(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2  #%i Chn%i", (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
+  display.printf("BeeIoT.v2 #%i C%i", (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();

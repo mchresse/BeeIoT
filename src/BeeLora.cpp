@@ -204,7 +204,7 @@ int setup_LoRa(int reentry) {
 
 	// Assign IRQ callback on DIO0
 	LoRa.onReceive(onReceive);    // (called by loRa.handleDio0Rise(pkglen))
-	BHLOG(LOGLORAR) Serial.printf("  LoRa: assign ISR to DIO0  - default: GWID:0x%02X, NodeID:0x%02X\n", LoRaCfg.gwid, LoRaCfg.nodeid);
+	BHLOG(LOGLORAR) Serial.printf("  LoRa: assign ISR to DIO0  - default: GWID:0x%02X, NodeID:0x%02X, Channel:%i\n", LoRaCfg.gwid, LoRaCfg.nodeid, LoRaCfg.chcfgid);
 	islora=1;                     // Declare:  LORA Modem is active now!
 
 	if(!reentry){	// for Reset only
@@ -457,11 +457,11 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
         } // if(Max-Retry)
     } // Retry action
 
-    if(rc==CMD_CONFIG){
-      // we are joined with a GW
-      BeeIoTStatus = BIOT_IDLE;		// we are connected
-	  LoRaCfg.joinRetryCount =0;	// connection is up -> reset fail counter
-      rc=1; 						// leave this loop: positive
+    if(rc==CMD_CONFIG){      // we are joined with a GW
+		configLoraModem(&LoRaCfg);      // set modem to new channel settings
+      	BeeIoTStatus = BIOT_IDLE;		// we are connected
+	  	LoRaCfg.joinRetryCount =0;	// connection is up -> reset fail counter
+      	rc=1; 						// leave this loop: positive RC
     }
   } while(rc == CMD_RETRY); // Retry JOINing again
 
