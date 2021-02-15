@@ -980,7 +980,7 @@ int rc;
 #endif
 	bhdb.chcfgid = pcfg->cfg.channelidx;		  // save channelidx for epd print
 
- //   lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
+    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
 
     // yearoff = offset to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);

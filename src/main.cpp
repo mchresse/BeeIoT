@@ -1,8 +1,8 @@
 //*******************************************************************
 /// @file   MAIN.cpp
-/// @brief  BeeIoT - Main Header file
+/// @brief  BeeIoT - Main file
 /// @author MchResse
-/// @date   2020-12-18
+/// @date   2021-02-15
 /// @details
 // from Project https://github.com/mchresse/BeeIoT
 //
@@ -248,7 +248,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGSD + LOGLORAW + LOGLORAR;
+		lflags = LOGBH + LOGSD + LOGLORAW;
 	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
