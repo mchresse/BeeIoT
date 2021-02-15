@@ -387,7 +387,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
     i=0;  // reset wait counter
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
-    while (!BeeIotRXFlag && (i<WAITRX1PKG*2)){  // till RX pkg arrived or max. wait time is over
+    while (!BeeIotRXFlag && (i<MAXRXACKWAIT*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
         delay(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
@@ -401,7 +401,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     };        // report_interval will be reinitialized by CONFIG with successfull JOIN request
 
     rc=0;
-    if(i>=WAITRX1PKG*2){       // TO condition reached, no RX pkg received=> no GW in range ?
+    if(i>=MAXRXACKWAIT*2){       // TO condition reached, no RX pkg received=> no GW in range ?
         BHLOG(LOGLORAW) Serial.println(" None.");
         // RX Queue should still be empty: validate it:
         if(!BeeIotRXFlag & (RXPkgSrvIdx != RXPkgIsrIdx)){ // RX Queue validation check: realy empty ?
@@ -435,9 +435,10 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
       }
     } // New Pkg parsed
 
-    if(rc==CMD_RETRY){ // it is requested to send JOIN again (because either no or wrong response or explicitly requested by GW)
+    if((rc==CMD_RETRY) || (rc==CMD_REJOIN)){ // it is requested to send JOIN again (because either no or wrong response or explicitly requested by GW)
        if(MyMsg.retries < MSGMAXRETRY){       // enough Retries ?
           BeeIoTStatus = BIOT_JOIN;           // No , start TX session
+		  rc=CMD_RETRY;						  // in case of REJOIN request activate next Retry loop
           while(!sendMessage(&MyTXData, 0));  // Send same pkg /w same msgid in sync mode again
           MyMsg.retries++;                    // remember # of retries
           BHLOG(LOGLORAW) Serial.printf("  BeeIotJoin: JOIN-Retry: #%i (Overall retries: %i)\n", MyMsg.retries, LoRaCfg.joinRetryCount);
