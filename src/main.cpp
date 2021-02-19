@@ -295,7 +295,7 @@ int rc;		// generic return code variable
 //				digitalWrite(LED_RED, HIGH);
 //				delay(10);
 //			}
-		}	
+		}
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
@@ -470,9 +470,9 @@ void loop() {
 // Monitor Analog Ports: e.g. of battery Control
 #ifdef ADS_CONFIG
 uint32_t addata = 0;   	// raw ADS Data buffer
-uint32_t addata1 = 0;   	// raw ADS Data buffer1
-uint32_t addata2 = 0;   	// raw ADS Data buffer2
-uint32_t addata3 = 0;   	// raw ADS Data buffer3
+//uint32_t addata1 = 0;   	// raw ADS Data buffer1
+//uint32_t addata2 = 0;   	// raw ADS Data buffer2
+//uint32_t addata3 = 0;   	// raw ADS Data buffer3
 float x;              		// Volt calculation buffer
 
   // read out all ADS channels 0..3
@@ -1014,7 +1014,7 @@ void get_efuse_ident(void) {
 //*******************************************************************
 /// @brief Reset Node
 /// @brief - Reset statistic counter
-/// @brief - clear SD 
+/// @brief - clear SD
 /// @brief - initiate JOIN for new cfg. data
 /// @return void	But GW expects JOIN request  on defjoin channel
 //*******************************************************************

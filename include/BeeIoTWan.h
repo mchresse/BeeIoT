@@ -261,8 +261,9 @@ typedef struct {
 
 //***************************
 // EVENT-CMD Pkg:
-// for exceptional events; 
+// for exceptional events;
 // but normally event status is derived from LogSTatus on GW/AppSrv side
+/*
 enum {
 	EV_BATTERY = 0,
 	EV_WEIGHT,
@@ -296,13 +297,13 @@ typedef struct {
 	char	value[4];	// Event value field: for cast to  char, word, int
 	char	text[16];	// free event comment text field
 } beeiot_event_t;
-
+*/
 
 //***************************
 // beacon frame format: not used yet: t.b.d.
 // BEACON-CMD Pkg:
 // xfer of location Info only
-// useful for distance and transmission quality tests 
+// useful for distance and transmission quality tests
 typedef struct {
 	uint8_t	info;
 	uint8_t	crc1;
@@ -314,11 +315,11 @@ typedef struct {
 	uint8_t	crc2;
 	// GPS location
 	union{ // latitude
-		uint8_t	lat[sizeof(float)];	
+		uint8_t	lat[sizeof(float)];
 		float	latf;
 	};
 	union{ // longitude
-		uint8_t lon[sizeof(float)];	
+		uint8_t lon[sizeof(float)];
 		float	lonf;
 	};
 	uint32_t	alt;	// altitude
