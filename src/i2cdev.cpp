@@ -53,7 +53,6 @@ extern int isrtc;				// in rtc.cpp
 
 esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 	esp_err_t	esprc;
-	i2c_config_t cfg;
 
 	// ESP IDF I2C port configuration object
 	i2ccfg.mode 		 = I2C_MODE_MASTER;
@@ -166,16 +165,16 @@ int i2c_scan(void) {
 		if (esprc == 0) {
 			Serial.printf(" %.2x", i);
 			// if ADC: ADS111x overrules MAX123x by intention asking in that order
-			if(i==MAX_ADDR) {    
+			if(i==MAX_ADDR) {
 				isadc=1; adcaddr = i;	// remember ADS I2C dev.addr
-			} 
+			}
 			if (i == ADS111X_ADDR_GND || i == ADS111X_ADDR_VCC ||
     			i == ADS111X_ADDR_SDA || i == ADS111X_ADDR_SCL){
 				isadc=1; adcaddr = i;	// remember MAX I2C dev.addr
-			}  
+			}
 			if(i==RTC_ADDR) {
 				isrtc=i;				// remember RTC Presence -> use RTC_ADDR
-			}    
+			}
 		} else {
 			Serial.printf(" --");
 		}
