@@ -330,7 +330,7 @@ int    	getTimeStamp(void);
 void	printLocalTime(void);
 
 // in owbus.cpp
-void 	GetOWsensor	(int sample);
+int 	GetOWsensor	(int sample);
 
 // in main.cpp
 void	Logdata     (void);

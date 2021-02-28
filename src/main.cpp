@@ -248,7 +248,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGSD + LOGLORAW;
+		lflags = LOGBH;
 	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -381,7 +381,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
     BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
     // enter exit code here, if needed
   }else{
-    GetOWsensor(0); // read temperature the first time
+    // GetOWsensor(0); // read temperature the first time
   }
 //***************************************************************
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
@@ -416,11 +416,11 @@ void loop() {
     sprintf(bhdb.dlog[bhdb.loopid].timeStamp, "%s %s", bhdb.date, bhdb.time);
   }
 
-  BHLOG(LOGBH) Serial.println(">***********************************************<");
+  BHLOG(LOGBH) Serial.println(">************************************************<");
   BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop");
   BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n",
 		bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
-  BHLOG(LOGBH) Serial.println(">***********************************************<");
+  BHLOG(LOGBH) Serial.println(">************************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
   strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
@@ -457,13 +457,13 @@ void loop() {
 //***************************************************************
 // Scan OW Temp. Sensors
 #ifdef ONEWIRE_CONFIG
-  setup_owbus(0);
-  GetOWsensor(bhdb.loopid);   // Get all temp values directly into bhdb
+	// Get all temp values directly into bhdb.dlog[]
+	int owsensors = GetOWsensor(bhdb.loopid);
+  	if( owsensors == 0){
+		BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
+  	}
+	BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 
-  while(bhdb.dlog[bhdb.loopid].TempHive > 70){  // if we have just started lets do it again to get right values
-    GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-    delay(100);
-  }
 #endif // ONEWIRE_CONFIG
 
 //***************************************************************

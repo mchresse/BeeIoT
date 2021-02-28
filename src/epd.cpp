@@ -226,13 +226,13 @@ void showdata(int sampleID){
   display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
 
   display.print(" Temp.Beute: ");
-  display.println(String(bhdb.dlog[sampleID].TempHive,1));
+  display.println(String(bhdb.dlog[sampleID].TempHive,2));
 
   display.print(" TempExtern: ");
-  display.println(String(bhdb.dlog[sampleID].TempExtern,1));
+  display.println(String(bhdb.dlog[sampleID].TempExtern,2));
 
   display.print(" TempIntern: ");
-  display.println(String(bhdb.dlog[sampleID].TempIntern,1));
+  display.println(String(bhdb.dlog[sampleID].TempIntern,2));
 
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line

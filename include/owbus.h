@@ -17,7 +17,7 @@
 #ifndef OWBUS_H
 #define OWBUS_H
 
-#define OW_DEVICES  3
+#define OW_MAXDEV  4
 #define ONE_WIRE_RETRY	3
 
 // Physical ID of each DS18B20 OW Device
@@ -25,6 +25,26 @@
 #define TEMP_1   { 0x28, 0xAA, 0xE4, 0x6D, 0x18, 0x13, 0x02, 0x2F}    // -> BeeHive internal temperature
 #define TEMP_2   { 0x28, 0xAA, 0xB3, 0xF2, 0x52, 0x14, 0x01, 0x47}    // -> External temperature
 // #define TEMP_2   { 0x28, 0xAA, 0xCA, 0x6A, 0x18, 0x13, 0x2, 0xF3}  // old sensor
-#define TEMPERATURE_PRECISION 12
+#define TEMPRESOLUTION 12
+
+enum stype {	// sensor index to type assignment
+	TEMP_Int=0,	// Internal TempSensor for Weight cell calibration
+	TEMP_Ext,	// External TempSensor
+	TEMP_BH,	// BeeHive TempSensor
+	SENSOR_A,	// dummy placeholder
+};
+
+typedef struct {
+	DeviceAddress sid;	// serial unique ID of OW device
+	int type;				// sensor type eg. DS18B20, ..., =-1: no sensor
+} owdev_t;
+
+
+// data set holdeing data of discovered OW devices
+typedef struct {
+	int numdev;			// # of detected devices
+	int	resolution;		// all sensor resolution: 9,10,11,12 bit
+	owdev_t dev[OW_MAXDEV];
+} owbus_t;
 
 #endif // end of owbus.h
