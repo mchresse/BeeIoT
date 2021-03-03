@@ -864,8 +864,9 @@ int rc;
 	case CMD_REJOIN:
 		// GW requested a REJOIN
 		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
-		BeeIoTStatus = BIOT_REJOIN;  // reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-			rc= CMD_REJOIN;
+		BeeIoTStatus = BIOT_REJOIN;  	// reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
+		report_interval = 60;			// retry JOIN after 1 Minute; will be upd. by Config Pkg. at JOIN
+		rc= CMD_REJOIN;
 		break;
 
 	case CMD_CONFIG:                           // new BeeIoT channel cfg received
@@ -985,7 +986,7 @@ int rc;
 #endif
 	bhdb.chcfgid = pcfg->cfg.channelidx;		  // save channelidx for epd print
 
-    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
+//    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
 
     // yearoff = offset to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);

@@ -149,11 +149,11 @@ int getDSType(byte DSType){
       break;
     case 0x28:
       BHLOG(LOGOW) Serial.print(" DS18B20");
-      type_s = 0;
+      type_s = 2;
       break;
     case 0x22:
       BHLOG(LOGOW) Serial.print(" DS1822");
-      type_s = 0;
+      type_s = 3;
       break;
     default:
       BHLOG(LOGOW) Serial.print("No DS18x20 family device.");
@@ -180,9 +180,10 @@ int printAddress(DeviceAddress deviceAddress)
 // Using Dallas temperature device library
 // Input: INdex of Datarow entry in bhdb
 // Return:  Number of read devices
-
+// 			bhdb.dlog[sample].Tempxxxx = Temp value
+//										= -99C -> no device found
 int GetOWsensor(int sample){
-	if(owdata.numdev == 0)
+	if(owdata.numdev == 0)	// no OW devices detected, nothing to do
 		return(0);
 
 #ifdef ONEWIRE_CONFIG
