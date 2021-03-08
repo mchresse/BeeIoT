@@ -720,6 +720,7 @@ int rc;       // generic return code
           LoRaCfg.msgCount++;                 // increment global sequ. TX package/message ID for next TX pkg
           BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Sleep Mode\n");
           LoRa.sleep();                       // Sleep Mode: Stop modem, clear FIFO -> save power
+		  sprintf(bhdb.dlog[bhdb.loopid].comment, "AckTO");
           return(-99);                        // give up and no RX Queue check needed neither -> GW dead ?
         } // if(ACK-TO & Max-Retry)
 
@@ -808,6 +809,7 @@ int rc;       // generic return code
       LoRaCfg.nodeid = NODEIDBASE;    // -> CONFIG response from GW will provide a new MsgID (roaming ?!) later
       LoRa.sleep();                   // stop modem and clear FIFO, but keep JOIN mode
       BHLOG(LOGLORAW) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
+	  sprintf(bhdb.dlog[bhdb.loopid].comment, "ReJoin");
       return(-96);
   }
 
@@ -865,7 +867,7 @@ int rc;
 		// GW requested a REJOIN
 		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
 		BeeIoTStatus = BIOT_REJOIN;  	// reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-		report_interval = 60;			// retry JOIN after 1 Minute; will be upd. by Config Pkg. at JOIN
+		report_interval = 120;			// retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
 		rc= CMD_REJOIN;
 		break;
 
@@ -986,7 +988,7 @@ int rc;
 #endif
 	bhdb.chcfgid = pcfg->cfg.channelidx;		  // save channelidx for epd print
 
-//    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
+    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
 
     // yearoff = offset to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
