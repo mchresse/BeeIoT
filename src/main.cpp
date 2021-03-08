@@ -461,7 +461,24 @@ void loop() {
 	int owsensors = GetOWsensor(bhdb.loopid);
   	if( owsensors == 0){
 		BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
+<<<<<<< Updated upstream
   	}
+=======
+  	}else{
+		// check if value of last of all 3 sensors is in range
+		int retry=0;
+		while(bhdb.dlog[bhdb.loopid].TempHive == -99){  // if we have just started lets do it again to get right values
+    		GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
+    		delay(200);									// wait 200ms for OW bus recovery
+			if (retry++ == ONE_WIRE_RETRY){
+				BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
+				break;
+			}
+		}
+		if(retry > 0)
+			sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+	}
+>>>>>>> Stashed changes
 	BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 
 #endif // ONEWIRE_CONFIG
@@ -506,6 +523,8 @@ float x;              		// Volt calculation buffer
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
   bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
+  if(x==0)  sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
+
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) Serial.println();
   BHLOG(LOGADS) delay(1000);
