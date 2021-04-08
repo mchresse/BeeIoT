@@ -187,10 +187,13 @@ void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, u
 //*******************************************************************
 int getRTCtime(void){
 	float rtctemp;
-	struct tm tinfo;
+	struct tm * tinfo;
 
 	// DS3231 delivers time in struct TM format:
-	ds3231_get_time(&i2crtc, &tinfo);
+	ds3231_get_time(&i2crtc, & bhdb.stime);
+
+	tinfo = & bhdb.stime;			// get structure time ptr.
+	bhdb.rtime = mktime(tinfo);		// save RTC time as raw time value
 
 	// Convert timeinfo to DateTime Struct:
 	// DateTime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t min = 0, uint8_t sec = 0);
@@ -203,20 +206,21 @@ int getRTCtime(void){
 	BHLOG(LOGLAN) Serial.print("  RTC: Get RTC Time: ");
 	// Get date and time; 2019-10-28T08:09:47Z
 	// using ISO 8601 Timestamp functions: YYYY-MM-DDTHH:MM:SS
-	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo.tm_year+1900, tinfo.tm_mon+1, tinfo.tm_mday, tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo->tm_year+1900, tinfo->tm_mon+1, tinfo->tm_mday, tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
 	BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
+	BHLOG(LOGLAN) Serial.print(ctime(&bhdb.rtime));	// test print of time_t value as string
 
 	// Extract date: YYYY-MM-DD
-	sprintf(bhdb.date,"%i-%02i-%02i", tinfo.tm_year+1900, tinfo.tm_mon+1, tinfo.tm_mday);
+	sprintf(bhdb.date,"%i-%02i-%02i", tinfo->tm_year+1900, tinfo->tm_mon+1, tinfo->tm_mday);
 	BHLOG(LOGLAN) Serial.print(" - ");
 	BHLOG(LOGLAN) Serial.print(bhdb.date);
 
 	// Extract time: HH:MM:SS
-	sprintf(bhdb.time,"%02i:%02i:%02i ", tinfo.tm_hour, tinfo.tm_min, tinfo.tm_sec);
+	sprintf(bhdb.time,"%02i:%02i:%02i ", tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
 	BHLOG(LOGLAN) Serial.print(" - ");
 	BHLOG(LOGLAN) Serial.print(bhdb.time);
 
-    BHLOG(LOGLAN) Serial.print(daysOfTheWeek[tinfo.tm_wday]);
+    BHLOG(LOGLAN) Serial.print(daysOfTheWeek[tinfo->tm_wday]);
 
 	// last but not least: get current RTC temperature
 	ds3231_get_temp_float(&i2crtc, &rtctemp);

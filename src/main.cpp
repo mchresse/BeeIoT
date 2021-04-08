@@ -185,6 +185,7 @@ void biot_ioshutdown(int sleepmode);
 void get_efuse_ident(void);
 void ResetNode(void);
 void wiretest();
+extern void hexdump(unsigned char * msg, int len);
 
 
 //*******************************************************************
@@ -215,7 +216,6 @@ int rc;		// generic return code variable
   // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect to computer
 	Serial.begin(115200);       // enable Ser. Monitor Baud rate
-	//	delay(500);					// wait for console init
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
 
@@ -248,7 +248,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH;
+		lflags = LOGBH + LOGOW;
 	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -256,7 +256,7 @@ int rc;		// generic return code variable
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 01/2021\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 04/2021\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -423,7 +423,7 @@ void loop() {
   BHLOG(LOGBH) Serial.println(">************************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-  strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
+  sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.");
 
 
 //***************************************************************
@@ -464,7 +464,10 @@ void loop() {
   	}else{
 		// check if value of last of all 3 sensors is in range
 		int retry=0;
-		while(bhdb.dlog[bhdb.loopid].TempHive == -99){  // if we have just started lets do it again to get right values
+		while(	(bhdb.dlog[bhdb.loopid].TempIntern == -99) ||
+				(bhdb.dlog[bhdb.loopid].TempExtern == -99) ||
+				(bhdb.dlog[bhdb.loopid].TempHive == -99))
+		{  // if we have just started lets do it again to get right values
     		GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
     		delay(200);									// wait 200ms for OW bus recovery
 			if (retry++ == ONE_WIRE_RETRY){
@@ -562,18 +565,50 @@ float x;              		// Volt calculation buffer
 
 
 
-//*******************************************************************
-/// @brief Logdata() Append current sensor data set to SD card -> logdata file
-/// and send it via LoRaWAN
-/// @param none
-//*******************************************************************
+//*********************************************************************************
+///@brief Logdata() Append current sensor data set to SD card -> logdata file
+// and send it via LoRaWAN
+//
+///@param global bhdb
+//***********************************************************************************
 void Logdata(void) {
 uint16_t sample;
-String dataMessage; // Global data objects
+String  dataMessage; 		// Global data objects
+biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
-  sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
-// Create tatus Report based on the sensor readings
+  	sample = (bhdb.laps*datasetsize) + bhdb.loopid;
+
+#ifdef DSENSOR2
+  	dsensor.logid		= sample;
+  	dsensor.year2k		= bhdb.stime.tm_year - 100;	// rebase 1900 -> 2000
+	dsensor.month		= bhdb.stime.tm_mon+1;		// 1-12
+	dsensor.day			= bhdb.stime.tm_mday;		// 1-31
+	dsensor.hh			= bhdb.stime.tm_hour;
+	dsensor.mm			= bhdb.stime.tm_min;
+	dsensor.ss			= bhdb.stime.tm_sec;
+	dsensor.weight		= bhdb.dlog[bhdb.loopid].HiveWeight * 1000.0;
+	dsensor.text		= bhdb.dlog[bhdb.loopid].TempExtern * 100.0;
+	dsensor.tint		= bhdb.dlog[bhdb.loopid].TempIntern * 100.0;
+	dsensor.thive		= bhdb.dlog[bhdb.loopid].TempHive * 100.0;
+	dsensor.trtc		= bhdb.dlog[bhdb.loopid].TempRTC * 100.0;
+	dsensor.board3v		= bhdb.dlog[bhdb.loopid].ESP3V;
+	dsensor.board5v 	= bhdb.dlog[bhdb.loopid].Board5V;
+	dsensor.battcharge	= bhdb.dlog[bhdb.loopid].BattCharge;
+	dsensor.battload	= bhdb.dlog[bhdb.loopid].BattLoad;
+	dsensor.battlevel	= bhdb.dlog[bhdb.loopid].BattLevel;
+
+	dsensor.tlen = snprintf((char*) dsensor.notice, BIoT_NOTICELEN, "%s", (char*) bhdb.dlog[bhdb.loopid].comment);
+	if(dsensor.tlen > BIoT_NOTICELEN){
+		dsensor.tlen = BIoT_NOTICELEN;
+	}
+	if(dsensor.tlen < 0){
+		dsensor.tlen = 0;
+	}
+
+	dsensor.crc8	=0x00;	//t.b.d -> CRC8 calculation
+#else
+// Create Status Report based on the sensor readings
   dataMessage =
               String(bhdb.date) + " " +
               String(bhdb.time) + "," +
@@ -601,7 +636,9 @@ String dataMessage; // Global data objects
   }else{
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
-#endif
+#endif	// BEACON
+#endif	// DSENSOR2
+
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (joined ?)
@@ -609,8 +646,16 @@ String dataMessage; // Global data objects
     // For Test purpose of transmission quality: send a beacon to the current GW
     BeeIoTBeacon(0);  // in Non-Joined Mode != BIOT_JOIN (assumed LoRa Log was successfull)
 #else
-    LoRaLog((char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
-#endif
+
+#ifdef DMSG
+    LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
+#else
+	int dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
+    LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
+#endif // DMSG
+
+#endif // BEACON
+
   }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }

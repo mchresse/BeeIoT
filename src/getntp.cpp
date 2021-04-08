@@ -102,7 +102,7 @@ isntp = 0;
 //    -2: RTC & NTP failed -> no update done
 //*******************************************************************
 int getTimeStamp() {
-  struct tm timeinfo;
+  struct tm * tinfo;
   char tmstring[30];
 
 	if(isrtc){   // do we have RTC time resource
@@ -116,15 +116,25 @@ int getTimeStamp() {
 		sprintf(bhdb.formattedDate, "YYYY\\MM\\DDTHH:MM:SSZ");
 		sprintf(bhdb.date,      "YYYY\\MM\\DD");
 		sprintf(bhdb.time,      "HH:MM:SS");
-		return(-2);               // we give up
+		bhdb.rtime = 0;			// set default: 00:00 hours, Jan 1, 1970 UTC
+		bhdb.stime.tm_hour = 0;
+		bhdb.stime.tm_min = 0;
+		bhdb.stime.tm_sec = 0;
+		bhdb.stime.tm_mon = 0;		// 0..11 -> 1.January.1970
+		bhdb.stime.tm_mday = 1;		// 1..31
+		bhdb.stime.tm_year = 70;	// years since 1900
+		return(-2);               // we give up - no time source available
 	}
 
-	// alternatively we search for NTP server via Wifi
-	if(!getLocalTime(&timeinfo)){
+	// optional we search for NTP server via Wifi
+	if(!getLocalTime(&bhdb.stime)){
       BHLOG(LOGLAN) Serial.println("  NTP: Failed to obtain NTP time");
       isntp = 0;				      // remember NTP access failed
       return(-1);             // no RTC nor NTP Time at all, we give up.
   }
+	tinfo = & bhdb.stime;			// get structure time ptr.
+	bhdb.rtime = mktime(tinfo);		// save RTC time as raw time value
+  	BHLOG(LOGLAN) Serial.println(ctime(&bhdb.rtime));	// test print of raw time as string
 
 // For NTP: We need to extract date and time from timeinfo (struct tm)
 // The formattedDate should have the following format: 2018-05-28T16:00:13Z
@@ -135,24 +145,24 @@ int getTimeStamp() {
 //                    timeinfo.tm_hour,
 //                    timeinfo.tm_min,
 //                    timeinfo.tm_sec);
-  strftime(tmstring, 30, "%Y\\%m\\%dT%H:%M:%SZ", &timeinfo);
+  strftime(tmstring, 30, "%Y\\%m\\%dT%H:%M:%SZ", tinfo);
   strncpy(bhdb.formattedDate, tmstring, LENFDATE);
   BHLOG(LOGLAN) Serial.print("    ");
   BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 
   // Extract date
-  strftime(tmstring, 30, "%Y\\%m\\%d", &timeinfo);
+  strftime(tmstring, 30, "%Y\\%m\\%d", tinfo);
   strncpy(bhdb.date, tmstring, LENDATE);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.print(bhdb.date);
 
   // Extract time
-  strftime(tmstring, 30, "%H:%M:%S", &timeinfo);
+  strftime(tmstring, 30, "%H:%M:%S", tinfo);
   strncpy(bhdb.time, tmstring, LENTIME);
   BHLOG(LOGLAN) Serial.print(" - ");
   BHLOG(LOGLAN) Serial.println(bhdb.time);
 
-  BHLOG(LOGLAN) Serial.printf("  GetTimeStamp: NTC-Year %i\n", timeinfo.tm_year);
+  BHLOG(LOGLAN) Serial.printf("  GetTimeStamp: NTC-Year %i\n", tinfo->tm_year);
 
   return(0);
 } // end of getTimeStamp()
@@ -161,10 +171,11 @@ int getTimeStamp() {
 // NTP print current local Time Routine
 //*******************************************************************
 void printLocalTime() {
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
+  struct tm tinfo;
+  if(!getLocalTime(&tinfo)){
     BHLOG(LOGLAN) Serial.println("  NTP: Failed to obtain time");
     return;
   }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  asctime(&tinfo);
+//  Serial.println(&tinfo, "%A, %B %d %Y %H:%M:%S");
 }

@@ -23,7 +23,7 @@ using namespace std;
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		4		// Minor
+#define BIoT_VMINOR		6		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -38,6 +38,7 @@ using namespace std;
 //					Add ESP32 ChipID Detection by eFuse bitmap data
 //					Shorten WAITRX1PKG Window 3->1 sec.
 // 1.5  28.01.2021  Add new RESET command
+// 1.6  03.04.2021	Add DSENSOR Command + biot_dsensor_t -> Sensor Data in Binary format
 //
 //***********************************************
 // LoRa MAC Presets
@@ -108,7 +109,7 @@ typedef unsigned char bw_t;
 enum {
 	CMD_JOIN =0,	// JOIN Request to GW (e.g. register NodeID)
 	CMD_REJOIN,		// REJOIN Request to GW (Connection got lost -> restart with Default Cfg Channel)
-	CMD_LOGSTATUS,	// process Sensor log data set
+	CMD_LOGSTATUS,	// process Sensor log data set in ASCII Format
 	CMD_GETSDLOG,	// one more line of SD card log file
 	CMD_RETRY,		// Tell target: Package corrupt, do it again
 	CMD_ACK,		// Received message complete
@@ -118,8 +119,10 @@ enum {
 	CMD_ACKBCN,		// Beacon Acknowledge -> delivers RSSI & SNR
 	CMD_TIME,		// Request curr. time values from partner side
 	CMD_RESET,		// Reset GW->Node: reset counter, clear SD, initiate JOIN
-	CMD_NOP			// do nothing -> for xfer test purpose
+	CMD_NOP,		// do nothing -> for xfer test purpose
+	CMD_DSENSOR,	// process Sensor log data set in binary format
 };
+
 #ifndef BEEIOT_ACTSTRINGS
 extern const char * beeiot_ActString[];
 #else
@@ -238,6 +241,55 @@ typedef struct {
 	beeiot_header_t hd;			// BeeIoT common Header
 	char	dstat[BIoT_FRAMELEN]; 	// remaining status array
 } beeiot_status_t;
+
+// Sensor data Stream (binary format)
+// | Datentype	| Range		| ASCII	| Binary (28+1+\<text> Byte)
+// |------------|-----------|-------|----------------------------------------------
+// |LogID		|0 - 9999	|2397	| uint16_t xxxx
+// |Datum+Zeit:	|<YYYY/MM/DD 24:59:59>|2021/03/24 22:55:52|DateTime format (RTClib.h):
+// |			|			|		| uint8_t yOff < 2000 + yOff
+// |			|			|		| uint8_t mm   < Month 1-12
+// |			|			|		| uint8_t dd   < Day 1-31
+// |			|			|		| uint8_t hh   < Hours 0-23
+// |			|			|		| uint8_t mm   < Minutes 0-59
+// |			|			|		| uint8_t ss   < Seconds 0-59
+// |Gewicht		|0 - 99.999	|31.860	| uint16_t wwww	 < in Gramm
+// |TempExtern	|0 - 99.99	|2.37	| uint16_t ccdd < in Celsius+2digits
+// |TempIntern	|0 - 99.99	|4.44	| uint16_t ccdd < in Celsius+2digits
+// |TempBeute	|0 - 99.99	|19.94	| uint16_t ccdd < in Celsius+2digits
+// |TempRTC		|0 - 99.99	|5.25	| uint16_t ccdd < in Celsius+2digits
+// |BattESP3V	|0 - 9.99	|3.36	| uint16_t vvvv < in mV
+// |Board5V		|0 - 9.99	|5.00	| uint16_t vvvv < in mV
+// |BattCharge	|0 - 9.99	|0.00	| uint16_t vvvv < in mV
+// |BattLoad	|0 - 9.99	|3.96	| uint16_t vvvv < in mV
+// |BattLevel	|0 - 100	|82		| uint8_t	pp	< %
+// |CRC8		|0 - 255	| -		| uint8_t	xx	< CRC8
+// |Notice		|<asciistream +0x00>|"o.k."| <uint8_t len><asciitext> < 15 chars max.
+
+#define BIoT_DSENSORLEN	46	// Binary stream format: 28 + 1 + <text> Byte
+#define BIoT_NOTICELEN	16	// Notice text field incl. ending 0x00
+typedef struct {
+			uint16_t	logid;
+			uint8_t		year2k;		//< Year offset from 2000
+			uint8_t		month;		//< Month 1-12
+			uint8_t		day;		//< Day 1-31
+			uint8_t		hh;			//< Hours 0-23
+			uint8_t		mm;			//< Minutes 0-59
+			uint8_t		ss;			//< Seconds 0-59
+			int16_t		weight;
+			int16_t		text;
+			int16_t		tint;
+			int16_t		thive;
+			int16_t		trtc;
+			uint16_t	board3v;
+			uint16_t	board5v;
+			uint16_t	battcharge;
+			uint16_t	battload;
+			uint16_t	battlevel;
+			uint8_t		crc8;
+			uint8_t		tlen;		// notice text len 0..15
+			uint8_t		notice[BIoT_NOTICELEN];
+} biot_dsensor_t;
 
 //***************************
 // SDLOG-CMD Pkg:

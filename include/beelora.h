@@ -63,7 +63,7 @@ enum {
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(int mode);
-int  LoRaLog		(const char * outgoing, uint16_t outlen, int sync);
+int  LoRaLog		(const uint8_t * outgoing, uint16_t outlen, int sync);
 int  BeeIoTBeacon   (int bcnmode);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);

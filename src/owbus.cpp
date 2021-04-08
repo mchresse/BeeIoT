@@ -94,7 +94,7 @@ int idx=0;
 	if(OWsensors.isParasitePowerMode())
 		BHLOG(LOGOW) Serial.print("  OWBus requests parasite power !\n");
 
-  	BHLOG(LOGOW) Serial.printf("  OWBus: OW devices found (by Addr.): %i\n", owdata.numdev);
+  	BHLOG(LOGOW) Serial.printf("  OWBus: OW devices found (by Index): %i\n", owdata.numdev);
 
 	if(owdata.numdev==0){
 		return 0;	// no valid OW devices found
@@ -194,18 +194,24 @@ int GetOWsensor(int sample){
 
 	if(owdata.dev[TEMP_Int].type >= 0){
   		bhdb.dlog[sample].TempIntern = OWsensors.getTempC(owdata.dev[TEMP_Int].sid);
+		if(bhdb.dlog[sample].TempIntern == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempIntern = -99;
 	}else{
 		bhdb.dlog[sample].TempIntern = -99;
 	}
 
 	if(owdata.dev[TEMP_Ext].type >= 0){
   		bhdb.dlog[sample].TempExtern = OWsensors.getTempC(owdata.dev[TEMP_Ext].sid);
+		if(bhdb.dlog[sample].TempExtern == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempExtern = -99;
 	}else{
 		bhdb.dlog[sample].TempExtern = -99;
 	}
 
 	if(owdata.dev[TEMP_BH].type >= 0){
   		bhdb.dlog[sample].TempHive = OWsensors.getTempC(owdata.dev[TEMP_BH].sid);
+		if(bhdb.dlog[sample].TempHive == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempHive = -99;
 	}else{
 		bhdb.dlog[sample].TempHive = -99;
 	}

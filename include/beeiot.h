@@ -78,6 +78,10 @@
 #define WROOM			// use of WROOM32 Chip type
 // #define BEACON			// Work in Beacon Mode only -> Send LoRa Beacon only.
 
+//#define DMSG		// Use Sensor data Format 1: ASCII stream
+#define DSENSOR2		// Use Sensor data Format 2: binary stream
+
+
 // Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
 //*******************************************************************
@@ -268,6 +272,8 @@ typedef struct {				// data elements of one log line entry
 #define LENIPADDR	16
 typedef struct {
 	// save timestamp of last datarow entry:
+	struct tm	stime;			// structure time supp. by time.h
+	time_t		rtime;			// raw time
     char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
     char	date[LENDATE];  	// stamp of the day: 2019\10\28
     char	time[LENTIME]; 		// Timestamp: 08:10:15
