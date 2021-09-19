@@ -39,6 +39,7 @@ using namespace std;
 //					Shorten WAITRX1PKG Window 3->1 sec.
 // 1.5  28.01.2021  Add new RESET command
 // 1.6  03.04.2021	Add DSENSOR Command + biot_dsensor_t -> Sensor Data in Binary format
+//					Add weight-offset to devcfg_t
 //
 //***********************************************
 // LoRa MAC Presets
@@ -141,7 +142,8 @@ const char * beeiot_ActString[] = {
 	[CMD_ACKBCN]	= "ACKBEACON",
 	[CMD_TIME]		= "GETTIME",
 	[CMD_RESET]		= "RESET",
-	[CMD_NOP]		= "NOP"
+	[CMD_NOP]		= "NOP",
+	[CMD_DSENSOR]	= "DSENSOR"
 };
 #endif
 
@@ -223,6 +225,7 @@ typedef struct {
 	uint8_t	hour;			// 0-23
 	uint8_t	min; 			// 0-59
 	uint8_t	sec;			// 0-59
+	int16_t woffset;		// weight offset
 } devcfg_t;
 
 typedef struct {
@@ -253,7 +256,7 @@ typedef struct {
 // |			|			|		| uint8_t hh   < Hours 0-23
 // |			|			|		| uint8_t mm   < Minutes 0-59
 // |			|			|		| uint8_t ss   < Seconds 0-59
-// |Gewicht		|0 - 99.999	|31.860	| uint16_t wwww	 < in Gramm
+// |Gewicht		|0 - 99.99	|31.86	| uint16_t wwww	 < in 10 Gramm
 // |TempExtern	|0 - 99.99	|2.37	| uint16_t ccdd < in Celsius+2digits
 // |TempIntern	|0 - 99.99	|4.44	| uint16_t ccdd < in Celsius+2digits
 // |TempBeute	|0 - 99.99	|19.94	| uint16_t ccdd < in Celsius+2digits

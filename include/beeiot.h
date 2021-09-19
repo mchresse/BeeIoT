@@ -118,6 +118,7 @@
 #define ONEWIRE_CONFIG
 // #define WIFI_CONFIG
 // #define NTP_CONFIG
+// #define WEB_CONFIG
 #define SD_CONFIG
 #define EPD_CONFIG
 #define LORA_CONFIG
@@ -238,7 +239,7 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4130 // mV
+    #define BATTERY_MAX_LEVEL        4170 // mV
     #define BATTERY_MIN_LEVEL        3200 // mV
     #define BATTERY_SHUTDOWN_LEVEL   3170 // mV
 #endif
@@ -253,9 +254,9 @@ typedef struct {				// data elements of one log line entry
     int     index;
     char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY\MM\DD HH:MM:SS'
 	float	HiveWeight;			// weight in [kg]
-	float	TempHive;			// internal temp. of bee hive
 	float	TempExtern;			// external temperature
 	float	TempIntern;			// internal temp. of weight cell (for compensation)
+	float	TempHive;			// internal temp. of bee hive
 	float	TempRTC;			// internal temp. of RTC module
 	int16_t ESP3V;				// ESP32 DevKit 3300 mV voltage level
 	int16_t Board5V;			// Board 5000 mV Power line voltage level
@@ -281,6 +282,7 @@ typedef struct {
 	char	chcfgid;			// channel cfg ID of initialzed ChannelTab[]-config set -> struct LoRaCfg
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
+	int		woffset;			// offset for real weight adjustment
 	// Board Identification data
 	uint64_t  BoardID;  		// unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
 	int		  chipID;			// get chiptype: 0=WROOM32, 1=WROVER-B, ...

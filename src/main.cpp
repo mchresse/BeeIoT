@@ -248,7 +248,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH + LOGOW;
+		lflags = LOGBH;
 	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -443,11 +443,11 @@ void loop() {
   scale.power_up();  // HX711 WakeUp Device
 
   // Acquire raw reading
-  weight = HX711_read(0);
-  BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
+  // weight = HX711_read(0);
+  // BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
 
   // Acquire unit reading
-  weight = HX711_read(1);
+  weight = HX711_read(1);	// get it in 10 Gr. steps
   BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
   bhdb.dlog[bhdb.loopid].HiveWeight = weight;
 
@@ -505,12 +505,12 @@ float x;              		// Volt calculation buffer
   BHLOG(LOGADS) Serial.print("V - ");
 
   // addata = adc_read(2);
-	addata = (uint32_t) 0;								// not connected
+  addata = (uint32_t) 0;		// adc_read(2);			// not connected
   bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;	// value is useless
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
 
-  	addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+  addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 // debouncing easier on HW side: by 100nF at AINx against Gnd -> we sample just static voltage levels
 //  	addata1 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 //  	addata2 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
@@ -522,10 +522,12 @@ float x;              		// Volt calculation buffer
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
   bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
-  if(x==0)  sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
+  if(x==0){
+	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
+	// ToDO: set Bat Low Event here...
+  }
 
-  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) Serial.println();
+  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) delay(1000);
 #endif // ADS_CONFIG
 
@@ -587,7 +589,7 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 	dsensor.hh			= bhdb.stime.tm_hour;
 	dsensor.mm			= bhdb.stime.tm_min;
 	dsensor.ss			= bhdb.stime.tm_sec;
-	dsensor.weight		= bhdb.dlog[bhdb.loopid].HiveWeight * 1000.0;
+	dsensor.weight		= bhdb.dlog[bhdb.loopid].HiveWeight * 100.0;	// in 10 Gramm steps; save 1 digit
 	dsensor.text		= bhdb.dlog[bhdb.loopid].TempExtern * 100.0;
 	dsensor.tint		= bhdb.dlog[bhdb.loopid].TempIntern * 100.0;
 	dsensor.thive		= bhdb.dlog[bhdb.loopid].TempHive * 100.0;
@@ -707,24 +709,26 @@ void InitConfig(int reentry){
 		bhdb.time[0]      = 0;
 		bhdb.ipaddr[0]    = 0;
 		bhdb.chcfgid	  = 0;
+		bhdb.woffset	  = -scale_OFFSET;
 		// bhdb.BoardID      = 0;  already defined
 		for(i=0; i<datasetsize;i++){
 			bhdb.dlog[i].index       =0;
+			bhdb.dlog[i].timeStamp[0]=0;
 			bhdb.dlog[i].HiveWeight  =0;
 			bhdb.dlog[i].TempExtern  =0;
 			bhdb.dlog[i].TempIntern  =0;
 			bhdb.dlog[i].TempHive    =0;
 			bhdb.dlog[i].TempRTC     =0;
-			bhdb.dlog[i].timeStamp[0]=0;
 			bhdb.dlog[i].ESP3V       =0;
 			bhdb.dlog[i].Board5V     =0;
-			bhdb.dlog[i].BattLevel   =0;
 			bhdb.dlog[i].BattCharge  =0;
 			bhdb.dlog[i].BattLoad    =0;
+			bhdb.dlog[i].BattLevel   =0;
 			strncpy(bhdb.dlog[i].comment, "OK", 3);
 		}
 	}
 
+#ifdef WEB_CONFIG
 // Next settings are for Web based config Page:
 // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
   preferences.begin("MyJourney", false);
@@ -767,6 +771,7 @@ void InitConfig(int reentry){
 
   MQTTClient_Connected = false;
   CounterForMQTT = 0;
+#endif // WEB_CONFIG
 
 } // end of InitConfig()
 
@@ -777,6 +782,8 @@ void InitConfig(int reentry){
 /// @return void
 //*******************************************************************
 void ProcessAndValidateConfigValues(int countValues){
+#ifdef WEB_CONFIG
+
   BHLOG(LOGLAN) Serial.printf("  Webserver: ProcessConfigValues(%i)\n", countValues);
   if (countValues > CONFIGSETS) {
     countValues = CONFIGSETS;
@@ -809,7 +816,7 @@ void ProcessAndValidateConfigValues(int countValues){
     // do something other with actors: SwitchActor(ACTOR_ON);
   }
 
-
+#endif // WEB_CONFIG
 }
 
 
@@ -1091,6 +1098,8 @@ void ResetNode(void){
 /// @return void
 //*******************************************************************
 void CheckWebPage(){
+#ifdef WEB_CONFIG
+
   int i;
   String GETParameter = Webserver_GetRequestGETParameter();   // look for client request
 
@@ -1182,6 +1191,7 @@ void CheckWebPage(){
     }
   }
 */
+#endif // WEB_CONFIG
 } // end of CheckWebPage()
 
 

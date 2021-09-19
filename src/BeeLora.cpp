@@ -991,17 +991,18 @@ int rc;
 
 // update next Modem Config settings (gets activated at next LoRa Pckg Send via configLoraModem() call)
 #ifdef BEACON
-    SetChannelCfg(BEACONCHNCFG);          		  // initialize LoraCfg field by new cfg
-    report_interval = BEACONFRQ;                  // sec. frequency of beacon reports via LoRa
+    SetChannelCfg(BEACONCHNCFG);          		// initialize LoraCfg field by new cfg
+    report_interval = BEACONFRQ;                // sec. frequency of beacon reports via LoRa
 #else
-    SetChannelCfg(pcfg->cfg.channelidx);          // initialize LoraCfg field by new cfg
-    report_interval = pcfg->cfg.freqsensor*60;    // min -> sec. frequency of sensor reports via LoRa
+    SetChannelCfg(pcfg->cfg.channelidx);        // initialize LoraCfg field by new cfg
+    report_interval = pcfg->cfg.freqsensor*60;  // min -> sec. frequency of sensor reports via LoRa
 #endif
-	bhdb.chcfgid = pcfg->cfg.channelidx;		  // save channelidx for epd print
+	bhdb.chcfgid = pcfg->cfg.channelidx;		// save channelidx for epd print
+	bhdb.woffset = pcfg->cfg.woffset;			// offset for weight scale adjustement
 
-//    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
+//    lflags = (uint16_t) pcfg->cfg.verbose;	// get verbose value for BHLOG macro; needs to be 2 byte
 
-    // yearoff = offset to 1900
+    // yearoff = base to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",

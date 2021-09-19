@@ -1,5 +1,5 @@
 //*******************************************************************
-// HX711Scale.h  
+// HX711Scale.h
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -9,7 +9,7 @@
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -24,7 +24,7 @@
 #define scale_DIVIDER 44000     // Kilo unit value (2mV/V, GAIN=128 Vdd=3.3V)
 
 // HX711 Weight Scale offset values for 0.000 kg
-#define scale_OFFSET 297570   // 297000 = 44000 * 6,748kg (of the cover weight)
+#define scale_OFFSET 6748   // in kg -> 297000 = 44000 * 6,748kg (of the cover weight)
 
 
 #endif // end of HX711Scale.h

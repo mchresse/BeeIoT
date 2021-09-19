@@ -39,6 +39,7 @@
 // Global Sensor Data Object
 //*******************************************************************
 extern uint16_t	lflags; // BeeIoT log flag field
+extern dataset	bhdb;
 
 HX711 scale;            // the one and only weight cell
 
@@ -47,6 +48,7 @@ HX711 scale;            // the one and only weight cell
 //*******************************************************************
 int setup_hx711Scale(int reentry) {
 // put your setup code here, to run once:
+float	scale_offs;
 
 #ifdef HX711_CONFIG
 // HX711 constructor:
@@ -55,10 +57,14 @@ int setup_hx711Scale(int reentry) {
   gpio_hold_dis(HX711_DT);              // enable HX711_DT for Dig.-IO
   scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
   scale.set_scale(scale_DIVIDER);       // define unit value per kg
-  scale.set_offset(scale_OFFSET);       // define base value for 0kg
+
+  BHLOG(LOGHX) Serial.printf("  HX711: Weight Cfg.-Calib: %.3f kg\n", (float) bhdb.woffset/(-1000));
+  scale_offs = (float) scale_DIVIDER * ((float) bhdb.woffset/(-1000));	// get tare cfg. value as float
+  scale.set_offset((long)scale_offs);	// define base value for 0kg
                   // (e.g. reflects weight of weight cell cover board)
+
   BHLOG(LOGHX) Serial.print("  HX711: Offset(raw): ");
-  BHLOG(LOGHX) Serial.print(scale_OFFSET, 10);
+  BHLOG(LOGHX) Serial.print(scale_offs, 10);
   BHLOG(LOGHX) Serial.print(" - Unit(raw): ");
   BHLOG(LOGHX) Serial.print(scale_DIVIDER, 10);
   BHLOG(LOGHX) Serial.println(" per kg");
