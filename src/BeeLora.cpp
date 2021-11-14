@@ -870,9 +870,9 @@ int rc;
 
 	case CMD_REJOIN:
 		// GW requested a REJOIN
-		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
+		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);      
 		BeeIoTStatus = BIOT_REJOIN;  	// reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-		report_interval = 120;			// retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
+		report_interval = 120;			  // retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
 		rc= CMD_REJOIN;
 		break;
 
