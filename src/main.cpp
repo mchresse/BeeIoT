@@ -185,6 +185,7 @@ void biot_ioshutdown(int sleepmode);
 void get_efuse_ident(void);
 void ResetNode(void);
 void wiretest();
+extern void hexdump(unsigned char * msg, int len);
 
 
 //*******************************************************************
@@ -215,7 +216,6 @@ int rc;		// generic return code variable
   // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect to computer
 	Serial.begin(115200);       // enable Ser. Monitor Baud rate
-	//	delay(500);					// wait for console init
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
 
@@ -256,7 +256,7 @@ int rc;		// generic return code variable
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 01/2021\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 04/2021\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -423,7 +423,7 @@ void loop() {
   BHLOG(LOGBH) Serial.println(">************************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-  strncpy(bhdb.dlog[bhdb.loopid].comment, "o.k.", 5);
+  sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.");
 
 
 //***************************************************************
@@ -443,11 +443,11 @@ void loop() {
   scale.power_up();  // HX711 WakeUp Device
 
   // Acquire raw reading
-  weight = HX711_read(0);
-  BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
+  // weight = HX711_read(0);
+  // BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
 
   // Acquire unit reading
-  weight = HX711_read(1);
+  weight = HX711_read(1);	// get it in 10 Gr. steps
   BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
   bhdb.dlog[bhdb.loopid].HiveWeight = weight;
 
@@ -459,26 +459,26 @@ void loop() {
 #ifdef ONEWIRE_CONFIG
 	// Get all temp values directly into bhdb.dlog[]
 	int owsensors = GetOWsensor(bhdb.loopid);
-  	if( owsensors == 0){
-		BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
-<<<<<<< Updated upstream
-  	}
-=======
-  	}else{
-		// check if value of last of all 3 sensors is in range
-		int retry=0;
-		while(bhdb.dlog[bhdb.loopid].TempHive == -99){  // if we have just started lets do it again to get right values
-    		GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-    		delay(200);									// wait 200ms for OW bus recovery
-			if (retry++ == ONE_WIRE_RETRY){
-				BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
-				break;
-			}
-		}
-		if(retry > 0)
-			sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+
+  if( owsensors == 0){
+		    BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
+  }else{
+		    // check if value of last of all 3 sensors is in range
+		    int retry=0;
+		    while((bhdb.dlog[bhdb.loopid].TempIntern == -99) ||
+				     ( bhdb.dlog[bhdb.loopid].TempExtern == -99) ||
+				     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
+        {  // if we have just started lets do it again to get right values
+            GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
+            delay(200);									// wait 200ms for OW bus recovery
+            if (retry++ == ONE_WIRE_RETRY){
+              BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
+              break;
+            }
+		    }
+		    if(retry > 0)
+			      sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
 	}
->>>>>>> Stashed changes
 	BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 
 #endif // ONEWIRE_CONFIG
@@ -506,12 +506,12 @@ float x;              		// Volt calculation buffer
   BHLOG(LOGADS) Serial.print("V - ");
 
   // addata = adc_read(2);
-	addata = (uint32_t) 0;								// not connected
+  addata = (uint32_t) 0;		// adc_read(2);			// not connected
   bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;	// value is useless
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
 
-  	addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+  addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 // debouncing easier on HW side: by 100nF at AINx against Gnd -> we sample just static voltage levels
 //  	addata1 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 //  	addata2 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
@@ -523,10 +523,13 @@ float x;              		// Volt calculation buffer
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
   bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
-  if(x==0)  sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
 
-  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) Serial.println();
+  if(x==0){
+    sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
+    // ToDO: set Bat Low Event here...
+  }
+
+  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) delay(1000);
 #endif // ADS_CONFIG
 
@@ -566,18 +569,50 @@ float x;              		// Volt calculation buffer
 
 
 
-//*******************************************************************
-/// @brief Logdata() Append current sensor data set to SD card -> logdata file
-/// and send it via LoRaWAN
-/// @param none
-//*******************************************************************
+//*********************************************************************************
+///@brief Logdata() Append current sensor data set to SD card -> logdata file
+// and send it via LoRaWAN
+//
+///@param global bhdb
+//***********************************************************************************
 void Logdata(void) {
 uint16_t sample;
-String dataMessage; // Global data objects
+String  dataMessage; 		// Global data objects
+biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
-  sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
-// Create tatus Report based on the sensor readings
+  	sample = (bhdb.laps*datasetsize) + bhdb.loopid;
+
+#ifdef DSENSOR2
+  	dsensor.logid		= sample;
+  	dsensor.year2k		= bhdb.stime.tm_year - 100;	// rebase 1900 -> 2000
+	dsensor.month		= bhdb.stime.tm_mon+1;		// 1-12
+	dsensor.day			= bhdb.stime.tm_mday;		// 1-31
+	dsensor.hh			= bhdb.stime.tm_hour;
+	dsensor.mm			= bhdb.stime.tm_min;
+	dsensor.ss			= bhdb.stime.tm_sec;
+	dsensor.weight		= bhdb.dlog[bhdb.loopid].HiveWeight * 100.0;	// in 10 Gramm steps; save 1 digit
+	dsensor.text		= bhdb.dlog[bhdb.loopid].TempExtern * 100.0;
+	dsensor.tint		= bhdb.dlog[bhdb.loopid].TempIntern * 100.0;
+	dsensor.thive		= bhdb.dlog[bhdb.loopid].TempHive * 100.0;
+	dsensor.trtc		= bhdb.dlog[bhdb.loopid].TempRTC * 100.0;
+	dsensor.board3v		= bhdb.dlog[bhdb.loopid].ESP3V;
+	dsensor.board5v 	= bhdb.dlog[bhdb.loopid].Board5V;
+	dsensor.battcharge	= bhdb.dlog[bhdb.loopid].BattCharge;
+	dsensor.battload	= bhdb.dlog[bhdb.loopid].BattLoad;
+	dsensor.battlevel	= bhdb.dlog[bhdb.loopid].BattLevel;
+
+	dsensor.tlen = snprintf((char*) dsensor.notice, BIoT_NOTICELEN, "%s", (char*) bhdb.dlog[bhdb.loopid].comment);
+	if(dsensor.tlen > BIoT_NOTICELEN){
+		dsensor.tlen = BIoT_NOTICELEN;
+	}
+	if(dsensor.tlen < 0){
+		dsensor.tlen = 0;
+	}
+
+	dsensor.crc8	=0x00;	//t.b.d -> CRC8 calculation
+#else
+// Create Status Report based on the sensor readings
   dataMessage =
               String(bhdb.date) + " " +
               String(bhdb.time) + "," +
@@ -605,7 +640,9 @@ String dataMessage; // Global data objects
   }else{
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
-#endif
+#endif	// BEACON
+#endif	// DSENSOR2
+
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (joined ?)
@@ -613,8 +650,16 @@ String dataMessage; // Global data objects
     // For Test purpose of transmission quality: send a beacon to the current GW
     BeeIoTBeacon(0);  // in Non-Joined Mode != BIOT_JOIN (assumed LoRa Log was successfull)
 #else
-    LoRaLog((char *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
-#endif
+
+#ifdef DMSG
+    LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
+#else
+	int dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
+    LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
+#endif // DMSG
+
+#endif // BEACON
+
   }else{
     BHLOG(LOGLORAW) Serial.println("  Log: No LoRa, no BeeIoTWAN on air ...");
   }
@@ -666,24 +711,26 @@ void InitConfig(int reentry){
 		bhdb.time[0]      = 0;
 		bhdb.ipaddr[0]    = 0;
 		bhdb.chcfgid	  = 0;
+		bhdb.woffset	  = -scale_OFFSET;
 		// bhdb.BoardID      = 0;  already defined
 		for(i=0; i<datasetsize;i++){
 			bhdb.dlog[i].index       =0;
+			bhdb.dlog[i].timeStamp[0]=0;
 			bhdb.dlog[i].HiveWeight  =0;
 			bhdb.dlog[i].TempExtern  =0;
 			bhdb.dlog[i].TempIntern  =0;
 			bhdb.dlog[i].TempHive    =0;
 			bhdb.dlog[i].TempRTC     =0;
-			bhdb.dlog[i].timeStamp[0]=0;
 			bhdb.dlog[i].ESP3V       =0;
 			bhdb.dlog[i].Board5V     =0;
-			bhdb.dlog[i].BattLevel   =0;
 			bhdb.dlog[i].BattCharge  =0;
 			bhdb.dlog[i].BattLoad    =0;
+			bhdb.dlog[i].BattLevel   =0;
 			strncpy(bhdb.dlog[i].comment, "OK", 3);
 		}
 	}
 
+#ifdef WEB_CONFIG
 // Next settings are for Web based config Page:
 // see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
   preferences.begin("MyJourney", false);
@@ -726,6 +773,7 @@ void InitConfig(int reentry){
 
   MQTTClient_Connected = false;
   CounterForMQTT = 0;
+#endif // WEB_CONFIG
 
 } // end of InitConfig()
 
@@ -736,6 +784,8 @@ void InitConfig(int reentry){
 /// @return void
 //*******************************************************************
 void ProcessAndValidateConfigValues(int countValues){
+#ifdef WEB_CONFIG
+
   BHLOG(LOGLAN) Serial.printf("  Webserver: ProcessConfigValues(%i)\n", countValues);
   if (countValues > CONFIGSETS) {
     countValues = CONFIGSETS;
@@ -768,7 +818,7 @@ void ProcessAndValidateConfigValues(int countValues){
     // do something other with actors: SwitchActor(ACTOR_ON);
   }
 
-
+#endif // WEB_CONFIG
 }
 
 
@@ -1050,6 +1100,8 @@ void ResetNode(void){
 /// @return void
 //*******************************************************************
 void CheckWebPage(){
+#ifdef WEB_CONFIG
+
   int i;
   String GETParameter = Webserver_GetRequestGETParameter();   // look for client request
 
@@ -1141,6 +1193,7 @@ void CheckWebPage(){
     }
   }
 */
+#endif // WEB_CONFIG
 } // end of CheckWebPage()
 
 

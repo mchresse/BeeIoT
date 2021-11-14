@@ -78,6 +78,10 @@
 #define WROOM			// use of WROOM32 Chip type
 // #define BEACON			// Work in Beacon Mode only -> Send LoRa Beacon only.
 
+//#define DMSG		// Use Sensor data Format 1: ASCII stream
+#define DSENSOR2		// Use Sensor data Format 2: binary stream
+
+
 // Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
 //*******************************************************************
@@ -114,6 +118,7 @@
 #define ONEWIRE_CONFIG
 // #define WIFI_CONFIG
 // #define NTP_CONFIG
+// #define WEB_CONFIG
 #define SD_CONFIG
 #define EPD_CONFIG
 #define LORA_CONFIG
@@ -234,7 +239,7 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4130 // mV
+    #define BATTERY_MAX_LEVEL        4170 // mV
     #define BATTERY_MIN_LEVEL        3200 // mV
     #define BATTERY_SHUTDOWN_LEVEL   3170 // mV
 #endif
@@ -249,9 +254,9 @@ typedef struct {				// data elements of one log line entry
     int     index;
     char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY\MM\DD HH:MM:SS'
 	float	HiveWeight;			// weight in [kg]
-	float	TempHive;			// internal temp. of bee hive
 	float	TempExtern;			// external temperature
 	float	TempIntern;			// internal temp. of weight cell (for compensation)
+	float	TempHive;			// internal temp. of bee hive
 	float	TempRTC;			// internal temp. of RTC module
 	int16_t ESP3V;				// ESP32 DevKit 3300 mV voltage level
 	int16_t Board5V;			// Board 5000 mV Power line voltage level
@@ -268,6 +273,8 @@ typedef struct {				// data elements of one log line entry
 #define LENIPADDR	16
 typedef struct {
 	// save timestamp of last datarow entry:
+	struct tm	stime;			// structure time supp. by time.h
+	time_t		rtime;			// raw time
     char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
     char	date[LENDATE];  	// stamp of the day: 2019\10\28
     char	time[LENTIME]; 		// Timestamp: 08:10:15
@@ -275,6 +282,7 @@ typedef struct {
 	char	chcfgid;			// channel cfg ID of initialzed ChannelTab[]-config set -> struct LoRaCfg
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
+	int		woffset;			// offset for real weight adjustment
 	// Board Identification data
 	uint64_t  BoardID;  		// unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
 	int		  chipID;			// get chiptype: 0=WROOM32, 1=WROVER-B, ...

@@ -137,6 +137,7 @@ void onReceive		(int packetSize);
 void BIoT_getmic  (beeiotpkg_t * pkg, int dir, byte * mic);
 extern void LoRaMacJoinComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic );
 extern void ResetNode(void);
+void hexdump(unsigned char * msg, int len);
 
 
 //*********************************************************************
@@ -597,7 +598,7 @@ void BeeIoTSleep(void){
 // -99: TX timed out: waiting for ACK -> max. # of retries reached
 //                    -> forced BeeIoTStatus = BIOT_REJOIN
 //****************************************************************************************
-int LoRaLog( const char * outgoing, uint16_t outlen, int noack) {
+int LoRaLog( const uint8_t *outgoing, uint16_t outlen, int noack) {
 uint16_t length;  // final length of TX msg payload
 int ackloop;  // ACK wait loop counter
 int rc;       // generic return code
@@ -635,12 +636,16 @@ int rc;       // generic return code
     length = outlen;             // get real user-payload length
   }
   // b) Prepare BeeIoT TX package
+#ifdef DSENSOR2
+  MyTXData.hd.cmd    = CMD_DSENSOR;    	 // define type of action: BIoTApp session Command for LogStatus Data processing
+#else
   MyTXData.hd.cmd    = CMD_LOGSTATUS;    // define type of action: BIoTApp session Command for LogStatus Data processing
+#endif
   MyTXData.hd.destID = LoRaCfg.gwid;     // remote target GW
   MyTXData.hd.sendID = LoRaCfg.nodeid;   // that's me
   MyTXData.hd.pkgid  = LoRaCfg.msgCount; // serial number of sent packages (sequence checked on GW side!)
   MyTXData.hd.frmlen = (uint16_t) length;   // length of user payload data incl. any EOL - excl. MIC
-  strncpy(MyTXData.data, outgoing, length); // get BIoT-Frame payload data
+  memcpy(&MyTXData.data, outgoing, length); // get BIoT-Frame payload data
   if(MyTXData.hd.cmd == CMD_LOGSTATUS)   // do we send a string ?
     MyTXData.data[length-1]=0;           // assure EOL = 0
 
@@ -865,15 +870,10 @@ int rc;
 
 	case CMD_REJOIN:
 		// GW requested a REJOIN
-		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
-<<<<<<< Updated upstream
-		BeeIoTStatus = BIOT_REJOIN;  // reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-			rc= CMD_REJOIN;
-=======
+		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);      
 		BeeIoTStatus = BIOT_REJOIN;  	// reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
-		report_interval = 120;			// retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
+		report_interval = 120;			  // retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
 		rc= CMD_REJOIN;
->>>>>>> Stashed changes
 		break;
 
 	case CMD_CONFIG:                           // new BeeIoT channel cfg received
@@ -884,6 +884,12 @@ int rc;
 
 	case CMD_LOGSTATUS: // BeeIoT node sensor data set received
 		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= LOGSTATUS -> should be ACK => ignored\n", msg->hd.pkgid);
+		// intentionally do nothing on node side
+		rc=CMD_LOGSTATUS;
+		break;
+
+	case CMD_DSENSOR: // BeeIoT node sensor binary data set received
+		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= DSENSOR -> should be ACK => ignored\n", msg->hd.pkgid);
 		// intentionally do nothing on node side
 		rc=CMD_LOGSTATUS;
 		break;
@@ -985,17 +991,18 @@ int rc;
 
 // update next Modem Config settings (gets activated at next LoRa Pckg Send via configLoraModem() call)
 #ifdef BEACON
-    SetChannelCfg(BEACONCHNCFG);          		  // initialize LoraCfg field by new cfg
-    report_interval = BEACONFRQ;                  // sec. frequency of beacon reports via LoRa
+    SetChannelCfg(BEACONCHNCFG);          		// initialize LoraCfg field by new cfg
+    report_interval = BEACONFRQ;                // sec. frequency of beacon reports via LoRa
 #else
-    SetChannelCfg(pcfg->cfg.channelidx);          // initialize LoraCfg field by new cfg
-    report_interval = pcfg->cfg.freqsensor*60;    // min -> sec. frequency of sensor reports via LoRa
+    SetChannelCfg(pcfg->cfg.channelidx);        // initialize LoraCfg field by new cfg
+    report_interval = pcfg->cfg.freqsensor*60;  // min -> sec. frequency of sensor reports via LoRa
 #endif
-	bhdb.chcfgid = pcfg->cfg.channelidx;		  // save channelidx for epd print
+	bhdb.chcfgid = pcfg->cfg.channelidx;		// save channelidx for epd print
+	bhdb.woffset = pcfg->cfg.woffset;			// offset for weight scale adjustement
 
-    lflags = (uint16_t) pcfg->cfg.verbose;        // get verbose value for BHLOG macro; needs to be 2 byte
+//    lflags = (uint16_t) pcfg->cfg.verbose;	// get verbose value for BHLOG macro; needs to be 2 byte
 
-    // yearoff = offset to 1900
+    // yearoff = base to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",

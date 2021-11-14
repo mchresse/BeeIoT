@@ -94,7 +94,7 @@ int idx=0;
 	if(OWsensors.isParasitePowerMode())
 		BHLOG(LOGOW) Serial.print("  OWBus requests parasite power !\n");
 
-  	BHLOG(LOGOW) Serial.printf("  OWBus: OW devices found (by Addr.): %i\n", owdata.numdev);
+  	BHLOG(LOGOW) Serial.printf("  OWBus: OW devices found (by Index): %i\n", owdata.numdev);
 
 	if(owdata.numdev==0){
 		return 0;	// no valid OW devices found
@@ -149,11 +149,11 @@ int getDSType(byte DSType){
       break;
     case 0x28:
       BHLOG(LOGOW) Serial.print(" DS18B20");
-      type_s = 0;
+      type_s = 2;
       break;
     case 0x22:
       BHLOG(LOGOW) Serial.print(" DS1822");
-      type_s = 0;
+      type_s = 3;
       break;
     default:
       BHLOG(LOGOW) Serial.print("No DS18x20 family device.");
@@ -180,9 +180,10 @@ int printAddress(DeviceAddress deviceAddress)
 // Using Dallas temperature device library
 // Input: INdex of Datarow entry in bhdb
 // Return:  Number of read devices
-
+// 			bhdb.dlog[sample].Tempxxxx = Temp value
+//										= -99C -> no device found
 int GetOWsensor(int sample){
-	if(owdata.numdev == 0)
+	if(owdata.numdev == 0)	// no OW devices detected, nothing to do
 		return(0);
 
 #ifdef ONEWIRE_CONFIG
@@ -193,18 +194,24 @@ int GetOWsensor(int sample){
 
 	if(owdata.dev[TEMP_Int].type >= 0){
   		bhdb.dlog[sample].TempIntern = OWsensors.getTempC(owdata.dev[TEMP_Int].sid);
+		if(bhdb.dlog[sample].TempIntern == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempIntern = -99;
 	}else{
 		bhdb.dlog[sample].TempIntern = -99;
 	}
 
 	if(owdata.dev[TEMP_Ext].type >= 0){
   		bhdb.dlog[sample].TempExtern = OWsensors.getTempC(owdata.dev[TEMP_Ext].sid);
+		if(bhdb.dlog[sample].TempExtern == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempExtern = -99;
 	}else{
 		bhdb.dlog[sample].TempExtern = -99;
 	}
 
 	if(owdata.dev[TEMP_BH].type >= 0){
   		bhdb.dlog[sample].TempHive = OWsensors.getTempC(owdata.dev[TEMP_BH].sid);
+		if(bhdb.dlog[sample].TempHive == 85)	// erro occured with reading
+			bhdb.dlog[sample].TempHive = -99;
 	}else{
 		bhdb.dlog[sample].TempHive = -99;
 	}

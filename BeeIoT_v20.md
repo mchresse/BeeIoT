@@ -52,6 +52,7 @@
 	* [Die Client Programm Struktur](#die-client-programm-struktur)
 		+ [Setup Phase](setup-phase)
 		+ [Loop Phase](loop-phase)
+		+ [SensorDaten Übertragungsformat](#sensorDaten-übertragungsformat)
 	* [Kalibrierung der Waage](#kalibrierung-der-waage)
 	* [Optional: WebUI Daten Service](#optional:-webui-daten-service)
 - [WebUI ToDo - Liste](#webui-todo---liste)
@@ -113,8 +114,8 @@ Hier nun ein idealisierter qualitativer Gewichtsverlauf eines sonnigen Sommertag
 
 <img src="./images_v2/WeightDayChart.jpg">
 
-Der Tag beginnt mit dem Ausflug der Bienen (ca. 1-2kg). Da eine Biene etwa 0.1 Gramm wiegt und ca. 10-15.000 Flugbienen möglich sind ergibt sich somit ein Delta von 1-1,5kg. Diese kehren in den folgenden Stunden immer wieder mit Honig, Pollen und Wasser zurück, so dass das Gewicht kontinuierlich steigt. 
-Bis zum Sonnenuntergang ist die „Rückkehr“ der Sammlerinnen abgeschlossen und die Honigtrocknung durch die Stockbienen beginnt (begünstigt durch die kühleren Nachttemperaturen). 
+Der Tag beginnt mit dem Ausflug der Bienen (ca. 1-2kg). Da eine Biene etwa 0.1 Gramm wiegt und ca. 10-15.000 Flugbienen möglich sind ergibt sich somit ein Delta von 1-1,5kg. Diese kehren in den folgenden Stunden immer wieder mit Honig, Pollen und Wasser zurück, so dass das Gewicht kontinuierlich steigt.
+Bis zum Sonnenuntergang ist die „Rückkehr“ der Sammlerinnen abgeschlossen und die Honigtrocknung durch die Stockbienen beginnt (begünstigt durch die kühleren Nachttemperaturen).
 Das Delta stellt den Tageseintrag dar.
 
 ### Gewichtsschwankung pro Jahr
@@ -169,7 +170,7 @@ Die eigentliche Aufgabe der Sensorsteuerung und Roh-Messdatenaufnahme kann auch 
 + geringerer Stromverbrauch pro Sensorclient Modul
 + geringere Invest-Kosten
 + übersichtlichere Programmstruktur durch entzerrten Modulstack
-+ Skalierbarkeit durch standardisierte Schnittstellen 
++ Skalierbarkeit durch standardisierte Schnittstellen
 	+ -> eine gesicherte Übertragung ist leichter realisierbar
 + Dadurch sind nahezu beliebig viele Sensor Clients in Reichweite verwaltbar.
 
@@ -458,7 +459,7 @@ Die Eigenschaften des HX711:
 + Temperaturbereich: -40 - +85?
 
 Für Kanal A kann eine Verstärkung von 128 oder 64 gewählt werden, Kanal B bietet eine fixe Verstärkung von Faktor 32. Daher habe ich für diese Version nur den Port A mit GAIN 128 verwendet und Port B stillgelegt.
-Zum Anschluss der HX711 Logik-Ports an den ESP32 werden nur 2 der generischen duplex-fähigen GPIO Ports benötigt 
+Zum Anschluss der HX711 Logik-Ports an den ESP32 werden nur 2 der generischen duplex-fähigen GPIO Ports benötigt
 (Data + SCK):
 ```cpp
 #define HX711_DT    25    // serial dataline
@@ -543,13 +544,13 @@ benötigt jedes device mindestens seine eigene CS\ Leitung zum Start der individ
 Um Störung in der Startupphase des setup zu vermeiden werden zu Anfangs in der Setup routine alle CS\ Leitungen der 3 Devices auf inaktiv (High) vordefiniert. Das beugt Störungen bei der weiteren sequentiellen Inbetriebnahme der damit inaktiven SPI Modul Schnittstellen vor.
 
 #### Micro-SDCard Modul
-Die Verwendung einer SD Karte ermöglicht einerseits die dauerhafte Ablage großer Mengen an Sensordaten vor dem Versand oder auch als Backup space, wenn keine Konnektivität besteht. 
+Die Verwendung einer SD Karte ermöglicht einerseits die dauerhafte Ablage großer Mengen an Sensordaten vor dem Versand oder auch als Backup space, wenn keine Konnektivität besteht.
 Anderseits kann im Notfall der komplette Datensatz auch manuell am Laptop ausgelesen werden.
 
 <img src="./images_v2/MicroSDCard_Front.jpg"> <img src="./images_v2/MicroSDCard_Back.jpg">
 
 Dieses weitläufig verfügbare Modul enthält einen 3.3V <-> 5V level changer onboard und ermöglicht dadurch eine Vdd Spannung von 3.3V - 5V mit Logikleitungen auf 3.3V.
-Beim Anschluss weiterer SPI Devices stellte sich aber heraus, dass der 3.3V Logiklevel nicht immer sauber eingehalten wird (speziell nach einem Reset). Vdd = 3.3V löste das Problem wieder. 
+Beim Anschluss weiterer SPI Devices stellte sich aber heraus, dass der 3.3V Logiklevel nicht immer sauber eingehalten wird (speziell nach einem Reset). Vdd = 3.3V löste das Problem wieder.
 Dadurch wird allerdings der 5V -> 3.3V Spannungswandler auf dem DevKitC Modul stärker belastet. (Die möglichen 1 A werden wir aber natürlich nicht erreichen.)
 
 Die GPIO Port Definitionen:
@@ -587,10 +588,10 @@ Zumindest die ersten 3 Punkte konnte ich durch das ePaper von WaveShare erfülle
 + 3.3v E-ink Electronic Paper Screen with Embedded Controller
 + for ESP32 SPI Interface
 
-Ein Stromverbrauch entsteht nur in der Initialisierungs- und Ladephase der Darstellungsdaten. 
+Ein Stromverbrauch entsteht nur in der Initialisierungs- und Ladephase der Darstellungsdaten.
 Größter Vorteil ist aber das passive Darstellungsmedium: ePaper, welches auch bei direkter Sonne wie ein gedrucktes Papier erscheint. Das erhöht die Lesbarkeit im Outdoor-Einsatz enorm.
 Ein LCD Display müsste hier nachgesteuert werden und muss dazu dauerhaft mit Strom versorgt werden.
-Hat allerdings den Vorteil der möglichen Beleuchtung bei Dämmerung/Dunkelheit. 
+Hat allerdings den Vorteil der möglichen Beleuchtung bei Dämmerung/Dunkelheit.
 Allerdings mal ehrlich: wer imkert dann noch ???
 
 Daher hat ein EPaper i.d.R. auch keine Hintergrundbeleuchtung. Dieses Modul weißt neben dem eigentlichen Display dafür noch 4 universelle Schalter zur späteren funktionellen Erweiterung von z.B. verschiedenen Darstellungsebenen auf. Dazu später mehr...
@@ -624,7 +625,7 @@ neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY "Draht".
 ```cpp
 // WavePaper ePaper port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
-// Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5), 
+// Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
 #define EPD_MISO VSPI_MISO 	// SPI MISO -> VSPI
 #define EPD_MOSI VSPI_MOSI 	// SPI MOSI -> VSPI
@@ -641,7 +642,7 @@ neben der eigene CS Leitung gibt es noch einen Reset udn einen BUSY "Draht".
 
 Wie oben erwähnt fällt die Bedienung aber etwas aufwändiger aus, denn neben dem SPI API sind dann diverse Font Libs, und ggfs. BitMaps zu laden.
 Aktuell verwende ich die Library: https://github.com/ZinggJM/GxEPD
-mit dem für mein ePaper device spezifische Extension: GxGDEW027C44.h 
+mit dem für mein ePaper device spezifische Extension: GxGDEW027C44.h
 ```cpp
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
@@ -672,7 +673,7 @@ Das LoRa-WAN Protokoll ist auf geringe Band-Belastung (OnAir-DutyTime) und gerin
 
 Das verbaute HW-Funkmodul bietet nur den LoRa-MAC layer Übertragungssupport.
 Auf die Umsetzung der dazugehörigen Paketübertragungs- und Netzverwaltung sowie den dazugehörigen SW Stack auf beiden Seiten gehe ich in diesem Dokument detailliert ein: **[BeeIoTWAN_v10.md](https://github.com/mchresse/BeeIoTGW/blob/master/BeeIoTWAN_v10.md)** des zugehörigen Github Projektes **BeeIoTGW**.
-Dort findet sich auch die Beschreibung der BIoT Gateway/Edge-Server Gegenstelle für die weitere Verarbeitung der Sensordaten durch AppServices. Hier vorab schonmal das prinzip Schaltbild der Module des vollständigen BIoT WAN Netzwerkes. 
+Dort findet sich auch die Beschreibung der BIoT Gateway/Edge-Server Gegenstelle für die weitere Verarbeitung der Sensordaten durch AppServices. Hier vorab schonmal das prinzip Schaltbild der Module des vollständigen BIoT WAN Netzwerkes.
 <img src="./images_v2/BeeIoT_Concept.jpg">
 
 Als Gegenstück ist ein RaspberryPi basierter Gateway vorgesehen, der seinerseits wieder die benötigte leistungsfähigere WiFi/LAN Anbindung hat, um die gewonnenen SensorDaten aller Clients zu validieren, aufbereiten und auf eine Website oder andere Abnehmer (MQTT) zu spiegeln.
@@ -690,7 +691,7 @@ Eine SMA Antenne besteht intern ebenfalls nur aus:
 <img src="./images_v2/Duck_Antenna.jpg">
 
 Die LoraModul-Verdrahtung ist recht einfach:
-Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion (bei manchen Modulen auch NSS genannt), eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5. 
+Neben den Standard shared (!) SPI Leitungen (MISO, MOSI, SCK) gibt es noch die Modul-spezifische CS Leitung zur Modul-Selektion (bei manchen Modulen auch NSS genannt), eine Reset-Leitung (RST) und 6 universelle Daten-IO Leitungen für weitere Funktionen DIO0..DIO5.
 Für den Standard LoRa-Modem Betrieb werden die übrigen DIO1-DIO5 Leitung aber i.d.R. nicht benötigt.(Für den FSK Mode werden häufig auch DIO1+2 benötigt).
 Manchen SW Stacks (z.B. LMIC) benötigen zum vollständigen Support DIO0-2; der Lora-Lib von Sandeep reicht aber DIO0.
 DIO0 triggert z.B. alle LoRa-Mode RX/TX Interrupts (RXDone & TXDone).
@@ -807,7 +808,7 @@ Hinter der Adresse 0x48 verbirgt sich das ADS1115 Modul.
 Das I2C API wird am ESP32 über 2 frei definierte GPIO Leitungen realisiert:
 ```cpp
 // RTC DS3231 Libraries
-#include "RTClib.h"	
+#include "RTClib.h"
 // based on Wire.h library
 // ->referenced to pins_arduino.h:
 // static const uint8_t SDA = 21;
@@ -842,7 +843,7 @@ Als größter und wichtigster Stromverbraucher gilt das ESP32-DevKitC board im W
 
 So existieren auf dem Extension Board 2 Hauptversorgungsleitungen:
 - +5V: von der Batterieversorgung (die widerum auch die Ladespannung beziehen kann)
-	+ Verbraucher sind: 
+	+ Verbraucher sind:
 		* 3x OneWire Bus -> Temperatur Sensoren
 		* ADS1115 -> Power monitoring
 		* RTC Modul -> Uhrzeitversorgung
@@ -943,7 +944,7 @@ An dieser Stelle hilft es die Energie-Rechnung aus Kapitel:  **[Die MCU Arduino/
 - Anteil Aktivphase: 10 Sek./10Minuten: 1/60
 - auf 6 Monate entspricht das (6x30x24)h/60 = 72h = 3Tage Aktivphase
 - => 4320-3 Tage Passivphase = 4317 Tage
-- Stromverbrauch Passivphase: 4317 x 1mAh = 4317mAh von nun **30.000mAh** 
+- Stromverbrauch Passivphase: 4317 x 1mAh = 4317mAh von nun **30.000mAh**
 - Möglicher **Stromverbrauch Aktivphase**: (30.000mAh - 4317mAh)/72h = 5683mAh / 72h = **~365mA**
 
 Pro Tag kämen wir auf einen Gesamtverbrauchsmix:
@@ -983,7 +984,7 @@ Adafruit_ADS1115 ads(ADS_ADDR);    // Use this for the 16-bit version
 Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsfähigen I2C Interfaces des ADC1115 sehr einfach geworden:
 ```cpp
 	adcdata = ads.readADC_SingleEnded(channel);	//channel = 0..3
-	// ADC internal Reference: +/- 6.144V 
+	// ADC internal Reference: +/- 6.144V
 	// ADS1015: 11bit ADC -> 6144/2048  = 3 mV / bit
 	// ADS1115: 15bit ADC -> 6144/32768 = 0.1875 mV / bit
 	data = (int16_t)((float)adcdata * 0.1875);	// multiply by 1bit-sample in mV
@@ -993,7 +994,7 @@ Dank der Adafruit Library ist die Nutzung des recht komplizierten aber leistngsf
 Die oben errechneten 215 Tage Laufzeit können ggfs. noch verlängert/stabilisiert werden, wenn eine zusätzliche Stromversorgung zur Ladung ins Spiel kommt.
 Zur Erhaltung der Mobilität liegt die Lösung in einem externen PV Modul/Panel:
 
-	
+
 <img src="./images_v2/SolarPanel_RAVPower.jpg">
 **Solar Charger RAVPower 16W Solar Panel für 46€ (23.9 x 16 x 2 cm)**
 
@@ -1016,7 +1017,7 @@ Neben dem günstigen obe beschriebenen PV Modul mit integriertem 5V Ausgangsregl
 
 Die effiziente Energieverwaltung/Verteilung durch zeitgleiche Ladezyklen und Verbrauchsphasen soll über ein eigenes Ladekontrollmodul erzielt werden.
 
-Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen **PV Solar Panel MPPT Laderegler von Sunix** gestartet: 
+Erste Versuche in diese nächst höhere Leistungsklasse habe ich mit dem sehr günstigen **PV Solar Panel MPPT Laderegler von Sunix** gestartet:
 
 <img src="./images_v2/SolarCharger.jpg">
 
@@ -1190,18 +1191,18 @@ Dieser OneWire-Digital-Temperatursensor ist sehr präzise (±0,5°C Genauigkeit 
 Das wären 4096 Messteilwerte über den gesamten gemessenen Temperaturbereich.
 
 **Verfügbare Ausführungen:**
-+ DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang 
++ DS18B20 Sensor im Edelstahl-Körper, 6mm Durchmesser, 30mm lang
 + Kabellänge von etwa 90-110cm lang mit Durchmesser 4mm, unkonfektioniert
 
 	**Sensor-Anschluss mit 4-adrigem Kabel:**
-1. Rot:	 	3-5 V Anschluss, 
-2. Schwarz:	Masse 
-3. Weiß:	1-Wire serielles Datenprotokoll 
+1. Rot:	 	3-5 V Anschluss,
+2. Schwarz:	Masse
+3. Weiß:	1-Wire serielles Datenprotokoll
 4. Die äußere Kupferader wird an die Drahtabschirmung mit dem Stecker/Gehäuse verlötet.
 
 	**Sensor-Anschluss mit 3-adrigem Kabel: **
-1. Rot:		3-5 V Spannung 
-2. Blau / Schwarz: wird mit Masse verbunden 
+1. Rot:		3-5 V Spannung
+2. Blau / Schwarz: wird mit Masse verbunden
 3. Gelb / Weiß:	1-Wire Datenleitung
 
 Weitere Links:
@@ -1308,7 +1309,7 @@ platform = espressif32
 board = esp32dev
 framework = arduino
 
-; build_flags = 
+; build_flags =
 build_flags = -DCONFIG_WIFI_SSID=\"MYAP\" -DCONFIG_WIFI_PASSWORD=\"MYPASS\"
 
 ; Serial Monitor Options
@@ -1478,7 +1479,7 @@ Tuesday, February 18 2020 16:36:51
   LoRa: assign ISR to DIO0  - default: GWID:0x99, NodeID:0x80
   BeeIoTJoin: Start Joining for a GW
   BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[255]
-  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5,
   LPreamble:12   SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
   LoRaSend: TXData <PkgLen= 29By>
   sendMessage: Start TX
@@ -1541,7 +1542,7 @@ Die Logik der Setup-Bereiche:
 	a. Wenn NTP verfügbar -> read new time => init RTC Modul
 	b. If no NTP: Read time from RTC Module only
 	c. Optional: Start Wifi in HotSpot Mode and start a Web-HTTP service to offer a config page for firsttime init settings
-	-> wait till done 
+	-> wait till done
 12. Init SD Card access -> create new logfile if not detected
 13. Init Lora Module for sending -> join to gateway (OTAA) (if any in range)
 14. Init ePaper Moduel -> Show startframe of BeeIoT
@@ -1588,7 +1589,7 @@ Am Serial Monitor zeigt sie sich so:
   SD: Appending to file: /logdata.txt...Done
   LoRaLog: BeeIoTStatus = 6
   BeeIoTWakeUp()
-  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5, 
+  LoRaCfg: Set Modem/Channel-Cfg[0]: 868100000Mhz, SF=7, TXPwr:14, BW:125000, CR:5,
   LPreamble:12  SW:0x12, CRC, noInvIQ  LoraCfg: StdBy Mode
   BIoT_getmic: Add MIC[4] = xx xx xx xx for Msg[0]
   LoRaSend: TXData <PkgLen= 92By>
@@ -1633,6 +1634,38 @@ Der Logik-Ablauf für die loop() Routine:
 8. Start DeepSleep mode (or just delay loop with blinking LED for test purpose) for 10Min.
 10 back to loop()
 
+
+
+### SensorDaten Übertragungsformat
+Im folgenden Beispiel (Stand 1.4.2021) besteht der Payload der Sensordaten aus einem ASCII Stream (z.B. 82Byte) mit folgendem Format:
+"2021/03/24 22:55:52,31.860,2.37,4.44,19.94,5.25,3.36,0.00,0.00,3.96,82 #2397 o.k." + 0x00
+
+Zur Reduktion des Dutycycles bei der LoRa Übertragung ist ein Binärformat effektiver:
+Daher wird das Streamformat in ein Binärformat wie folgt umgesetzt:
+Datum,Zeit,GewichtBeute,Temp.Extern,TempIntern,Temp.Beute1,Temp.RTC,Batt.ESP3V,Board5V,BattCharge,BattLoad,BattLevel
+
+|Datentyp|Range|ASCII(e.g.81By)|Binär(28+1+\<text> Byte)|
+|-----------|-----------|-------|------|
+|LogID		|0 - 9999	|2397	| uint16_t xxxx	|
+|Datum+Zeit:|<YYYY/MM/DD 24:59:59>|2021/03/24 22:55:52|DateTime format (RTClib.h):|
+|			|			|		| uint8_t yOff < 2000 + yOff|
+|			|			|		| uint8_t mm   < Month 1-12|
+|			|			|		| uint8_t dd   < Day 1-31|
+|			|			|		| uint8_t hh   < Hours 0-23|
+|			|			|		| uint8_t mm   < Minutes 0-59|
+|			|			|		| uint8_t ss   < Seconds 0-59|
+|Gewicht	|0 - 99.999	|31.860	| uint16_t wwww	 < in Gramm|
+|TempExtern	|0 - 99.99	|2.37	| uint16_t ccdd < in Celsius+2digits|
+|TempIntern	|0 - 99.99	|4.44	| uint16_t ccdd < in Celsius+2digits|
+|TempBeute	|0 - 99.99	|19.94	| uint16_t ccdd < in Celsius+2digits|
+|TempRTC	|0 - 99.99	|5.25	| uint16_t ccdd < in Celsius+2digits|
+|BattESP3V	|0 - 9.99	|3.36	| uint16_t vvvv < in mV|
+|Board5V	|0 - 9.99	|5.00	| uint16_t vvvv < in mV	|
+|BattCharge	|0 - 9.99	|0.00	| uint16_t vvvv < in mV	|
+|BattLoad	|0 - 9.99	|3.96	| uint16_t vvvv < in mV	|
+|BattLevel	|0 - 100	|82		| uint8_t	pp	< %|
+|CRC8		|0 - 255	| -		| uint8_t	xx	< CRC8 |
+|Notice		|<asciistream +0x00>|"o.k."| <uint8_t len><asciitext> < 15 chars max.|
 
 
 ### Kalibrierung der Waage
@@ -1690,8 +1723,8 @@ Apache 2 Webserver installieren:
 
 ToDo: "Hier folgt nun die Beschreibung der Webpage Datei: index.html zur darstellung der Datendiagramme mittels Dygraph-library"
 
-Beipiel:  **http://randolphesser.de/imkerei/index.html**  
-=> Menü: Bienenstockwaage 
+Beipiel:  **http://randolphesser.de/imkerei/index.html**
+=> Menü: Bienenstockwaage
 
 
 ## WebUI ToDo - Liste
