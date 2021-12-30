@@ -324,16 +324,16 @@ void drawBitmaps_200x200(){
   int16_t x = (display.width() - 200) / 2;
   int16_t y = (display.height() - 200) / 2;
   drawBitmapFromSD("logo200x200.bmp", x, y);
-  delay(2000);
+  mydelay2(2000);
 }
 
 void drawBitmaps_other(){
   int16_t w2 = display.width() / 2;
   int16_t h2 = display.height() / 2;
   drawBitmapFromSD("parrot.bmp", w2 - 64, h2 - 80);
-  delay(2000);
+  mydelay2(2000);
   drawBitmapFromSD("betty_1.bmp", w2 - 100, h2 - 160);
-  delay(2000);
+  mydelay2(2000);
  }
 
 

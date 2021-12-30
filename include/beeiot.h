@@ -131,36 +131,37 @@
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
 
 // HSPI not used here -> IO ports reused for STd. GPIO
-// #define HSPI_MISO   GPIO_NUM_12    // PIN_NUM_MISO
-// #define HSPI_MOSI   GPIO_NUM_13    // PIN_NUM_MOSI
-// #define HSPI_SCK    GPIO_NUM_14    // PIN_NUM_CLK
-// #define HSPI_CS     GPIO_NUM_15    // PIN_NUM_CS
+// #define HSPI_MISO   GPIO_NUM_12  // PIN_NUM_MISO
+// #define HSPI_MOSI   GPIO_NUM_13  // PIN_NUM_MOSI
+// #define HSPI_SCK    GPIO_NUM_14  // PIN_NUM_CLK
+// #define HSPI_CS     GPIO_NUM_15  // PIN_NUM_CS
 
 // ESP32 default SPI port pins for SD/EPD/BEE:
-#define VSPI_MISO   MISO  // PIN_NUM_MISO    = 19
-#define VSPI_MOSI   MOSI  // PIN_NUM_MOSI    = 23
-#define VSPI_SCK    SCK   // PIN_NUM_CLK     = 18
-#define VSPI_CS     SS    // PIN_NUM_CS      = 5
+#define VSPI_MISO   MISO            // PIN_NUM_MISO    = 19
+#define VSPI_MOSI   MOSI            // PIN_NUM_MOSI    = 23
+#define VSPI_SCK    SCK             // PIN_NUM_CLK     = 18
 
-#define SD_MISO     VSPI_MISO  // SPI MISO -> VSPI = 19
-#define SD_MOSI     VSPI_MOSI  // SPI MOSI -> VSPI = 23
-#define SD_SCK      VSPI_SCK   // SPI SCLK -> VSPI = 18
-#define SD_CS       GPIO_NUM_2 // SD card CS line - arbitrary selection !
+#define VSPI_CS     SS              // PIN_NUM_CS      = 5
+
+#define SD_MISO     VSPI_MISO       // SPI MISO -> VSPI = 19
+#define SD_MOSI     VSPI_MOSI       // SPI MOSI -> VSPI = 23
+#define SD_SCK      VSPI_SCK        // SPI SCLK -> VSPI = 18
+#define SD_CS       GPIO_NUM_2      // SD card CS line - arbitrary selection !
 
 // reused by BEE_RST: Green LED not used anymore
-//#define LED_GREEN   14    // GPIO number of green LED
+//#define LED_GREEN   14            // GPIO number of green LED
 
 // HX711 ADC GPIO Port to Espressif 32 board
-#define HX711_DT    GPIO_NUM_25    // serial dataline
-#define HX711_SCK   GPIO_NUM_26    // Serial clock line
+#define HX711_DT    GPIO_NUM_25     // serial dataline
+#define HX711_SCK   GPIO_NUM_26     // Serial clock line
 
 // Used I2C Port: 0
-#define I2C_PORT	I2C_NUM_0		// Default I2C port for all i2c Devices
-#define I2C_SDA		GPIO_NUM_21    // def: SDA=21	common for all I2C dev.
-#define I2C_SCL		GPIO_NUM_22    // def. SCL=22	common for all I2C dev.
+#define I2C_PORT	I2C_NUM_0	    // Default I2C port for all i2c Devices
+#define I2C_SDA		GPIO_NUM_21     // def: SDA=21	common for all I2C dev.
+#define I2C_SCL		GPIO_NUM_22     // def. SCL=22	common for all I2C dev.
 
 // for ADS only:
-#define ADS_ALERT   GPIO_NUM_27    // arbitrary selection of ALERT line
+#define ADS_ALERT   GPIO_NUM_27     // arbitrary selection of ALERT line
 
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_32
@@ -169,10 +170,10 @@
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 // Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
-#define EPD_MISO	VSPI_MISO 	// SPI MISO -> VSPI
-#define EPD_MOSI	VSPI_MOSI 	// SPI MOSI -> VSPI
-#define EPD_SCK		VSPI_SCK  	// SPI SCLK -> VSPI
-#define EPD_CS		GPIO_NUM_5  // SPI SS   -> VSPI
+#define EPD_MISO	VSPI_MISO 	    // SPI MISO -> VSPI
+#define EPD_MOSI	VSPI_MOSI 	    // SPI MOSI -> VSPI
+#define EPD_SCK		VSPI_SCK     	// SPI SCLK -> VSPI
+#define EPD_CS		GPIO_NUM_5      // SPI SS   -> VSPI
 #ifdef WROVERB					// If ESP32 WROVERB is used IO16+17 are internally used.
 #define EPD_DC    GPIO_NUM_15		// DC use of LED_RED IO PIN !
 #define EPD_RST   GPIO_NUM_4		// RST use of EPD_BUSY PIN !
@@ -190,14 +191,14 @@
 #define EPD_KEY4  GPIO_NUM_35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
 
 // LoRa-Bee Board
-#define BEE_MISO VSPI_MISO	// SPI MISO -> VSPI:	19
-#define BEE_MOSI VSPI_MOSI	// SPI MOSI -> VSPI:	23
-#define BEE_SCK  VSPI_SCK	// SPI SCLK -> VSPI: 	18
-#define BEE_CS   GPIO_NUM_12	// CS = NSS
-#define BEE_RST	 GPIO_NUM_14  	//
-#define BEE_DIO0 GPIO_NUM_33	// RXDone, TXDone - Main Lora_Interrupt line
-#define BEE_DIO1 GPIO_NUM_13	// RXTout - FSK
-#define BEE_DIO2 GPIO_NUM_34	// not used by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
+#define BEE_MISO VSPI_MISO	        // SPI MISO -> VSPI:	19
+#define BEE_MOSI VSPI_MOSI	        // SPI MOSI -> VSPI:	23
+#define BEE_SCK  VSPI_SCK	        // SPI SCLK -> VSPI: 	18
+#define BEE_CS   GPIO_NUM_12	    // CS = NSS
+#define BEE_RST	 GPIO_NUM_14  	    //
+#define BEE_DIO0 GPIO_NUM_33	    // RXDone, TXDone - Main Lora_Interrupt line
+#define BEE_DIO1 GPIO_NUM_13	    // RXTout - FSK
+#define BEE_DIO2 GPIO_NUM_34	    // not used by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
 
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
@@ -239,17 +240,17 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4170 // mV
-    #define BATTERY_MIN_LEVEL        3200 // mV
-    #define BATTERY_SHUTDOWN_LEVEL   3170 // mV
+    #define BATTERY_MAX_LEVEL        4170 // mV	= 100%
+    #define BATTERY_MIN_LEVEL        3200 // mV =  33%
+    #define BATTERY_SHUTDOWN_LEVEL   2700 // mV =   0%
 #endif
 
 
 //*******************************************************************
 // Global data declarations
 //*******************************************************************
-#define DROWNOTELEN	129
-#define LENTMSTAMP	20
+#define DROWNOTELEN	129			// max. Data set notice string length
+#define LENTMSTAMP	20			// length of date & time string in RTC-format
 typedef struct {				// data elements of one log line entry
     int     index;
     char  	timeStamp[LENTMSTAMP]; // time stamp of sensor row  e.g. 'YYYY\MM\DD HH:MM:SS'
@@ -263,14 +264,14 @@ typedef struct {				// data elements of one log line entry
 	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5000mV
 	int16_t BattLoad;			// Battery voltage level (typ. 3700 mV)
 	int16_t BattLevel;			// Battery Level in % (3200mV (0%) - 4150mV (100%))
-	char	 comment[DROWNOTELEN];
+	char	 comment[DROWNOTELEN]; // free notice text string to GW
 } datrow;
 
 #define datasetsize	4			// max. # of dynamic dataset buffer: each for "looptime" seconds
 #define LENFDATE 	21			// length of ISO8601 TimeSTamp (BIoTWan.h)
-#define LENDATE		11
-#define LENTIME		9
-#define LENIPADDR	16
+#define LENDATE		11			// YYYY\MM\DD + \0
+#define LENTIME		9			// HH:MM:SS + \0
+#define LENIPADDR	16			// xxx:yyy:zzz:aaa + \0
 typedef struct {
 	// save timestamp of last datarow entry:
 	struct tm	stime;			// structure time supp. by time.h
@@ -289,7 +290,7 @@ typedef struct {
 	esp_chip_info_t chipTYPE;	// get chip board type and revision -> relevant for sytem API vaildation
 	datrow	dlog[datasetsize];	// all sensor logs till upload to server
 	// for beacon mode
-	int		rssi;
+	int		rssi;				// LoRa Quality metrics of current transfer
 	int		snr;
 } dataset;
 
@@ -342,7 +343,8 @@ int 	GetOWsensor	(int sample);
 
 // in main.cpp
 void	Logdata     (void);
-void	mydelay		(int32_t tval);
+void	mydelay		(int32_t tval);	// Busy loop delay method (tval in ms)
+void	mydelay2	(int32_t tval);	// light sleep delay method (tval in ms)
 
 // in max123x.cpp
 uint16_t adc_read(int channel);

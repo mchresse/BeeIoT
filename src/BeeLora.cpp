@@ -336,7 +336,7 @@ int BeeIoTJoin(byte joinstatus){
 beeiot_join_t * pjoin;  // ptr. on JOIN message format field (reusing global MyTXData buffer)
 int i;
 int rc;
-int cmd;	// return from beeiotparse()
+int cmd=0;	// return from beeiotparse()
 
 pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
 
@@ -391,13 +391,14 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
     while (!BeeIotRXFlag && (i<MAXRXACKWAIT*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        delay(500);            // count wait time in msec. -> frequency to check RXQueue
+        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
     // notice # of JOIN Retries
     if(LoRaCfg.joinRetryCount++ == 10){ // max. # of acceptable JOIN Requests reached ?
-      report_interval *= 2;    		// wait 10-times longer to try again for saving power
-      BHLOG(LOGLORAW) Serial.printf("\n  BeeIoTJoin: After %i retries: Reduce Retry frequency to every %isec.",
+// 30.12.2021: keep report_interval of initial 1 minute -> otherwise retry counter increase too much.
+//      report_interval *= 2;    		// wait 10-times longer to try again for saving power
+      BHLOG(LOGLORAW) Serial.printf("\n  BeeIoTJoin: After %i retries: Reduce Retry frequency to every %i sec.",
             LoRaCfg.joinRetryCount, report_interval);
       LoRaCfg.joinRetryCount = 0;
     };        // report_interval will be reinitialized by CONFIG with successfull JOIN request
@@ -624,7 +625,7 @@ int rc;       // generic return code
  		BeeIoTStatus = BIOT_JOIN;	// anyway next must be a JOIN Request (no Rejoin anymore)
     	return(-96);                // by now no gateway in range -> try again later
     }
-	delay(1000);		// gracetime for GW to prepare modem on new channel
+	mydelay2(1000);		// gracetime for GW to prepare modem on new channel
   }
 
   // 2. Prepare TX package with LogStatus data
@@ -690,7 +691,7 @@ int rc;       // generic return code
     ackloop=0;                        // preset RX-ACK wait loop counter
     while(!MyMsg.ack){                // wait till TX got committed by ACK
       BHLOG(LOGLORAW) Serial.print(".");
-      delay(MSGRESWAIT);              // min. wait time for ACK to arrive -> polling rate
+      mydelay2(MSGRESWAIT);              // min. wait time for ACK to arrive -> polling rate
 
       // 8. Check for ACK Wait Timeout
       if(ackloop++ > MAXRXACKWAIT){   // max # of wait loops reached ? -> yes, ACK RX timed out
@@ -755,7 +756,7 @@ int rc;       // generic return code
     BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX1 Pkg. (RXCont):");
     while (!BeeIotRXFlag & (ackloop < WAITRX1PKG*2)){  // wait till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        delay(500);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
+        mydelay2(500);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
         ackloop++;
     }
 

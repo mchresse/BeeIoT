@@ -470,7 +470,7 @@ void loop() {
 				     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
         {  // if we have just started lets do it again to get right values
             GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-            delay(200);									// wait 200ms for OW bus recovery
+            mydelay2(200);								// sleep 200ms for OW bus recovery
             if (retry++ == ONE_WIRE_RETRY){
               BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
               break;
@@ -667,6 +667,14 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
   return;
 }
 
+//*******************************************************************
+/// @brief Simple Wait - Busy loop method
+/// @param tval 	waittime in millisec
+/// @param Getdata	Flag from GPIO35-BlueKey-ISR routine =1 -> stop busy loop
+/// @details
+///		250ms busy loop: lets blink Red LED each 0,5sec.
+/// @return void
+//*******************************************************************
 void mydelay(int32_t tval){
   int fblink = tval / 1000;   // get # of seconds == blink frequence
   int i;
@@ -688,6 +696,34 @@ void mydelay(int32_t tval){
 	}
   } // loop
 }
+
+//*******************************************************************
+/// @brief Simple Wait - by light sleep method: MM keeps active
+/// @param waittime 	waittime in millisec
+/// @details
+/// 	ESP32 to enter light sleep mode
+/// 	GPIO35-BlueKey configured as async wakup trigger
+/// @return void
+//*******************************************************************
+void mydelay2(int32_t waittime){
+esp_err_t rc;
+	BHLOG(LOGBH) Serial.printf("  Main-Dly2: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+	gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
+	esp_sleep_enable_gpio_wakeup();
+
+	// Configure the wake up timer source
+	esp_sleep_enable_timer_wakeup(waittime * 1000);	// time in us
+
+	rc = esp_light_sleep_start();
+	if(rc != ESP_OK){
+		BHLOG(LOGBH) Serial.printf("  Main-Dly2: LightSleep failed: %i\n", rc);
+		delay(5000);	// wait some time to show the message
+		// ToDo: what to do i this error case ???
+	}
+
+	return;
+}
+
 
 //*******************************************************************
 /// @brief initialize static configuration settings of housekeeping data
@@ -970,7 +1006,8 @@ esp_err_t  rc;
 			rc = esp_light_sleep_start();
 			if(rc != ESP_OK){
 				BHLOG(LOGBH) Serial.printf("  Main: LightSleep failed: %i\n", rc);
-				delay(5000);
+				delay(5000);	// wait some time to show the message
+				// ToDo: what to do i this error case ???
 			}
 
 			BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
