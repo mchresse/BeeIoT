@@ -202,21 +202,21 @@
 
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
-#define LOGBH		1		// 1:   Behive Setup & Loop program flow control
-#define LOGOW		2		// 2:   1-wire discovery and value read
-#define LOGHX		4		// 4:   HX711 init & get values
-#define LOGEPD		8		// 8:   ePaper init & control
-#define LOGLAN		16		// 16:  Wifi init & LAN Import/export in all formats and protocols
-#define LOGSD		32		// 32:  SD Card & local data handling
-#define LOGADS		64              // 64:  ADS BMS monitoring routines /w ADS1115S
-#define LOGSPI		128		// 128: SPI Init
-#define LOGLORAR	256		// 256: LoRa Init: Radio class
-#define LOGLORAW	512		// 512: LoRa Init: BeeIoT-WAN (NwSrv class)
-#define LOGQUE		1024	//1024: MsgQueue & MsgBuffer class handling
-#define LOGJOIN		2048	//2048: JOIN service class
-#define LOGBIOT		4096	//4096: BIoT	Application class
-#define LOGGH		8192	//8192: GH		Application class
-#define LOGTURTLE  16384	//16384:Turtle	Application class
+#define LOGBH		1		//    1: Behive Setup & Loop program flow control
+#define LOGOW		2		//    2: 1-wire discovery and value read
+#define LOGHX		4		//    4: HX711 init & get values
+#define LOGEPD		8		//    8: ePaper init & control
+#define LOGLAN		16		//   16: Wifi init & LAN Import/export in all formats and protocols
+#define LOGSD		32		//   32: SD Card & local data handling
+#define LOGADS		64      //   64: ADS BMS monitoring routines /w ADS1115S
+#define LOGSPI		128		//  128: SPI Init
+#define LOGLORAR	256		//  256: LoRa Init: Radio class
+#define LOGLORAW	512		//  512: LoRa Init: BeeIoT-WAN (NwSrv class)
+#define LOGQUE		1024	// 1024: MsgQueue & MsgBuffer class handling
+#define LOGJOIN		2048	// 2048: JOIN service class
+#define LOGBIOT		4096	// 4096: BIoT	Application class
+#define LOGGH		8192	// 8192: GH		Application class
+#define LOGTURTLE  16384	//16384: Turtle	Application class
 
 //#define RELMODE
 #ifdef RELMODE

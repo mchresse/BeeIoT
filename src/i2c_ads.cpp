@@ -83,8 +83,7 @@ uint16_t ads_read(int channel);
 int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 #ifdef  ADS_CONFIG
 	uint16_t val;
-
-	BHLOG(LOGADS) Serial.println("  ADS: Init I2C ADS device & Alert line");
+	BHLOG(LOGADS) Serial.printf("  ADS: Init I2C ADS device & Alert line\n");
 	pinMode(ADS_ALERT, INPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
 	gpio_hold_dis((gpio_num_t) ADS_ALERT);  // enable ADS_ALERT for Dig.-IO I2C Master Mode
 
@@ -93,6 +92,7 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
     	adcaddr == ADS111X_ADDR_SDA || adcaddr == ADS111X_ADDR_SCL){
 		BHLOG(LOGADS) Serial.printf("  ADS: ADC ADS1115 detected at port: 0x%02X\n", adcaddr);
 	}else{
+		// no ADS111x found
 		return(0);
 	}
 

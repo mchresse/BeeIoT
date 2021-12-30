@@ -256,7 +256,7 @@ int rc;		// generic return code variable
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 04/2021\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 01/2021\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -274,17 +274,17 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // I2C_master() has to be started always before setup_rtc() and setup_i2c_ADC/MAX()
-  BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init/Scan");
+  BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init & Scan");
   isi2c = setup_i2c_master(ReEntry);
   if (!isi2c){
-    BHLOG(LOGBH) Serial.println("  Setup: I2c Master port failed ");
+    BHLOG(LOGBH) Serial.println("         I2c Master port failed ");
     // enter here exit code, if needed
   }
 
 //***************************************************************
 	BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
 		if (!setup_rtc(ReEntry)){
-			BHLOG(LOGBH) Serial.printf("  Setup: RTC setup failed\n");
+			BHLOG(LOGBH) Serial.println("         RTC setup failed");
 			// enter exit code here, if needed (monitoring is hard without correct timestamp)
 			// isrtc should be 0 here; hopefully NTP can help out later on
 		}else{
@@ -301,14 +301,14 @@ int rc;		// generic return code variable
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
   issdcard = setup_spi_VSPI(ReEntry);
   if (!issdcard){
-    BHLOG(LOGBH) Serial.println("  Setup: SPI SD setup failed.");
+    BHLOG(LOGBH) Serial.println("         SPI SD setup failed.");
     // enter here exit code, if needed
   }
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell");
   if (!setup_hx711Scale(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell setup failed");
+    BHLOG(LOGBH) Serial.println("         HX711 setup failed");
     // enter here exit code, if needed
   }
 
@@ -317,13 +317,13 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 // only one ADC dev. type accepted -> as set by adcaddr in i2c_scan()
   	BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
 	if (!setup_i2c_ADS(ReEntry)){
-    	BHLOG(LOGBH) Serial.println("  Setup: ADS11x5 setup failed");
+    	BHLOG(LOGBH) Serial.println("         ADS11x5 setup failed");
     	// enter here exit code, if needed
 	}
 	//***************************************************************
 	BHLOG(LOGBH) Serial.println("  Setup: ADC MAX123x");
 	if (!setup_i2c_MAX(ReEntry)){  // MAX123x constructor
-  		BHLOG(LOGBH) Serial.println("  Setup: MAX123x setup failed");
+  		BHLOG(LOGBH) Serial.println("         MAX123x setup failed");
    		// enter here exit code, if needed
 	}
 }
@@ -333,13 +333,13 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 // setup Wifi & NTP & RTC time & Web service
   BHLOG(LOGBH) Serial.println("  Setup: Wifi in Station Mode");
   if (!setup_wifi(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: Wifi setup failed -> Skip NTP");
+    BHLOG(LOGBH) Serial.println("         Wifi setup failed -> Skip NTP");
     // enter exit code here, if needed
     // probably we are LOOPTIME ahead ?!
     // recalc bhdb "timestamp+LOOPTIME"  here
   }else{  // WIFI connected
     if (!setup_ntp(ReEntry)){
-      BHLOG(LOGBH) Serial.println("  Setup: NTP setup failed");
+      BHLOG(LOGBH) Serial.println("         NTP setup failed");
       isntp = 0;
       // enter exit code here, if needed
       // NTP requires connected WIFI ! -> check iswifi also
@@ -347,7 +347,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
       BHLOG(LOGLAN) Serial.println("  Setup: Get new Date & Time:");
       rc = ntp2rtc();
 	  if(rc <0){       // init RTC time once at restart
-      	BHLOG(LOGLAN) Serial.printf("  ntp2rtc failed (%i)", rc);
+      	BHLOG(LOGLAN) Serial.printf("         ntp2rtc failed (%i)", rc);
 	  }
     }
 
@@ -370,7 +370,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: LoRa SPI device & Base layer");
   if (!setup_LoRa(ReEntry)){
-    BHLOG(LOGBH) Serial.println("  Setup: LoRa Base layer setup failed");
+    BHLOG(LOGBH) Serial.println("         LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
 
@@ -378,7 +378,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
   if (setup_owbus(ReEntry) == 0){
-    BHLOG(LOGBH) Serial.println("  Setup: No OneWire devices found");
+    BHLOG(LOGBH) Serial.println("         No OneWire devices found");
     // enter exit code here, if needed
   }else{
     // GetOWsensor(0); // read temperature the first time
@@ -386,12 +386,11 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 //***************************************************************
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
   if (!setup_epd(ReEntry)){
-    BHLOG(LOGBH)Serial.println("  Setup: ePaper Test failed");
+    BHLOG(LOGBH)Serial.println("         ePaper Test failed");
     // enter exit code here, if needed
   }
 
 //***************************************************************
-  BHLOG(LOGBH) Serial.println("Setup Phase done");
   Serial.println(" ");
 
 // while(1);  // for setup test purpose
@@ -418,12 +417,11 @@ void loop() {
 
   BHLOG(LOGBH) Serial.println(">************************************************<");
   BHLOG(LOGBH) Serial.println("> Start next BeeIoT Weight Scale loop");
-  BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n",
+  BHLOG(LOGBH) Serial.printf ("> Loop# %i  (Laps: %i, BHDB[%i]) %s\n\n",
 		bhdb.loopid + (bhdb.laps*datasetsize), bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
-  BHLOG(LOGBH) Serial.println(">************************************************<");
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-  sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.");
+  sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.  ");
 
 
 //***************************************************************
@@ -707,7 +705,7 @@ void mydelay(int32_t tval){
 //*******************************************************************
 void mydelay2(int32_t waittime){
 esp_err_t rc;
-	BHLOG(LOGBH) Serial.printf("  Main-Dly2: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+	// BHLOG(LOGBH) Serial.printf("  Main-Dly2: Light Sleep - Trigger: Timer(%i ms) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 	gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 	esp_sleep_enable_gpio_wakeup();
 
@@ -980,23 +978,23 @@ esp_err_t  rc;
 
       		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
       		// Otherwise power it down.
-    		BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
+    	//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
     		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
     		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
     		gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
 			esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
-    		BHLOG(LOGBH) Serial.printf("  Main: Going to Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but
 			// deep sleep was started, it will sleep forever unless hardware reset occurs.
 			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
 
-			BHLOG(LOGBH) Serial.println("  Main: This will never be printed");
+			BHLOG(LOGBH) Serial.println("  Main: This should never be printed");
 			break;
 
 		case 2:		// LightSleepMode
-			BHLOG(LOGBH) Serial.printf("  Main: Going to Light Sleep now - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+			BHLOG(LOGBH) Serial.printf("  Main: Light Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 			gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 			esp_sleep_enable_gpio_wakeup();
 
@@ -1010,7 +1008,7 @@ esp_err_t  rc;
 				// ToDo: what to do i this error case ???
 			}
 
-			BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
+			// BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
 			break;
 
 		case 3:		// ModemSleepMode

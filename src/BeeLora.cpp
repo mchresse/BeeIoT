@@ -391,7 +391,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
     while (!BeeIotRXFlag && (i<MAXRXACKWAIT*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
+        delay(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
     // notice # of JOIN Retries
@@ -1006,9 +1006,9 @@ int rc;
     // yearoff = base to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
-    Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
       report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
-    Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
       2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
     rc=CMD_CONFIG;

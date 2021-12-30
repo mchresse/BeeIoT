@@ -127,7 +127,7 @@ esp_err_t i2c_dev_write(const i2c_dev_t *dev, const void *out_reg, size_t out_re
     i2c_master_stop(cmd);
     esp_err_t res = i2c_master_cmd_begin(dev->port, cmd, I2CDEV_TIMEOUT / portTICK_RATE_MS);
     if (res != ESP_OK)
-        BHLOG(LOGADS) Serial.printf("  ADS: Could not write to device [0x%02x at %d]: %d", dev->addr, dev->port, res);
+        BHLOG(LOGADS) Serial.printf("  I2C: Could not write to device [0x%02x at %d]: %d", dev->addr, dev->port, res);
     i2c_cmd_link_delete(cmd);
 
     return res;
@@ -149,8 +149,8 @@ int i2c_scan(void) {
 	int i;
 	esp_err_t esprc;
 	i2c_cmd_handle_t cmd;
-	Serial.printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
-	Serial.printf("00:         ");
+	BHLOG(LOGADS) Serial.printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
+	BHLOG(LOGADS) Serial.printf("00:         ");
 
 	for (i=3; i< 0x78; i++) {
 		cmd = i2c_cmd_link_create();
@@ -160,10 +160,10 @@ int i2c_scan(void) {
 
 		esprc = i2c_master_cmd_begin(i2c_master_port, cmd, 10/portTICK_PERIOD_MS);
 		if (i%16 == 0) {
-			Serial.printf("\n%.2x:", i);
+			BHLOG(LOGADS) Serial.printf("\n%.2x:", i);
 		}
 		if (esprc == 0) {
-			Serial.printf(" %.2x", i);
+			BHLOG(LOGADS) Serial.printf(" %.2x", i);
 			// if ADC: ADS111x overrules MAX123x by intention asking in that order
 			if(i==MAX_ADDR) {
 				isadc=1; adcaddr = i;	// remember ADS I2C dev.addr
@@ -176,14 +176,14 @@ int i2c_scan(void) {
 				isrtc=i;				// remember RTC Presence -> use RTC_ADDR
 			}
 		} else {
-			Serial.printf(" --");
+			BHLOG(LOGADS) Serial.printf(" --");
 		}
 
 		//ESP_LOGD(tag, "i=%d, rc=%d (0x%x)", i, espRc, espRc);
 		i2c_cmd_link_delete(cmd);
 	}
 
-	Serial.printf("\n");
+	BHLOG(LOGADS) Serial.printf("\n");
 
 	return(isadc);
 }
