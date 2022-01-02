@@ -31,7 +31,7 @@
 #include "i2c_ads.h"
 
 // #include <Wire.h>
-#include <Adafruit_ADS1015.h>
+#include <Adafruit_ADS1x15.h>
 //Adafruit_ADS1115 ads(ADS_ADDR); 		// 16-bit ADC version, ADDR pin = Gnd
 
 extern uint16_t	lflags;      			// BeeIoT log flag field
