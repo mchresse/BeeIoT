@@ -5,7 +5,7 @@
 // Description:
 // BeeIoT-WAN - Lora package flow definitions
 //
-// Created on 17. Januar 2020, 16:13
+// Created on 08. Januar 2022, 12:58
 //----------------------------------------------------------
 // Copyright (c) 2019-present, Randolph Esser
 // All rights reserved.
@@ -23,7 +23,7 @@ using namespace std;
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		6		// Minor
+#define BIoT_VMINOR		7		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -40,6 +40,7 @@ using namespace std;
 // 1.5  28.01.2021  Add new RESET command
 // 1.6  03.04.2021	Add DSENSOR Command + biot_dsensor_t -> Sensor Data in Binary format
 //					Add weight-offset to devcfg_t
+// 1.7  08.01.2022  add RX-cmd + SD-dir + SD-data package definition
 //
 //***********************************************
 // LoRa MAC Presets
@@ -111,7 +112,7 @@ enum {
 	CMD_JOIN =0,	// JOIN Request to GW (e.g. register NodeID)
 	CMD_REJOIN,		// REJOIN Request to GW (Connection got lost -> restart with Default Cfg Channel)
 	CMD_LOGSTATUS,	// process Sensor log data set in ASCII Format
-	CMD_GETSDLOG,	// one more line of SD card log file
+	CMD_GETSDLOG,	// get one more line of SD card log file from node (chunk of 116 By.)
 	CMD_RETRY,		// Tell target: Package corrupt, do it again
 	CMD_ACK,		// Received message complete
 	CMD_CONFIG,		// exchange new set of runtime configuration parameters
@@ -122,6 +123,7 @@ enum {
 	CMD_RESET,		// Reset GW->Node: reset counter, clear SD, initiate JOIN
 	CMD_NOP,		// do nothing -> for xfer test purpose
 	CMD_DSENSOR,	// process Sensor log data set in binary format
+	CMD_GETSDDIR	// get one more line(string) of SD directory structure (1..254)
 };
 
 #ifndef BEEIOT_ACTSTRINGS
@@ -133,7 +135,7 @@ const char * beeiot_ActString[] = {
 	[CMD_JOIN]		= "JOIN",
 	[CMD_REJOIN]	= "REJOIN",
 	[CMD_LOGSTATUS]	= "LOGSTATUS",
-	[CMD_GETSDLOG]	= "GETSDLOG",
+	[CMD_GETSDLOG]	= "GETSDDATA",
 	[CMD_RETRY]		= "RETRY",
 	[CMD_ACK]		= "ACK",
 	[CMD_CONFIG]	= "CONFIG",
@@ -143,7 +145,8 @@ const char * beeiot_ActString[] = {
 	[CMD_TIME]		= "GETTIME",
 	[CMD_RESET]		= "RESET",
 	[CMD_NOP]		= "NOP",
-	[CMD_DSENSOR]	= "DSENSOR"
+	[CMD_DSENSOR]	= "DSENSOR",
+	[CMD_GETSDDIR]	= "GETSDDIR"
 };
 #endif
 
@@ -295,20 +298,48 @@ typedef struct {
 } biot_dsensor_t;
 
 //***************************
-// SDLOG-CMD Pkg:
-// xfer of large bin files with max. raw size: 255 * (BEEIOT_DLEN-2)
-// e.g. 65535 * (0x80-5-2) = 7.929.735 Byte = 7743kB max value
+// RX1-CMD Pkg:	(GW -> Node)
+// RX1-Request cmd Byte (in Header) + max. 3 Parameters
+typedef struct {
+	uint8_t	cmdp1;				// Cmd package parameter 1
+	uint8_t	cmdp2;				// Cmd package parameter 2
+	uint8_t	cmdp3;				// Cmd package parameter 3
+} cmd_param_t;
+
+typedef struct {
+	beeiot_header_t hd;			// BeeIoT common Pkg Header incl. CMd code
+	cmd_param_t	p;				// optional command parameter
+	uint8_t	mic[BIoT_MICLEN];	// Cmd pkg integrity code for complete 'beeiot_sd_t' (except MIC itself)
+								// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
+								// MIC = cmacS[0..3]
+} beeiot_cmd_t;
+
+//***************************
+// SDDIR-Data Pkg:	(sent by request on RX1 Cmd Pkg: 'GetSDDir' cmd.
+// xfer of a SD Directory structure string
+#define SDDIRLEN	BIoT_FRAMELEN-1
+typedef struct {
+	beeiot_header_t hd;			// BeeIoT common Pkg Header
+	uint8_t	sddir_seq;			// Sequence of dir string (1..max. 0xFE, 0xFF = last one)
+	char	sddir[SDDIRLEN];	// raw SD directory string incl. final EOL(/0) of curr. sequence
+	// MIC: pkg integrity code for header + payload (except MIC itself)
+								// MIC = cmacS[0..3] = aes128_cmac(SNwkSIntKey, B1 | msg)
+} beeiot_sddir_t;
+
+//***************************
+// SDLOG-Data Pkg:	(sent by request on RX1 Cmd Pkg: 'GetSDLog' cmd.
+// xfer of large bin files with max. raw size: 255(MSB)*255(LSB) * (BIoT_FRAMELEN-2)
+// e.g. 65535 * (0x80-6-4-2) = 7.602.060 Byte = 7.423,8kB max value (PkgLen - HDR-SQCnt-MIC)
+#define SDDATLEN	BIoT_FRAMELEN-2	// length of raw data
+#define BEEIOT_SDNPAR		1	// one big binary data package
 typedef struct {
 	beeiot_header_t hd;			// BeeIoT common Pkg Header
 	uint8_t	sdseq_msb;			// MSB: data package sequence number: 0-65535 * (BIoT_FRAMELEN-2)
 	uint8_t	sdseq_lsb;			// LSB data pkg. sequ. number
-	char	dsd[BIoT_FRAMELEN-2];	// raw SD data per sequ. pkg - len of 2 By. sdseq counter
-	uint8_t	mic[BIoT_MICLEN];	// pkg integrity code for complete 'beeiot_status_t' (except MIC itself)
-								// cmacS = aes128_cmac(SNwkSIntKey, B1 | msg)
-								// MIC = cmacS[0..3]
+	char	dsd[SDDATLEN];	// raw SD data per sequ. pkg - len of 2 By. sdseq counter (msb+lsb)
+	// MIC: pkg integrity code for header + payload (except MIC itself)
+								// MIC = cmacS[0..3] = aes128_cmac(SNwkSIntKey, B1 | msg)
 } beeiot_sd_t;
-#define BEEIOT_SDNPAR		1	// one big binary data package
-#define BEEIOT_MAXDSD		BEEIOT_DLEN-1	// length of raw data
 
 //***************************
 // ACK & RETRY & NOP & RESET - CMD Pkg:

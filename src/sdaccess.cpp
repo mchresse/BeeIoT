@@ -1,5 +1,5 @@
 //*******************************************************************
-// SDaccess.cpp  
+// SDaccess.cpp
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -7,7 +7,7 @@
 //
 //-------------------------------------------------------------------
 // This file is distributed under the BSD-3-Clause License
-// The complete license agreement can be obtained at: 
+// The complete license agreement can be obtained at:
 //     https://github.com/mchresse/BeeIoT/license
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
@@ -42,38 +42,40 @@
 #include "sdcard.h"
 
 #include "beeiot.h"
+#include "BeeIotWan.h"
 extern uint16_t	lflags;      // BeeIoT log flag field
 
 //*******************************************************************
 // SD Access Routines
 //*******************************************************************
 
-void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
-    BHLOG(LOGSD) Serial.printf("  SD: List directory: %s\n", dirname);
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels, char * fileline ){
+    BHLOG(LOGSD) Serial.printf("  SD: List directory: '%s'\n", dirname);
 
     File root = fs.open(dirname);
     if(!root){
-        Serial.printf("  SD: Failed to open directory '%s'\n", dirname);
+        BHLOG(LOGSD) Serial.printf("  SD: Failed to open directory '%s'\n", dirname);
         return;
     }
     if(!root.isDirectory()){
-        Serial.printf("  SD: '%s' is not a directory\n", dirname);
+        BHLOG(LOGSD) Serial.printf("  SD: '%s' is not a directory\n", dirname);
         return;
     }
 
     File file = root.openNextFile();
     while(file){
         if(file.isDirectory()){
-            Serial.print("    DIR : ");
-            Serial.println(file.name());
+            BHLOG(LOGSD) Serial.print("    DIR : ");
+            BHLOG(LOGSD) Serial.println(file.name());
             if(levels){
-                listDir(fs, file.name(), levels -1);
+                listDir(fs, file.name(), levels-1, fileline);
             }
         } else {
-            Serial.print("      FILE: ");
-            Serial.print(file.name());
-            Serial.print("  SIZE: ");
-            Serial.println(file.size());
+			snprintf(fileline, (size_t) SDDIRLEN, "  FILE: %s, SIZE: %d", file.name(), file.size());
+            BHLOG(LOGSD) Serial.print("      FILE: ");
+            BHLOG(LOGSD) Serial.print(file.name());
+            BHLOG(LOGSD) Serial.print("  SIZE: ");
+            BHLOG(LOGSD) Serial.println(file.size());
         }
         file = root.openNextFile();
     }
@@ -84,7 +86,7 @@ void createDir(fs::FS &fs, const char * path){
     if(fs.mkdir(path)){
         BHLOG(LOGSD) Serial.println("  SD: Dir created");
     } else {
-        Serial.println("  SD: mkdir failed");
+        BHLOG(LOGSD)Serial.println("  SD: mkdir failed");
     }
 }
 
@@ -102,7 +104,7 @@ void readFile(fs::FS &fs, const char * path){
 
     File file = fs.open(path);
     if(!file){
-        Serial.println("  SD: Failed to open file for reading");
+        BHLOG(LOGSD) Serial.println("  SD: Failed to open file for reading");
         return;
     }
 
@@ -137,6 +139,22 @@ void appendFile(fs::FS &fs, const char * path, const char * message){
         return;
     }
     if(file.print(message)){
+        BHLOG(LOGSD) Serial.println("...Done");
+    } else {
+        Serial.println("  SD: Print to file failed");
+    }
+    file.close();
+}
+
+void appendBinFile(fs::FS &fs, const char * path, const uint8_t* message, size_t length){
+    BHLOG(LOGSD) Serial.printf("  SD: Appending to bin file: %s", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("  SD: ...Open file failed");
+        return;
+    }
+    if(file.write(message, length)){
         BHLOG(LOGSD) Serial.println("...Done");
     } else {
         Serial.println("  SD: Print to file failed");

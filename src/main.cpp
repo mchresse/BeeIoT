@@ -183,8 +183,10 @@ void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
 void get_efuse_ident(void);
-void ResetNode(void);
 void wiretest();
+void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
+
+extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
 
 
@@ -248,7 +250,7 @@ int rc;		// generic return code variable
 	if(!ReEntry) {
     // Define Log level (search for Log values in beeiot.h)
     // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = LOGBH;
+		lflags = 0;
 	//	lflags = 65535;
 	// works only in setup phase till LoRa-JOIN received Cfg data
 	// final value will be defined in BeeIoTParseCfg() by GW config data
@@ -609,6 +611,17 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 	}
 
 	dsensor.crc8	=0x00;	//t.b.d -> CRC8 calculation
+
+#ifndef BEACON
+size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
+  // Write the sensor readings onto the SD card
+  if(issdcard){
+    appendBinFile(SD, SDLOGPATH, (const uint8_t*) &dsensor, dslen);
+  }else{
+    BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
+  }
+#endif	// BEACON
+
 #else
 // Create Status Report based on the sensor readings
   dataMessage =
@@ -627,7 +640,6 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
               String(sample) + " " +
               String(bhdb.dlog[bhdb.loopid].comment) +
               "\r\n";       // OS common EOL: 0D0A
-
 #ifndef BEACON
   Serial.printf("  Loop[%i]: ", sample);
   Serial.print(dataMessage);
@@ -641,6 +653,10 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 #endif	// BEACON
 #endif	// DSENSOR2
 
+#ifndef BEACON
+#endif	// BEACON
+
+
 
   // Send Sensor report via BeeIoT-LoRa ...
   if(islora){  // do we have an active connection (joined ?)
@@ -652,7 +668,6 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 #ifdef DMSG
     LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
 #else
-	int dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
     LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
 #endif // DMSG
 
@@ -1122,8 +1137,9 @@ void get_efuse_ident(void) {
 /// @brief - initiate JOIN for new cfg. data
 /// @return void	But GW expects JOIN request  on defjoin channel
 //*******************************************************************
-void ResetNode(void){
-
+void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
+	// Reset SD Card: P1=1: LogFile, P1=2: Directory
+	sd_reset(sdlevel);
 }
 
 

@@ -136,8 +136,12 @@ int  sendMessage	(beeiotpkg_t * TXData, int sync);
 void onReceive		(int packetSize);
 void BIoT_getmic  (beeiotpkg_t * pkg, int dir, byte * mic);
 extern void LoRaMacJoinComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic );
-extern void ResetNode(void);
+// in main()
+extern void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
 void hexdump(unsigned char * msg, int len);
+
+// in sdcard.cpp
+extern int sd_get_dir(uint8_t p1, uint8_t p2, uint8_t p3, char * dirline);
 
 
 //*********************************************************************
@@ -776,7 +780,7 @@ int rc;       // generic return code
     // 13. Either RX1 job received
     // or RETRY / REJOIN as Ack from previous TX session
     }else{  // new pkg received -> process it
-      BHLOG(LOGLORAR) Serial.printf("  LoRaLog: add. Pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]);
+      BHLOG(LOGLORAW) Serial.printf("  LoRaLog: add. Pkg received: %s\n", beeiot_ActString[MyRXData[RXPkgSrvIdx].hd.cmd]);
       BHLOG(LOGLORAR) Serial.printf("  LoRaLog: RX Queue Status: SrvIdx:%i, IsrIdx:%i, new PkgID:%i, RXFlag:%i\n",
                         RXPkgSrvIdx, RXPkgIsrIdx, MyRXData[RXPkgSrvIdx].hd.pkgid, BeeIotRXFlag);
 
@@ -852,6 +856,8 @@ int rc;       // generic return code
 //******************************************************************************
 int BeeIoTParse(beeiotpkg_t * msg){
 ackbcn_t * ackbcn;  // ptr. on ack data of beacon
+beeiot_cmd_t * rx1pkg;
+beeiot_sddir_t* sxpkg;
 int rc;
 
 // We have a new valid BeeIoT Package (header and data length was checked already):
@@ -871,7 +877,7 @@ int rc;
 
 	case CMD_REJOIN:
 		// GW requested a REJOIN
-		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);      
+		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: cmd= REJOIN received from sender: 0x%02X\n", msg->hd.pkgid, msg->hd.sendID);
 		BeeIoTStatus = BIOT_REJOIN;  	// reset Node to JOIN Reqeusting Mode -> New Join with next LoRaLog request by Loop()
 		report_interval = 120;			  // retry JOIN after 2 Minute; will be upd. by Config Pkg. at JOIN
 		rc= CMD_REJOIN;
@@ -895,11 +901,77 @@ int rc;
 		rc=CMD_LOGSTATUS;
 		break;
 
-	case CMD_GETSDLOG:
-	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: SDLOG Save command: not supported yet\n", msg->hd.pkgid);
+	case CMD_GETSDDIR:
+	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: SDDIR Request command: not completed yet\n", msg->hd.pkgid);
 		// for test purpose: dump payload in hex format
 			// ToDo: read out SD card and send it package wise to GW
+		rx1pkg = (beeiot_cmd_t *) msg;
+		sxpkg = (beeiot_sddir_t*) &MyTXData;
+		// cmdp1: Directory level - 1: '/' Root directory
+		// cmdp2: Max. Number of requested text strings (or index == 0xFF earlier)
+		// cmdp2: not used
+		sxpkg->sddir_seq = 1;	// by now only 1 string with index 1
+		sd_get_dir(rx1pkg->p.cmdp1, rx1pkg->p.cmdp2, rx1pkg->p.cmdp3, (char *) sxpkg->sddir);
+
+		// Prepare new BeeIoT TX-package session
+		LoRaCfg.msgCount++;            // increment global sequ. TX package/message ID for next TX pkg
+		sxpkg->hd.cmd = CMD_GETSDDIR;	// Provide new Directory Text line
+		sxpkg->hd.destID = LoRaCfg.gwid;     // remote target GW
+		sxpkg->hd.sendID = LoRaCfg.nodeid;   // that's me
+		sxpkg->hd.pkgid  = LoRaCfg.msgCount; // serial number of sent packages (sequence checked on GW side!)
+		sxpkg->hd.frmlen = sizeof(uint8_t) + strlen(sxpkg->sddir)+1; // length of user payload data incl. any EOL - excl. MIC
+		sxpkg->hd.res	 = 0;
+		// Add MIC (4By.) to end of payload data
+  		BIoT_getmic( & MyTXData, UP_LINK, (byte*) & MyTXData.data[MyTXData.hd.frmlen]); // MIC CMAC generation of (TX-hdr + TX-payload)
+
+  		// remember new Msg (for mutual RETRIES and ACK checks)
+  		// have to do it before sendmessage -> used by ISR for TX-ACK response
+		MyMsg.ack     = 0;                  // in sync mode: checked by sendMessage() and set by ISR
+		MyMsg.idx     = LoRaCfg.msgCount;
+		MyMsg.retries = 0;                  // TX retry counter in transmission error case
+		MyMsg.pkg     = (beeiotpkg_t*) & MyTXData;  // remember TX Message of session
+
+  		// Initiate TX session
+  		BeeIoTStatus = BIOT_TX;             // start TX session
+  		while(!sendMessage(&MyTXData, 0));  // send it in sync mode: wait for RXDone
+
+		rc=CMD_GETSDDIR;                        // -> No wait for ACK by upper layer required
+		break;
+
+	case CMD_GETSDLOG:
+	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: SDLOG Data command: not completed yet\n", msg->hd.pkgid);
+		// for test purpose: dump payload in hex format
+		rx1pkg = (beeiot_cmd_t *) msg;		// optional: rx1pkg->p.cmdp1..3
+		// ToDo: read out SD card and send it package wise to GW
+		// cmdp1:  Max. Number of requested text strings (or index == 0xFF earlier)
+		// cmdp2: not used
+		// cmdp3: not used
 		rc= CMD_GETSDLOG;                      // not supported yet
+		break;
+
+	case CMD_RESET:
+		// Reset all statistic counter, clear SD and initiate JOIN for new cfg. data
+		rx1pkg = (beeiot_cmd_t *) msg;		// optional: rx1pkg->p.cmdp1..3
+	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RESET Node: %d, %d, %d\n", msg->hd.pkgid, rx1pkg->p.cmdp1, rx1pkg->p.cmdp2, rx1pkg->p.cmdp3);
+
+		// cmdp1: Reset Level: 1: All (Lora + SD), 2: Lora only
+		// cmdp2: SDLevel 1: Reset-File, 2: Reset LogPathFile
+		// cmdp3: not used
+		if(rx1pkg->p.cmdp1 == 1){ // reset all areas
+			ResetNode(rx1pkg->p.cmdp1, rx1pkg->p.cmdp2, rx1pkg->p.cmdp3);		// do everything on sensor node side here...
+		}
+
+		// Reset LoRa:  Reset Statistic, Setup RX Queue management, enter JOIN Mode
+		BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
+		RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
+		RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
+		LoRaCfg.joinCount = 0;
+		LoRaCfg.joinRetryCount = 0;
+		LoRaCfg.msgCount = 0;
+
+		BeeIoTStatus = CMD_JOIN;	  // start new GW join again.
+
+		rc = CMD_REJOIN;
 		break;
 
 	case CMD_RETRY:
@@ -914,23 +986,6 @@ int rc;
 				msg->hd.pkgid, MyMsg.pkg->hd.pkgid);
 		rc = -1;  // retry requested but not for last sent message -> obsolete request
 		}
-		break;
-
-	case CMD_RESET:
-	    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RESET Node\n", msg->hd.pkgid);
-		// ToDo: Reset all statistic counter, clear SD and initiate JOIN for new cfg. data
-		// Setup RX Queue management
-		BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
-		RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
-		RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
-		LoRaCfg.joinCount = 0;
-		LoRaCfg.joinRetryCount = 0;
-		LoRaCfg.msgCount = 0;
-
-		BeeIoTStatus = BIOT_JOIN;	  // start new GW join again.
-
-		ResetNode();		// do everything on sensor node side here...
-		rc= CMD_RESET;
 		break;
 
 	case CMD_ACK:   // we should not reach this point -> covered by ISR
