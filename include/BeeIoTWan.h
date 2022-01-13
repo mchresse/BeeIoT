@@ -23,7 +23,7 @@ using namespace std;
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		7		// Minor
+#define BIoT_VMINOR		8		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -41,7 +41,23 @@ using namespace std;
 // 1.6  03.04.2021	Add DSENSOR Command + biot_dsensor_t -> Sensor Data in Binary format
 //					Add weight-offset to devcfg_t
 // 1.7  08.01.2022  add RX-cmd + SD-dir + SD-data package definition
+// 1.8  13-01-2022  Node HWConfig flag field in devcfg_t structure
 //
+//***********************************************
+
+//***********************************************
+// BIoT Node HW Component enable flags
+// used for definition of devcfg_t->hwconfig flag field
+//***********************************************
+#define HC_EPD		0x01	// EPD display panel
+#define HC_LORA		0x02	// LORA wireless protocol
+#define HC_SDCARD	0x04	// Node SDcard for LogData & Messages
+#define HC_WIFI		0x08	// Node onboard WiFi hotspot
+#define HC_NTP		0x10    // NTP time update by WiFi
+#define HC_BEACON	0x20	// LoRa Beacon Protocol
+#define HC_HWCONF40	0x40	// HC-XXX Placeholder reserved
+#define HC_HWCONF80	0x80	// HC-XXX Placeholder reserved
+
 //***********************************************
 // LoRa MAC Presets
 //***********************************************
@@ -219,7 +235,7 @@ typedef struct {
 	// LoRa Modem settings
 	uint8_t	channelidx;		// used channelidx of channeltable_t	txchntab[MAX_CHANNELS]
 	uint8_t	nonce;			// pkg counter init value
-	uint8_t	reserved;		// fill uint8_t for word boundary
+	uint8_t	hwconfig;		// HW configuration flag field defined by HC_xxxx masks (s.a.)
 
 	// RTC DATETIME input format: YYoffs-MM-DD-HH-MM-SS
 	uint8_t	yearoff;		// offset to 2000
@@ -253,23 +269,24 @@ typedef struct {
 // |------------|-----------|-------|----------------------------------------------
 // |LogID		|0 - 9999	|2397	| uint16_t xxxx
 // |Datum+Zeit:	|<YYYY/MM/DD 24:59:59>|2021/03/24 22:55:52|DateTime format (RTClib.h):
-// |			|			|		| uint8_t yOff < 2000 + yOff
-// |			|			|		| uint8_t mm   < Month 1-12
-// |			|			|		| uint8_t dd   < Day 1-31
-// |			|			|		| uint8_t hh   < Hours 0-23
-// |			|			|		| uint8_t mm   < Minutes 0-59
-// |			|			|		| uint8_t ss   < Seconds 0-59
-// |Gewicht		|0 - 99.99	|31.86	| uint16_t wwww	 < in 10 Gramm
-// |TempExtern	|0 - 99.99	|2.37	| uint16_t ccdd < in Celsius+2digits
-// |TempIntern	|0 - 99.99	|4.44	| uint16_t ccdd < in Celsius+2digits
-// |TempBeute	|0 - 99.99	|19.94	| uint16_t ccdd < in Celsius+2digits
-// |TempRTC		|0 - 99.99	|5.25	| uint16_t ccdd < in Celsius+2digits
+// |			|			|		| uint8_t yOff  < 2000 +  yOff
+// |			|			|		| uint8_t mm    < Month   1-12
+// |			|			|		| uint8_t dd    < Day     1-31
+// |			|			|		| uint8_t hh    < Hours   0-23
+// |			|			|		| uint8_t mm    < Minutes 0-59
+// |			|			|		| uint8_t ss    < Seconds 0-59
+// |Gewicht		|0 - 99.99	|31.86	|  int16_t wwww	< in 10 Gramm
+// |TempExtern	|0 - 99.99	|2.37	|  int16_t ccdd < in Celsius+2digits
+// |TempIntern	|0 - 99.99	|4.44	|  int16_t ccdd < in Celsius+2digits
+// |TempBeute	|0 - 99.99	|19.94	|  int16_t ccdd < in Celsius+2digits
+// |TempRTC		|0 - 99.99	|5.25	|  int16_t ccdd < in Celsius+2digits
 // |BattESP3V	|0 - 9.99	|3.36	| uint16_t vvvv < in mV
 // |Board5V		|0 - 9.99	|5.00	| uint16_t vvvv < in mV
 // |BattCharge	|0 - 9.99	|0.00	| uint16_t vvvv < in mV
 // |BattLoad	|0 - 9.99	|3.96	| uint16_t vvvv < in mV
-// |BattLevel	|0 - 100	|82		| uint8_t	pp	< %
+// |BattLevel	|0 - 100	|82		| uint8_t	pp	< in %
 // |CRC8		|0 - 255	| -		| uint8_t	xx	< CRC8
+// |NoticeLen	|0..16		| -		| uint8_t	xx  < char counter incl EOL
 // |Notice		|<asciistream +0x00>|"o.k."| <uint8_t len><asciitext> < 15 chars max.
 
 #define BIoT_DSENSORLEN	46	// Binary stream format: 28 + 1 + <text> Byte

@@ -89,9 +89,9 @@
 // Specify workOn Modules of setup() and main loop()
 #ifdef WROVERB
 // ESP32 WROVER-B (-> with less GPIO ->see EPD pinning)
-//#define HX711_CONFIG
-//#define ADS_CONFIG
-//#define ONEWIRE_CONFIG
+#define HX711_CONFIG
+#define ADS_CONFIG
+#define ONEWIRE_CONFIG
 //#define WIFI_CONFIG
 //#define NTP_CONFIG
 //#define SD_CONFIG
@@ -284,6 +284,7 @@ typedef struct {
     int     loopid;             // sensor data read sample ID
 	int		laps;				// # of hangovers till datasetsize reached by loopid++
 	int		woffset;			// offset for real weight adjustment
+	uint8_t	hwconfig;			// HW component enable flag field <- from pcfg
 	// Board Identification data
 	uint64_t  BoardID;  		// unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
 	int		  chipID;			// get chiptype: 0=WROOM32, 1=WROVER-B, ...

@@ -1055,14 +1055,15 @@ int rc;
 #endif
 	bhdb.chcfgid = pcfg->cfg.channelidx;		// save channelidx for epd print
 	bhdb.woffset = pcfg->cfg.woffset;			// offset for weight scale adjustement
+	bhdb.hwconfig= pcfg->cfg.hwconfig;			// save HW component enable eflag field
 
 //    lflags = (uint16_t) pcfg->cfg.verbose;	// get verbose value for BHLOG macro; needs to be 2 byte
 
-    // yearoff = base to 1900
+    // yearoff => setRTCtime() expects base to 1900
     setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i\n",
-      report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount);
+    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i, HWConf:0x%02X\n",
+      report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount, bhdb.hwconfig);
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
       2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 

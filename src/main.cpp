@@ -362,7 +362,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SD Card");
-  if(issdcard){
+  if((issdcard) && (bhdb.hwconfig & HC_SDCARD)){
     if (!setup_sd(ReEntry)){
       BHLOG(LOGBH) Serial.println("  SD: SD Card failed");
       // enter exit code here, if needed
@@ -545,7 +545,9 @@ float x;              		// Volt calculation buffer
 #ifdef BEACON
     showbeacon(bhdb.loopid);
 #else
-    showdata(bhdb.loopid);
+	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
+		showdata(bhdb.loopid);
+	}
 #endif
 #endif
 
@@ -616,7 +618,9 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
   // Write the sensor readings onto the SD card
   if(issdcard){
-    appendBinFile(SD, SDLOGPATH, (const uint8_t*) &dsensor, dslen);
+	  if(bhdb.hwconfig & HC_SDCARD) {	// SDCard acces enabled by PCFG
+    	appendBinFile(SD, SDLOGPATH, (const uint8_t*) &dsensor, dslen);
+	  }
   }else{
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
@@ -646,7 +650,9 @@ size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen;
 
   // Write the sensor readings onto the SD card
   if(issdcard){
-    appendFile(SD, SDLOGPATH, dataMessage.c_str());
+ 	  if(bhdb.hwconfig & HC_SDCARD) {	// SDCard acces enabled by PCFG
+	    appendFile(SD, SDLOGPATH, dataMessage.c_str());
+	   }
   }else{
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
@@ -761,6 +767,28 @@ void InitConfig(int reentry){
 		bhdb.ipaddr[0]    = 0;
 		bhdb.chcfgid	  = 0;
 		bhdb.woffset	  = -scale_OFFSET;
+
+	// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
+		bhdb.hwconfig	  = 0;
+#ifdef LORA_CONFIG
+		bhdb.hwconfig	  += HC_LORA; 	// LoRa is minimum unless pcfg is needed for remote control
+#endif
+#ifdef EPD_CONFIG
+		bhdb.hwconfig	  += HC_EPD;
+#endif
+#ifdef SD_CONFIG
+		bhdb.hwconfig	  += HC_SDCARD;
+#endif
+#ifdef WIFI_CONFIG
+		bhdb.hwconfig	  += HC_WIFI;
+#endif
+#ifdef NTP_CONFIG
+		bhdb.hwconfig	  += HC_NTP;
+#endif
+#ifdef BEACON
+		bhdb.hwconfig	  += HC_BEACON;
+#endif
+
 		// bhdb.BoardID      = 0;  already defined
 		for(i=0; i<datasetsize;i++){
 			bhdb.dlog[i].index       =0;
@@ -777,7 +805,7 @@ void InitConfig(int reentry){
 			bhdb.dlog[i].BattLevel   =0;
 			strncpy(bhdb.dlog[i].comment, "OK", 3);
 		}
-	}
+	} // end of !reentry
 
 #ifdef WEB_CONFIG
 // Next settings are for Web based config Page:
@@ -1140,6 +1168,7 @@ void get_efuse_ident(void) {
 void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
 	// Reset SD Card: P1=1: LogFile, P1=2: Directory
 	sd_reset(sdlevel);
+	ESP.restart();	// Reset ESP /wo Reentry reason
 }
 
 
