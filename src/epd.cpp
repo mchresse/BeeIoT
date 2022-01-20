@@ -104,7 +104,7 @@ if(!reentry){
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
     display.update();    //refresh display by buffer content
 
-    BHLOG(LOGEPD) delay(3000);
+    BHLOG(LOGEPD) mydelay2(3000);
     BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
     BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
     BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);

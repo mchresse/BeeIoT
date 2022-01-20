@@ -395,7 +395,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
     while (!BeeIotRXFlag && (i<MAXRXACKWAIT*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        delay(500);            // count wait time in msec. -> frequency to check RXQueue
+        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
     // notice # of JOIN Retries
@@ -1337,7 +1337,7 @@ int rc;
     BHLOG(LOGLORAW) Serial.printf("  BIoTBCN: waiting for ACKBCN in RXCont mode:");
     while (!BeeIotRXFlag && (i<WAITRX1PKG*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        delay(500);            // count wait time in msec. -> frequency to check RXQueue
+        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
 

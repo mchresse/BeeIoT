@@ -213,7 +213,7 @@ int rc;		// generic return code variable
     gpio_hold_dis(EPD_CS);   	// enable EPD_CS
     gpio_hold_dis(BEE_CS);  	// enable BEE_CS
 
-	delay(500); //delay nicht entfernen wg Wakeup mode !
+	BHLOG(LOGBH) mydelay2(500); 				//delay nicht entfernen wg Wakeup mode !
 
   // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect to computer
@@ -530,7 +530,7 @@ float x;              		// Volt calculation buffer
   }
 
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) delay(1000);
+  BHLOG(LOGADS) mydelay2(1000);
 #endif // ADS_CONFIG
 
 
@@ -702,12 +702,12 @@ void mydelay(int32_t tval){
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
-    delay(250);  // wait 0.25 second
+    mydelay2(250);  // wait 0.25 second
     digitalWrite(LED_RED, HIGH);
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
-    delay(2000);  // wait 2 second
+    mydelay2(2000);  // wait 2 second
 	if(GetData){  // Semaphor controlled by GPIO35 Key (blue button)
 		// user wants next measurement loop
 		GetData = 0;	// reset loop trigger flag
@@ -731,9 +731,10 @@ esp_err_t rc;
 	esp_sleep_enable_gpio_wakeup();
 
 	// Configure the wake up timer source
-	esp_sleep_enable_timer_wakeup(waittime * 1000);	// time in us
-
+	esp_sleep_enable_timer_wakeup((uint64_t) waittime * 1000);	// time in us
+	delay(20); 					// set gracetime for timer activatin
 	rc = esp_light_sleep_start();
+
 	if(rc != ESP_OK){
 		BHLOG(LOGBH) Serial.printf("  Main-Dly2: LightSleep failed: %i\n", rc);
 		delay(5000);	// wait some time to show the message
@@ -1092,9 +1093,11 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_TOUCHPAD:   Serial.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP:        Serial.println("Wakeup caused by ULP program"); break;
 	case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
+    case ESP_SLEEP_WAKEUP_UART:       Serial.println("Wakeup caused by UART (light sleep only)"); break;
+	case ESP_SLEEP_WAKEUP_ALL:        Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source"); break;
 	case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
     default :
-        Serial.printf("Sleep>Wakeup root cause: %d\n",wakeup_reason);
+        Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
 		    return(ESP_SLEEP_WAKEUP_UNDEFINED);
 		    break;
   }
@@ -1143,7 +1146,7 @@ void get_efuse_ident(void) {
 	Serial.printf("  Setup: Chip Revision: %d -", getChipRevision());
 
 	bhdb.chipID = getChipVerPkg();
-  Serial.printf("-  Chip-Package ID: %d  ", bhdb.chipID);
+  	Serial.printf("-  Chip-Package ID: %d  ", bhdb.chipID);
 
   switch(bhdb.chipID){
 		case EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ6:	Serial.println("-> ESP32D0WDQ6 (WROOM32)"); break;
@@ -1291,9 +1294,9 @@ void wiretest(){
   for (int i=0; i<10000; i++){
     pinMode(gpio,   OUTPUT);
     digitalWrite(gpio, LOW);
-    delay(twait);
+    mydelay2(twait);
     digitalWrite(gpio, HIGH);
-    delay(twait);
+    mydelay2(twait);
     Serial.printf(".");
   }
   Serial.printf("\n");
@@ -1302,7 +1305,7 @@ void wiretest(){
   pinMode(gpio,  INPUT);
   for (int i=0; i<20; i++){
     int dio = digitalRead(gpio);
-    delay(twait/2);
+    mydelay2(twait/2);
     if(dio)
       Serial.printf("1");
     else
