@@ -162,7 +162,7 @@ int i2c_scan(void) {
 		if (i%16 == 0) {
 			BHLOG(LOGADS) Serial.printf("\n%.2x:", i);
 		}
-		if (esprc == 0) {
+		if (esprc == ESP_OK) {
 			BHLOG(LOGADS) Serial.printf(" %.2x", i);
 			// if ADC: ADS111x overrules MAX123x by intention asking in that order
 			if(i==MAX_ADDR) {
@@ -185,5 +185,5 @@ int i2c_scan(void) {
 
 	BHLOG(LOGADS) Serial.printf("\n");
 
-	return(isadc);
+	return(1);
 }

@@ -104,7 +104,7 @@ if(!reentry){
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
     display.update();    //refresh display by buffer content
 
-    BHLOG(LOGEPD) mydelay2(3000);
+    BHLOG(LOGEPD) mydelay2(3000,0);
     BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
     BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
     BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
@@ -324,16 +324,16 @@ void drawBitmaps_200x200(){
   int16_t x = (display.width() - 200) / 2;
   int16_t y = (display.height() - 200) / 2;
   drawBitmapFromSD("logo200x200.bmp", x, y);
-  mydelay2(2000);
+  mydelay2(2000,0);
 }
 
 void drawBitmaps_other(){
   int16_t w2 = display.width() / 2;
   int16_t h2 = display.height() / 2;
   drawBitmapFromSD("parrot.bmp", w2 - 64, h2 - 80);
-  mydelay2(2000);
+  mydelay2(2000,0);
   drawBitmapFromSD("betty_1.bmp", w2 - 100, h2 - 160);
-  mydelay2(2000);
+  mydelay2(2000,0);
  }
 
 

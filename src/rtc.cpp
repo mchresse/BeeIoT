@@ -60,6 +60,9 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 //*******************************************************************
 // Setup_RTC(): Initial Setup of RTC module instance
 // Expects discovered I2C RC device by I2C_scan() -> isrtc=1
+// isrtc = <I2c addr> => RTC_ADDR
+// Return: =0 RTC time not readable / no RTC device
+//  	   =1 BHDB updated by latest RTC time & Temp.
 //*******************************************************************
 int setup_rtc (int reentry) {
 	float rtctemp;
@@ -69,18 +72,20 @@ int setup_rtc (int reentry) {
 	if(!isi2c){	// I2C Master Port active + ADC detected ?
 		// I2C should have been scanned by I2c_master_init() already
 		// if i2c problems occurs -> should have been reported there
-		if(!isrtc){
+		if(isrtc!=RTC_ADDR){
         	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
-			return(isrtc);
+			isrtc=0;
+			return(0);
     	}
 	}
-
+	// isrtc=1 -> RTC can be expected at RTC_ADDR
+	BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", isrtc);
 	// setup RTC Device config set
-    i2crtc.port = i2c_master_port;
-    i2crtc.addr = RTC_ADDR;
-    i2crtc.sda_io_num = I2C_SDA;
-    i2crtc.scl_io_num = I2C_SCL;
-    i2crtc.clk_speed = I2C_FREQ_HZ;
+    i2crtc.port			= i2c_master_port;
+    i2crtc.addr 		= isrtc;
+    i2crtc.sda_io_num	= I2C_SDA;
+    i2crtc.scl_io_num	= I2C_SCL;
+    i2crtc.clk_speed 	= I2C_FREQ_HZ;
 
 // For Wire-lib usage:
 //  if (! rtc.begin()) {
@@ -89,17 +94,16 @@ int setup_rtc (int reentry) {
 //  }
 //  rtc.writeSqwPinMode(DS3231_OFF);  // reset Square Pin Mode to 0Hz
 
-// For I2cdev-lib access test:
+// For I2cdev-lib access test: Read RTC temperatur value
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
 		isrtc =0;		// RTC does not react anyhow
-        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp.register failed (%i)\n", esprc);
-		return(isrtc);
+        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
+		return(0);
 	}
 
-	BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", RTC_ADDR);
 	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
-	BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C, SqarePin switched off\n", rtctemp);
+	BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
   // if NTC based adjustment is needed use:  static void adjust(const DateTime& dt);
   // or update by NTP: -> main() => ntp2rtc() automatically
@@ -114,7 +118,7 @@ int setup_rtc (int reentry) {
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
 //    isrtc =0;  // power again but no valid time => lets hope for NTP update later on
 //  }
-	return(isrtc);
+	return(1);
 
 } // end of rtc_setup()
 
@@ -188,9 +192,15 @@ void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, u
 int getRTCtime(void){
 	float rtctemp;
 	struct tm * tinfo;
+	esp_err_t esprc;
 
 	// DS3231 delivers time in struct TM format:
-	ds3231_get_time(&i2crtc, & bhdb.stime);
+	esprc = ds3231_get_time(&i2crtc, & bhdb.stime);
+	if(esprc !=ESP_OK){
+		isrtc =0;		// RTC does not react anyhow
+        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Time failed (%i)\n", esprc);
+		return(esprc);
+	}
 
 	tinfo = & bhdb.stime;			// get structure time ptr.
 	bhdb.rtime = mktime(tinfo);		// save RTC time as raw time value
@@ -206,7 +216,7 @@ int getRTCtime(void){
 	BHLOG(LOGLAN) Serial.print("  RTC: Get RTC Time: ");
 	// Get date and time; 2019-10-28T08:09:47Z
 	// using ISO 8601 Timestamp functions: YYYY-MM-DDTHH:MM:SS
-	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", 	tinfo->tm_year+1900, tinfo->tm_mon+1, tinfo->tm_mday, tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
+	sprintf(bhdb.formattedDate,"%i-%02i-%02iT%02i:%02i:%02i", tinfo->tm_year+1900, tinfo->tm_mon+1, tinfo->tm_mday, tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
 	BHLOG(LOGLAN) Serial.print(bhdb.formattedDate);
 	BHLOG(LOGLAN) Serial.print(ctime(&bhdb.rtime));	// test print of time_t value as string
 
@@ -222,11 +232,15 @@ int getRTCtime(void){
 
     BHLOG(LOGLAN) Serial.print(daysOfTheWeek[tinfo->tm_wday]);
 
-	// last but not least: get current RTC temperature
-	ds3231_get_temp_float(&i2crtc, &rtctemp);
-	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
-	BHLOG(LOGLAN)  Serial.printf(" RTC-Temp.: %.2f °C\n", rtctemp);
-
+	// last but not least: get optional current RTC temperature
+	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
+	if(esprc !=ESP_OK){
+        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
+		bhdb.dlog[bhdb.loopid].TempRTC = -99;  // reset RTC module temperature fault
+	}else{
+		bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+		BHLOG(LOGLAN)  Serial.printf(" RTC-Temp.: %.2f °C\n", rtctemp);
+	}
   return 0;
 } // end of getRTCtime()
 

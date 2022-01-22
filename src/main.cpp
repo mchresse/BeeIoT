@@ -123,12 +123,12 @@ RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset);   =1 a
 RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
 
 // Define deep sleep options
-uint64_t uS_TO_S_FACTOR = 1000000;  // Conversion factor for micro seconds to seconds
-int TIME_TO_SLEEP	= SLEEPTIME;	// RTC sleep in seconds
+#define uS_TO_S_FACTOR  1000000LL  // Conversion factor for micro seconds to seconds
+#define uS_TO_mS_FACTOR    1000LL  // Conversion factor for micro seconds to milli seconds
+int TIME_TO_SLEEP	= SLEEPTIME;   // RTC sleep in seconds
 
 // Central Database of all measured values and runtime parameters
 RTC_DATA_ATTR dataset		bhdb;
-RTC_DATA_ATTR unsigned int	lflags; // BeeIoT log flag field
 Preferences preferences;        // we must generate this object of the preference library
 
 extern int iswifi;              // =1 WIFI flag o.k.
@@ -147,7 +147,7 @@ extern int 			adcaddr;	// I2C Dev.address of detected ADC
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
-RTC_DATA_ATTR int  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
+RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
 char LoRaBuffer[256];			// buffer for LoRa Packages
 
 // construct the object attTCPClient of class TCPClient
@@ -177,7 +177,7 @@ void showFontCallback(void);
 void showPartialUpdate(float data);
 void ProcessAndValidateConfigValues(int countValues);
 void InitConfig(int mode);
-void prepare_sleep_mode(int mode, int sleeptime);
+void prepare_sleep_mode(int mode, uint64_t waittime);
 esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
@@ -197,6 +197,13 @@ extern void hexdump(unsigned char * msg, int len);
 /// @param none
 /// @return void
 //*******************************************************************
+// Define Log level (search for Log values in beeiot.h)
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags=0;
+//	lflags = 65535;
+// works only in setup phase till LoRa-JOIN received Cfg data
+// final value will be defined in BeeIoTParseCfg() by GW config data
+
 void setup() {
 int rc;		// generic return code variable
   // put your setup code here, to run once:
@@ -213,17 +220,17 @@ int rc;		// generic return code variable
     gpio_hold_dis(EPD_CS);   	// enable EPD_CS
     gpio_hold_dis(BEE_CS);  	// enable BEE_CS
 
-	BHLOG(LOGBH) mydelay2(500); 				//delay nicht entfernen wg Wakeup mode !
+//	mydelay2(500); 				//delay nicht entfernen wg Wakeup mode !
 
   // If Ser. Diagnostic Port connected
-	while(!Serial);             // wait to connect to computer
+	while(!Serial);             // wait to connect UART to computer terminal
 	Serial.begin(115200);       // enable Ser. Monitor Baud rate
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
 
 //***************************************************************
   //Print the wakeup reason for ESP32
-  BHLOG(LOGBH)Serial.printf("Evaluate Wakeup reason - BootCnt: %i - Intervall %i\n", bootCount, report_interval);
+  	BHLOG(LOGBH) Serial.printf("Main: BootCnt: %i - ReportInterval %i\n", bootCount, report_interval);
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
       //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
@@ -236,29 +243,23 @@ int rc;		// generic return code variable
 			}
 		}else if(rc == ESP_SLEEP_WAKEUP_GPIO){
 			// GPIO shortcuts sleep wait loop: Just continue with shortcut setup phase
-  			BHLOG(LOGBH)Serial.printf("Main: Sleep Wakup by GPIO (%i)\n", rc);
+  			BHLOG(LOGBH) Serial.printf("Main: Sleep Wakup by GPIO (%i)\n", rc);
   		}
 	} else {
-	  ReEntry = 0;	// reset was pressed
+	  ReEntry = 0;	// reset was pressed or PwrCycle -> set initial Sleep Mode =0
+		// Nexus of sleepmode set at end of a loop
 	}
 
-  // ReEntry mode was defined at start of sleep mode already
+	// ReEntry mode was defined at start of sleep mode (end of loop) already
 	// wakeup by Reset -> start initial setup code and reset counter anyway
 	bootCount = 0;
 
 //***************************************************************
-	if(!ReEntry) {
-    // Define Log level (search for Log values in beeiot.h)
-    // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-		lflags = 0;
-	//	lflags = 65535;
-	// works only in setup phase till LoRa-JOIN received Cfg data
-	// final value will be defined in BeeIoTParseCfg() by GW config data
-
+	if(!ReEntry) { // only at new POn cycle once
 		Serial.println();
 		Serial.println(">***********************************<");
 		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 01/2021\n", VERSION_SHORT);
+		Serial.printf ("> %s by R.Esser (c) 2020-2022\n", VERSION_SHORT);
 		Serial.println(">***********************************<");
 		if(lflags > 0)
 			Serial.printf ("LogLevel: %i\n", lflags);
@@ -470,7 +471,7 @@ void loop() {
 				     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
         {  // if we have just started lets do it again to get right values
             GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-            mydelay2(200);								// sleep 200ms for OW bus recovery
+            mydelay2(200,0);								// sleep 200ms for OW bus recovery
             if (retry++ == ONE_WIRE_RETRY){
               BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
               break;
@@ -530,7 +531,7 @@ float x;              		// Volt calculation buffer
   }
 
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) mydelay2(1000);
+  BHLOG(LOGADS) mydelay2(1000,0);
 #endif // ADS_CONFIG
 
 
@@ -565,7 +566,7 @@ float x;              		// Volt calculation buffer
 	ReEntry = SLEEPMODE;	// initial startup sleep mode;
 					// =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
   // Start sleep/wait loop
-	prepare_sleep_mode(ReEntry, report_interval); // intervall in seconds
+	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
 
 } // end of loop()
 
@@ -702,12 +703,12 @@ void mydelay(int32_t tval){
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
-    mydelay2(250);  // wait 0.25 second
+    mydelay2(250,0);  // wait 0.25 second
     digitalWrite(LED_RED, HIGH);
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
-    mydelay2(2000);  // wait 2 second
+    mydelay2(2000,0);  // wait 2 second
 	if(GetData){  // Semaphor controlled by GPIO35 Key (blue button)
 		// user wants next measurement loop
 		GetData = 0;	// reset loop trigger flag
@@ -718,21 +719,29 @@ void mydelay(int32_t tval){
 
 //*******************************************************************
 /// @brief Simple Wait - by light sleep method: MM keeps active
-/// @param waittime 	waittime in millisec
+/// @param waitms 	waittime in millisec
+/// @param initdelay gracetime for trigger timer initiaöization in msec.
 /// @details
 /// 	ESP32 to enter light sleep mode
 /// 	GPIO35-BlueKey configured as async wakup trigger
 /// @return void
 //*******************************************************************
-void mydelay2(int32_t waittime){
+esp_err_t mydelay2(int32_t waitms, int32_t initdelay){
+#define uS_TO_mS_FACTOR 1000LL  /* Conversion factor for micro seconds to milli seconds */
 esp_err_t rc;
+
 	// BHLOG(LOGBH) Serial.printf("  Main-Dly2: Light Sleep - Trigger: Timer(%i ms) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 	gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 	esp_sleep_enable_gpio_wakeup();
 
 	// Configure the wake up timer source
-	esp_sleep_enable_timer_wakeup((uint64_t) waittime * 1000);	// time in us
-	delay(20); 					// set gracetime for timer activatin
+	rc=esp_sleep_enable_timer_wakeup(uint64_t (waitms) * uS_TO_mS_FACTOR);	// time in us
+	if(rc != ESP_OK){
+		BHLOG(LOGBH) Serial.printf("  Main-Dly2: LightSleep timer setup failed: %i\n", rc);
+		return(rc);
+	}else{
+		//	delay(initdelay); 					// set gracetime for timer activation
+	}
 	rc = esp_light_sleep_start();
 
 	if(rc != ESP_OK){
@@ -740,8 +749,7 @@ esp_err_t rc;
 		delay(5000);	// wait some time to show the message
 		// ToDo: what to do i this error case ???
 	}
-
-	return;
+	return(rc);
 }
 
 
@@ -759,7 +767,7 @@ esp_err_t rc;
 void InitConfig(int reentry){
   int i;
 
-	if(!reentry){
+	if(!reentry){ // do init only once afetr Power Reset
 		bhdb.loopid       = 0;
 		bhdb.laps         = 0;
 		bhdb.formattedDate[0] = 0;
@@ -804,7 +812,7 @@ void InitConfig(int reentry){
 			bhdb.dlog[i].BattCharge  =0;
 			bhdb.dlog[i].BattLoad    =0;
 			bhdb.dlog[i].BattLevel   =0;
-			strncpy(bhdb.dlog[i].comment, "OK", 3);
+			strncpy(bhdb.dlog[i].comment, "OK/0", 3);
 		}
 	} // end of !reentry
 
@@ -1007,7 +1015,7 @@ void biot_ioshutdown(int sleepmode){
 /// @param waittime sleep/wait time in seconds
 /// @return void
 //***********************************************************************
-void prepare_sleep_mode(int mode, int waittime){
+void prepare_sleep_mode(int mode, uint64_t waittime){
 esp_err_t  rc;
 
 	switch(mode){
@@ -1026,24 +1034,34 @@ esp_err_t  rc;
     		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
     		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
     		gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
-			esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
-    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
+    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", (uint32_t)waittime, EPD_KEY4);
+			if(rc != ESP_OK){
+				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep timer setup failed: %i\n", rc);
+			}else{
+				//	delay(initdelay); 					// set gracetime for timer activation
+			}
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but
 			// deep sleep was started, it will sleep forever unless hardware reset occurs.
-			esp_deep_sleep(waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
+			esp_deep_sleep((uint64_t) waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
 
 			BHLOG(LOGBH) Serial.println("  Main: This should never be printed");
 			break;
 
 		case 2:		// LightSleepMode
-			BHLOG(LOGBH) Serial.printf("  Main: Light Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
+			BHLOG(LOGBH) Serial.printf("  Main: Light Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", (uint32_t)waittime, EPD_KEY4);
 			gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
-			esp_sleep_enable_gpio_wakeup();
+			esp_sleep_enable_gpio_wakeup();		// enable wakeup feature of selected GPIO wakeup resource
 
 			// Configure the wake up timer source
-			esp_sleep_enable_timer_wakeup(waittime * uS_TO_S_FACTOR);	// time in us
+			rc = esp_sleep_enable_timer_wakeup((uint64_t)waittime * uS_TO_S_FACTOR);	// time in us
+			if(rc != ESP_OK){
+				BHLOG(LOGBH) Serial.printf("  Main: LightSleep timer setup failed: %i\n", rc);
+			}else{
+				//	delay(initdelay); 					// set gracetime for timer activation
+			}
 
 			rc = esp_light_sleep_start();
 			if(rc != ESP_OK){
@@ -1059,9 +1077,11 @@ esp_err_t  rc;
 			// ESP32 can enter modem sleep mode only when it connects to the router in station mode.
 			// ESP32 stays connected to the router through the DTIM beacon mechanism
 			// NOP
+			break;
 
 		case 4:		// Active Mode
 			// NOP
+			break;
 
 		default:
 #ifndef BEACON
@@ -1082,25 +1102,24 @@ esp_err_t  rc;
 /// @return esp_sleep_wakeup_cause_t wakeup_reason
 //***********************************************************************
 esp_sleep_wakeup_cause_t print_wakeup_reason(){
-  esp_sleep_wakeup_cause_t wakeup_reason;
+	esp_sleep_wakeup_cause_t wakeup_reason;
 
-  wakeup_reason = esp_sleep_get_wakeup_cause();
+	wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch(wakeup_reason)  {
-    case ESP_SLEEP_WAKEUP_EXT0:       Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1:       Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER:      Serial.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:   Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP:        Serial.println("Wakeup caused by ULP program"); break;
-	case ESP_SLEEP_WAKEUP_GPIO:       Serial.println("Wakeup caused by GPIO"); break;
-    case ESP_SLEEP_WAKEUP_UART:       Serial.println("Wakeup caused by UART (light sleep only)"); break;
-	case ESP_SLEEP_WAKEUP_ALL:        Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source"); break;
-	case ESP_SLEEP_WAKEUP_UNDEFINED:  Serial.println("Reset or unknown WakeUp cause"); break;
-    default :
-        Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
-		    return(ESP_SLEEP_WAKEUP_UNDEFINED);
-		    break;
-  }
+	switch(wakeup_reason)  {
+		case ESP_SLEEP_WAKEUP_EXT0:       BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+		case ESP_SLEEP_WAKEUP_EXT1:       BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+		case ESP_SLEEP_WAKEUP_TIMER:      BHLOG(LOGBH)Serial.println("Wakeup caused by timer"); break;
+		case ESP_SLEEP_WAKEUP_TOUCHPAD:   BHLOG(LOGBH)Serial.println("Wakeup caused by touchpad"); break;
+		case ESP_SLEEP_WAKEUP_ULP:        BHLOG(LOGBH)Serial.println("Wakeup caused by ULP program"); break;
+		case ESP_SLEEP_WAKEUP_GPIO:       BHLOG(LOGBH)Serial.println("Wakeup caused by GPIO"); break;
+		case ESP_SLEEP_WAKEUP_UART:       BHLOG(LOGBH)Serial.println("Wakeup caused by UART (light sleep only)"); break;
+		case ESP_SLEEP_WAKEUP_ALL:        BHLOG(LOGBH)Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source"); break;
+		case ESP_SLEEP_WAKEUP_UNDEFINED:  BHLOG(LOGBH)Serial.println("Reset or unknown WakeUp cause"); break;
+		default :
+			BHLOG(LOGBH)Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
+			return(ESP_SLEEP_WAKEUP_UNDEFINED);
+	}
 	return(wakeup_reason);
 }
 
@@ -1294,9 +1313,9 @@ void wiretest(){
   for (int i=0; i<10000; i++){
     pinMode(gpio,   OUTPUT);
     digitalWrite(gpio, LOW);
-    mydelay2(twait);
+    mydelay2(twait,20);
     digitalWrite(gpio, HIGH);
-    mydelay2(twait);
+    mydelay2(twait,20);
     Serial.printf(".");
   }
   Serial.printf("\n");
@@ -1305,7 +1324,7 @@ void wiretest(){
   pinMode(gpio,  INPUT);
   for (int i=0; i<20; i++){
     int dio = digitalRead(gpio);
-    mydelay2(twait/2);
+    mydelay2(twait/2,20);
     if(dio)
       Serial.printf("1");
     else

@@ -148,7 +148,7 @@ extern int sd_get_dir(uint8_t p1, uint8_t p2, uint8_t p3, char * dirline);
 // Setup_LoRa(): init BEE-client object: LoRa
 //*********************************************************************
 int setup_LoRa(int reentry) {
-	islora = 0;
+	islora = 0;;
 
 #ifdef LORA_CONFIG
 	if(!reentry){	// after PON Reset only
@@ -210,24 +210,13 @@ int setup_LoRa(int reentry) {
 	// Assign IRQ callback on DIO0
 	LoRa.onReceive(onReceive);    // (called by loRa.handleDio0Rise(pkglen))
 	BHLOG(LOGLORAR) Serial.printf("  LoRa: assign ISR to DIO0  - default: GWID:0x%02X, NodeID:0x%02X, Channel:%i\n", LoRaCfg.gwid, LoRaCfg.nodeid, LoRaCfg.chcfgid);
-	islora=1;                     // Declare:  LORA Modem is active now!
+	islora=1;                     // Declare:  LORA Modem is basically active now, but not joined yet!
 
-	if(!reentry){	// for Reset only
-		// From now on : JOIN to a GW
+	if(!reentry){	// AFter (Pwr-) Reset only
+		// From now on : Try JOIN to a GW
 		BeeIoTStatus = BIOT_JOIN; // have to join to a GW
-
-		// 1. Try: send a message to join to a GW
-		if(BeeIoTJoin(BeeIoTStatus) <= 0){
-			BHLOG(LOGLORAW)  Serial.printf("  Lora: 1. BeeIoT JOIN failed -> remaining in BIOT_JOIN Mode\n");
-			// ToDo: any Retry action after a while ?
-			BeeIoTStatus = BIOT_JOIN; // stay in JOIN mode
-      		LoRa.sleep(); // stop modem and clear FIFO
-		}else{
-			BeeIoTStatus = BIOT_IDLE; // we have a joined modem -> wait for RX/TX pkgs.
-
-			// Modem is joined and ready, but may be BIOT_SLEEP would be better to save power
-			BeeIoTSleep();  // by now we can support "Joined-Sleep" only => because WakeUp will set Idle mode
-		}
+    	LoRa.sleep(); // stop modem and clear FIFO
+		BHLOG(LOGLORAW)  Serial.printf("  Lora: remain in JOIN Mode\n");
 	}
 #endif
 
@@ -395,7 +384,7 @@ pjoin = (beeiot_join_t *) & MyTXData; // fetch global Msg buffer
     BHLOG(LOGLORAW) Serial.printf("  BeeIoTJoin: waiting for RX-CONFIG Pkg. in RXCont mode:");
     while (!BeeIotRXFlag && (i<MAXRXACKWAIT*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
+        mydelay2(500,100);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
     // notice # of JOIN Retries
@@ -629,7 +618,7 @@ int rc;       // generic return code
  		BeeIoTStatus = BIOT_JOIN;	// anyway next must be a JOIN Request (no Rejoin anymore)
     	return(-96);                // by now no gateway in range -> try again later
     }
-	mydelay2(1000);		// gracetime for GW to prepare modem on new channel
+	mydelay2(1000, 0);		// gracetime for GW to prepare modem on new channel
   }
 
   // 2. Prepare TX package with LogStatus data
@@ -695,7 +684,7 @@ int rc;       // generic return code
     ackloop=0;                        // preset RX-ACK wait loop counter
     while(!MyMsg.ack){                // wait till TX got committed by ACK
       BHLOG(LOGLORAW) Serial.print(".");
-      mydelay2(MSGRESWAIT);              // min. wait time for ACK to arrive -> polling rate
+      mydelay2(MSGRESWAIT,0);              // min. wait time for ACK to arrive -> polling rate
 
       // 8. Check for ACK Wait Timeout
       if(ackloop++ > MAXRXACKWAIT){   // max # of wait loops reached ? -> yes, ACK RX timed out
@@ -760,7 +749,7 @@ int rc;       // generic return code
     BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX1 Pkg. (RXCont):");
     while (!BeeIotRXFlag & (ackloop < WAITRX1PKG*2)){  // wait till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        mydelay2(500);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
+        mydelay2(500,0);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
         ackloop++;
     }
 
@@ -1337,7 +1326,7 @@ int rc;
     BHLOG(LOGLORAW) Serial.printf("  BIoTBCN: waiting for ACKBCN in RXCont mode:");
     while (!BeeIotRXFlag && (i<WAITRX1PKG*2)){  // till RX pkg arrived or max. wait time is over
         BHLOG(LOGLORAW) Serial.print("o");
-        mydelay2(500);            // count wait time in msec. -> frequency to check RXQueue
+        mydelay2(500,0);            // count wait time in msec. -> frequency to check RXQueue
         i++;
     }
 
