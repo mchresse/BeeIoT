@@ -34,7 +34,6 @@
 
 #include "i2cdev.h"
 #include "max123x.h"
-#include "i2cdev.h"
 
 #include "beeiot.h"
 
@@ -111,7 +110,7 @@ esp_err_t i2c_dev_read(const i2c_dev_t *dev, const void *out_data, size_t out_si
 
     esp_err_t res = i2c_master_cmd_begin(dev->port, cmd, I2CDEV_TIMEOUT / portTICK_RATE_MS);
     if (res != ESP_OK)
-        BHLOG(LOGADS) Serial.printf("  I2C: Could not read from device [0x%02x at %d]: %d", dev->addr, dev->port, res);
+        BHLOG(LOGADS) Serial.printf("  I2C: Could not read from device [0x%02x at %d]: %X", dev->addr, dev->port, res);
     i2c_cmd_link_delete(cmd);
 
     return res;

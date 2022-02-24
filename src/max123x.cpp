@@ -105,21 +105,17 @@ int setup_i2c_MAX(int reentry) {  // MAX123x constructor
 //	data		ADC value in mV
 // 				-> Vref=2096V data = n x 1/Vref
 //***************************************************************
-#define MAXCAL	7		// MAX Calibrationfaktor +7% 
-#define ADSCAL	0		// ADS Calibrationfaktor +0% 
-int16_t ADCCal;			// ADC Calibrationfaktor +7% 
-
+#define MAXCAL	-2		// MAX Calibrationfaktor -3%
+#define ADSCAL	0		// ADS Calibrationfaktor +0%
 
 uint16_t adc_read(int channel) {
 
     if(adcaddr == MAX_ADDR){
-		ADCCal = MAXCAL;
-      return(max_read(channel) * (100+ADCCal) / 100);
+      return((max_read(channel) * (100+MAXCAL)) / 100);
     }
     if (adcaddr == ADS111X_ADDR_GND || adcaddr == ADS111X_ADDR_VCC ||
     	adcaddr == ADS111X_ADDR_SDA || adcaddr == ADS111X_ADDR_SCL){
-		ADCCal = ADSCAL;
-      return(ads_read(channel) * (100+ADCCal) / 100);
+      return((ads_read(channel) * (100+ADSCAL)) / 100);
     }
   return(-1);
 }
@@ -131,23 +127,24 @@ uint16_t adc_read(int channel) {
 // INPUT:
 // 	channel	0..3	Index of AINx
 // OUTPUT
-//	data	digital value -> Vref=2096V data = n x 1/2096
+//	data	digital value -> Vref=2.048V data = n x 1/2048
 //************************************************************
 
 uint16_t max_read(uint8_t channel) {
     int ret=0;
 #ifdef ADS_CONFIG
 
+    BHLOG(LOGADS) Serial.printf("\n  SingleADC Read AIN%d\n", channel);
     // setup byte:   Ref.int., Vref=InternalOn, int.clock, unipolar, no reset cfg.register
 	uint8_t setupbyte 	= MAX1363_SETUPREG | MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT		// Default: 0xD2
 				| MAX1363_SETUP_POWER_UP_INT_REF
-				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_NORESET ;
+				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_NORESETCFG ;
     // Send config byte: Mode=single ended, one sel. channel,
 	uint8_t configbyte 	= MAX1363_CONFIGREG | MAX1363_CONFIG_SCAN_SINGLE_1 				// default 0: 0x61 (1: 0x63, 2: 0x65, 3: 0x67)
 				| ((channel << 1) & MAX123x_CHANNEL_SEL_MASK)| MAX1363_CONFIG_SE;
 
-    BHLOG(LOGADS) Serial.printf("  MAX-Adr(0x%02X): Write Setup 0x%02X", isadc, setupbyte);
-    BHLOG(LOGADS) Serial.printf("-  Config: 0x%02X",configbyte);
+    BHLOG(LOGADS) Serial.printf("  MAX-Adr(0x%02X): Write Setup: 0x%02X", isadc, setupbyte);
+    BHLOG(LOGADS) Serial.printf(" - Config: 0x%02X",configbyte);
 
 // Start MAX1236 in F/S Mode
 	ret = i2c_dev_write( &i2cmax123x, &setupbyte, 1, &configbyte, 1);
@@ -157,19 +154,108 @@ uint16_t max_read(uint8_t channel) {
     }
 
 // Start Read Conversion data
-	int8_t datax[2] ={0,0};
+	int8_t datax[2] ={0,0}; // MSB + LSB
 	int data=0;
 	ret = i2c_dev_read( &i2cmax123x, 0,0, &datax[0], 2 );	// no out data
     if (ret != ESP_OK) {
 		BHLOG(LOGADS) Serial.printf(" => Read data failed ->  RC(%i)\n",ret);
 	}else{
 		data = ((datax[0] & 0x000F)*256 + (datax[1] & 0x00FF));
-		BHLOG(LOGADS) Serial.printf("-> done: 0x%02x-%02x (%i)\n",  datax[0] &0x000F, datax[1] & 0x00FF, data);
+		BHLOG(LOGADS) Serial.printf("-> Samples: 0x%02x-%02x (%i)\n",  datax[0] &0x000F, datax[1] & 0x00FF, data);
 	}
-	data = data * 1000 / 2096;	// get value in mV
+	data = data / 2;	// get value in mV; 1LSB = 2.048V/4096 = 0,5mV => factor: 0,5
     return((uint16_t) data);	// get 12 bit conversion word
 
 #endif // ADS_CONFIG
+}
+
+//***************************************************************
+// max_multiread()
+// Convert and read selected Analog channels:
+// selected from AIN0 - AIN<channelend>
+// from MAX1236 4-port 12bit ADC in single ended mode
+// digital data-value -> Vref=2.048V data = n x 1/2048
+// INPUT:
+// 	channelend		0..3	Index of last scanned channel AIN0..3
+//  datax *			ptr on 8-bit result field numchannel * (MSB,LSB)
+//					field size: (channelend + 1) * 2 * sizeof(uint8_t)
+// OUTPUT
+//	int				= >=0 # of sampled channels
+// 					=-1 Setup/Cfg failed
+//					=-2 sampling failed
+//************************************************************
+int max_multiread(uint8_t channelend, uint16_t* adcdat) {
+	uint8_t databuf[2 * 4];
+    int ret=0;
+	return(-1); 	// => not functional for > 2 Byte result yet
+
+#ifdef ADS_CONFIG
+    BHLOG(LOGADS) Serial.printf("\n  MultiADC read AIN0 - AIN%d\n", channelend);
+    // setup byte:   Ref.int., Vref=InternalOn, int.clock, unipolar, no reset cfg.register
+	uint8_t setupbyte 	= MAX1363_SETUPREG | MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT		// Default: 0xD2
+				| MAX1363_SETUP_POWER_UP_INT_REF
+				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_NORESETCFG ;
+    // Send config byte: Mode=single ended, one sel. channel,
+	uint8_t configbyte 	= MAX1363_CONFIGREG | MAX1363_CONFIG_SCAN_TO_CS 				// default 0: 0x61 (1: 0x63, 2: 0x65, 3: 0x67)
+				| (MAX1363_CHANNEL_SEL(channelend) & MAX123x_CHANNEL_SEL_MASK)| MAX1363_CONFIG_SE;
+
+    BHLOG(LOGADS) Serial.printf("  MAX-Adr(0x%02X): Write Setup 0x%02X", isadc, setupbyte);
+    BHLOG(LOGADS) Serial.printf("-  Config: 0x%02X - MultiRead:\n  ",configbyte);
+
+	// Start MAX1236 in F/S Mode
+	ret = i2c_dev_write( &i2cmax123x, &setupbyte, 1, &configbyte, 1);
+    if (ret != ESP_OK) {
+    	BHLOG(LOGADS) Serial.printf(" -> RC(%i)\n",ret);
+        return(-1);   // Initialization was not successfull -> skip
+    }
+//	delay(10); // wake up int. refernce, in case internal ref. had to be switched on
+
+	// Start Read Conversion data
+	ret = i2c_dev_read( &i2cmax123x, 0,0, &databuf[0], (channelend+1) * 2 );	// fill result data field
+    if (ret != ESP_OK) {
+		BHLOG(LOGADS) Serial.printf(" => Read data failed ->  RC(%i)\n",ret);
+		ret=-2;
+	}else{
+		int i;
+		for (i=0; i<channelend+1; i++){
+			adcdat[i] = (((databuf[2*i] & 0x000F)<<8) + (databuf[2*i+1] & 0x00FF));
+			BHLOG(LOGADS) Serial.printf(" %d:0x%02x-%02x (%i)\n", i, databuf[2*i] & 0x000F, databuf[2*i+1] & 0x00FF, adcdat[i]);
+			adcdat[i] = adcdat[i] * 1000 / 2048;	// get value in mV
+		}
+		ret=i+1;
+	}
+#endif // ADS_CONFIG
+	return(ret);	// get 12 bit conversion word
+}
+
+
+//***************************************************************
+// max_reset()
+// reset setup and config byte to default values
+// INPUT:	none
+// OUTPUT: 	none
+//************************************************************
+void max_reset(void) {
+#ifdef ADS_CONFIG
+int ret;
+    BHLOG(LOGADS) Serial.printf("\n  MAX123x Reset\n");
+    // setup byte:   Ref.int., Vref=InternalOn, int.clock, unipolar, no reset cfg.register
+	uint8_t setupbyte 	= MAX1363_SETUPREG | MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT		// Default: 0xD2
+				| MAX1363_SETUP_POWER_UP_INT_REF
+				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_RESETCFG ;
+    // Send config byte: Mode=single ended, one sel. channel,
+	uint8_t configbyte 	= MAX1363_CONFIGREG | MAX1363_CONFIG_SCAN_TO_CS 				// default 0: 0x61 (1: 0x63, 2: 0x65, 3: 0x67)
+				|  MAX1363_CONFIG_SE;
+
+    BHLOG(LOGADS) Serial.printf("  MAX-Adr(0x%02X): Write Default to Setup 0x%02X", isadc, setupbyte);
+    BHLOG(LOGADS) Serial.printf("-  Config: 0x%02X\n  ",configbyte);
+
+	// Start MAX1236 in F/S Mode
+	ret = i2c_dev_write( &i2cmax123x, &setupbyte, 1, &configbyte, 1);
+    if (ret != ESP_OK) {
+    	BHLOG(LOGADS) Serial.printf(" -> RC(%i)\n",ret);
+    }
+#endif
 }
 
 
@@ -190,7 +276,7 @@ uint16_t max_read_core(uint8_t channel) {
     // setup byte:   Ref.int., Vref=InternalOn, int.clock, unipolar, no reset cfg.register
 	setupbyte 	= MAX1363_SETUPREG | MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT		// Default: 0xD2
 				| MAX1363_SETUP_POWER_UP_INT_REF
-				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_NORESET ;
+				| MAX1363_SETUP_INT_CLOCK | MAX1363_SETUP_UNIPOLAR | MAX1363_SETUP_NORESETCFG ;
     // Send config byte: Mode=single ended, one sel. channel,
 	configbyte 	= MAX1363_CONFIGREG | MAX1363_CONFIG_SCAN_SINGLE_1 				// default 0: 0x61 (1: 0x63, 2: 0x65, 3: 0x67)
 				| ((channel << 1) & MAX123x_CHANNEL_SEL_MASK)| MAX1363_CONFIG_SE;

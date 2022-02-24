@@ -34,6 +34,7 @@
 #include <SPI.h>
 
 #include "beeiot.h" // provides all GPIO PIN configurations of all sensor Ports !
+#include "BeeIoTWan.h"
 
 // Libraries for SD card at ESP32_
 // ...has support for FAT32 support with long filenames
@@ -58,7 +59,8 @@
 //************************************
 // Global data object declarations
 //**********************************
-extern uint16_t	lflags;      // BeeIoT log flag field
+extern dataset	bhdb;		// central node status DB -> main.cpp
+extern uint16_t	lflags;     // BeeIoT log flag field
 
 
 // ePaper IO-SPI Object: arbitrary selection of DC + RST + BUSY
@@ -117,12 +119,16 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
     pinMode(EPD_BUSY, INPUT);
 
     #ifdef SD_CONFIG
-        if (!SD.begin(SD_CS)){
-            BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
-        } else {
-            BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
-            issdcard = 1;
-        }
+		if(bhdb.hwconfig & HC_SDCARD){
+			if (!SD.begin(SD_CS)){
+				BHLOG(LOGSPI) Serial.println("  MSPI: SD Card Mount Failed");
+			} else {
+				BHLOG(LOGSPI) Serial.println("  MSPI: SD Card mounted");
+				issdcard = 1;
+			}
+		}else{	// SDCard disabled by GW side HWconf flag
+			issdcard=0;
+		}
     #endif
 
     #ifdef EPD_CONFIG
@@ -130,7 +136,7 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 		display.init();   // enable diagnostic output on Serial
 		// display class does not provide any feedback if dev. is available
 		// so we assume its there...
-		isepd = 1;
+		isepd = 1; // have to assume epd works now...no check implememnted by driver
     #endif
 
     return (issdcard);   // SD SPI port is initialized

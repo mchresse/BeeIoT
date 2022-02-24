@@ -200,8 +200,9 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD;	// 65535;
-// works only in setup phase till LoRa-JOIN received new Cfg data from GW
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGADS;
+//	lflags = 65535;
+// works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
 
 void setup() {
@@ -241,13 +242,15 @@ int rc;		// generic return code variable
         // if deep sleep time == report_interval no boot counter needed:
         //				prepare_sleep_mode(ReEntry, report_interval);
 			}
-		}else if(rc == ESP_SLEEP_WAKEUP_GPIO){
-			// GPIO shortcuts sleep wait loop: Just continue with shortcut setup phase
-  			BHLOG(LOGBH) Serial.printf("Main: Sleep Wakup by GPIO (%i)\n", rc);
-  		}
+		}
+		// ReEntry > 1 <predefined startup/sleep mode set at end of Loop()>
+		// 		=1 after deep sleep:  Reset MM -> wakeup with setup()
+		// 		=2 after light sleep: keeps MM alive -> wakeup where sleep was called
+		// 		=3 after ModemSleep Mode; ( not used here)
+		// 		=4 Active Wait Loop (just a busy loop with delay())
 	} else {
-	  ReEntry = 0;	// reset was pressed or PwrCycle -> set initial Sleep Mode =0
-		// Nexus of sleepmode set at end of a loop
+	  ReEntry = 0;	// reset was pressed or PwrCycle -> set initial StartupState for setup action
+		// Nexus of StartupMode set at end of a each loop()
 	}
 
 	// ReEntry mode was defined at start of sleep mode (end of loop) already
@@ -255,20 +258,23 @@ int rc;		// generic return code variable
 	bootCount = 0;
 
 //***************************************************************
+// Print welcome text
 	if(!ReEntry) { // only at new POn cycle once
-		Serial.println();
-		Serial.println(">***********************************<");
-		Serial.printf (">   BeeIoT - BeeHive Weight Scale\n");
-		Serial.printf ("> %s by R.Esser (c) 2020-2022\n", VERSION_SHORT);
-		Serial.println(">***********************************<");
-		if(lflags > 0)
-			Serial.printf ("LogLevel: %i\n", lflags);
-		BHLOG(LOGBH)Serial.println("Start Sensor Setup Phase ...");
+		if(lflags > 0){
+			Serial.println();
+			Serial.println(">***********************************<");
+			Serial.printf ("> BeeIoT - BeeHive Weight Scale %s", VERSION_SHORT);
+			Serial.println("> by R.Esser (c) 2020-2022");
+			Serial.println(">***********************************<");
+		}
+		BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 
 		//***************************************************************
 		// get bhdb.BoardID (=WiFI MAC), .ChipID and .ChipREV from eFuse area
 		get_efuse_ident();
 	}
+
+BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
 
 //***************************************************************
 // Preset BeeIoT runtime config values
@@ -304,7 +310,7 @@ int rc;		// generic return code variable
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
   issdcard = setup_spi_VSPI(ReEntry);
   if (!issdcard){
-    BHLOG(LOGBH) Serial.println("         SPI SD setup failed.");
+    BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not found.");
     // enter here exit code, if needed
   }
 
@@ -490,32 +496,44 @@ float weight =0;
 //***************************************************************
 // Monitor Analog Ports: e.g. of battery Control
 #ifdef ADS_CONFIG
-uint32_t addata = 0;   	// raw ADS Data buffer
+uint32_t addata = 0;   		// raw ADS Data buffer
 //uint32_t addata1 = 0;   	// raw ADS Data buffer1
 //uint32_t addata2 = 0;   	// raw ADS Data buffer2
 //uint32_t addata3 = 0;   	// raw ADS Data buffer3
 float x;              		// Volt calculation buffer
-if(isadc){
   // read out all ADS channels 0..3
   BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
+/*
+  uint16_t addatax[4];
+  max_multiread(1, &addatax[0]);	// read AIN0..3
 
-  addata = (uint32_t)adc_read(0) * 306 / 100;  			// get Level of Battery Charge Input from Ext-USB port
+  addata = (uint32_t) addatax[0] * 306 / 100;  			// get Level of Battery Charge Input from Ext-USB port
+  bhdb.dlog[bhdb.loopid].BattCharge = addata; 			//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
+  BHLOG(LOGADS) Serial.print("V - ");
+*/
+// 					Waage Wiese: * 316 / 100
+// 4,46V/1,44V=311/100
+  addata = (uint32_t)adc_read(0) * 311 / 100;  			// get Level of Battery Charge Input from Ext-USB port
   bhdb.dlog[bhdb.loopid].BattCharge = addata; 			//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
-  addata = (uint32_t)adc_read(1) * 2;         			// get 3.3V line value of ESP32 devKit in mV
+// 					Waage Wiese: * 2
+  addata = (uint32_t)adc_read(1) * 310 / 100;         			// get 3.3V line value of ESP32 devKit in mV
   bhdb.dlog[bhdb.loopid].ESP3V = (uint16_t) addata;		// AIN1 has 2x33k -> div by 2
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.print("V - ");
 
   // addata = adc_read(2);
-  addata = (uint32_t) 0;		// adc_read(2);			// not connected
+  addata = (uint32_t) adc_read(2) * 1;					// not connected
   bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;	// value is useless
   BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   BHLOG(LOGADS) Serial.println("V");
 
-  addata = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
+// 					Waage Wiese: * 321/100
+// 4,16V/1,15V = 362
+  addata = (uint32_t)adc_read(3) * 310 / 100;			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 // debouncing easier on HW side: by 100nF at AINx against Gnd -> we sample just static voltage levels
 //  	addata1 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
 //  	addata2 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
@@ -532,9 +550,9 @@ if(isadc){
     sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
     // ToDO: set Bat Low Event here...
   }
+  max_reset();	// reset MAX123x to default
 
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGADS) mydelay2(1000,0);
 } // end of isadc
 #endif // ADS_CONFIG
 
@@ -790,7 +808,8 @@ void InitConfig(int reentry){
 		bhdb.hwconfig	  += HC_EPD;
 #endif
 #ifdef SD_CONFIG
-		bhdb.hwconfig	  += HC_SDCARD;
+// can be actively switched on by HWconfig RX1 command later, but not now
+//		bhdb.hwconfig	  += HC_SDCARD;
 #endif
 #ifdef WIFI_CONFIG
 		bhdb.hwconfig	  += HC_WIFI;
@@ -1004,8 +1023,6 @@ void biot_ioshutdown(int sleepmode){
 	digitalWrite(LED_RED, HIGH);    // signal Sleep Phase: LED OFf to save power
     gpio_hold_en(LED_RED); // OneWire Bus line
 
-    gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
-    // reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis() needed
   } // end of sleepmode
 } // biot_ioshutdown()
 
@@ -1046,6 +1063,9 @@ esp_err_t  rc;
 			}else{
 				//	delay(initdelay); 					// set gracetime for timer activation
 			}
+
+    		gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
+    		// reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis() needed
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but

@@ -1074,7 +1074,7 @@ Die Anforderungsliste liest sich gut:
 |1|1|Plattformwägezelle H40A-C3-0100|Bosche|http://www.bosche.eu|58€|H30A v H40A 100kg|
 |2a|1|ESP32-DevKitC v4|OSS|Amazon|20€|(WROOM32 oder WROVER32)|
 |2b|1x|SD HC Karte 2GB|||Amazon|5€|
-|3|1x|HX711 24 Bit A/D Wandler||Amazon|10€|mit grüner Lackschicht!|
+|3|1x|HX711 24 Bit A/D Wandler (24x15mm)||[Amazon](https://www.amazon.de/Innovateking-EU-Gewicht-Arduino-Pr%C3%A4zision-Dual-Kanal/dp/B07GT2HYFJ/ref=sr_1_2_sspa?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=2ZY5LCSAK5OPF&keywords=hx711&qid=1642973793&sprefix=hx711%2Caps%2C186&sr=8-2-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUEzVklNNjBINTM0MVVXJmVuY3J5cHRlZElkPUEwMDc4ODI1MU1RQTlSRkNYQk4zQSZlbmNyeXB0ZWRBZElkPUEwMzI2ODU3MVI0N1I5TEpQQkJBMyZ3aWRnZXROYW1lPXNwX2F0ZiZhY3Rpb249Y2xpY2tSZWRpcmVjdCZkb05vdExvZ0NsaWNrPXRydWU=)|10€|mit grüner Lackschicht!|
 |4|2x|Montageplatte für Wägezelle ALU 200 x 200 x 10mm|Schlosserei||200€|Keine Beschichtung|
 |5|2x|4-kant Unterlageholz|Baumarkt||10€|20x40x500mm|
 |6|1x|IP67 Kunststoff-Montagebox|Maße 70x80x160mm||Amazon||
