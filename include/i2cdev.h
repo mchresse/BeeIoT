@@ -4,7 +4,7 @@
 #include "driver/i2c.h"
 
 #define I2C_FREQ_HZ 	1000000 	// Max 1MHz for esp32
-#define I2CDEV_TIMEOUT	1000		// ms
+#define I2CDEV_TIMEOUT	2000		// ms
 
 // I2C Address Ports
 #define ADS111X_ADDR_GND 0x48 //!< I2C device address with ADDR pin connected to ground

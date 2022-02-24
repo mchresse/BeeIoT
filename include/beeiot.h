@@ -240,9 +240,9 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4170 // mV	= 100%
+    #define BATTERY_MAX_LEVEL        4200 // mV	= 100%
     #define BATTERY_MIN_LEVEL        3200 // mV =  33%
-    #define BATTERY_SHUTDOWN_LEVEL   2700 // mV =   0%
+    #define BATTERY_SHUTDOWN_LEVEL   3000 // mV =   0% -> Limit from ESP32 Min Power level.
 #endif
 
 
@@ -349,6 +349,8 @@ esp_err_t mydelay2(int32_t waitms, int32_t initdelay);	// light sleep delay meth
 
 // in max123x.cpp
 uint16_t adc_read(int channel);
+int  max_multiread(uint8_t channelend, uint16_t* adcdat);
+void max_reset(void);	// set MAX123x to default reset
 
 // epd.cpp functions
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);

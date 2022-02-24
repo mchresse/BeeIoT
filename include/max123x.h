@@ -47,6 +47,7 @@
 #define MAX1363_SETUP_AIN3_IS_REF_EXT_TO_REF	0x20
 #define MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT	0x40
 #define MAX1363_SETUP_AIN3_IS_REF_REF_IS_INT	0x60
+
 #define MAX1363_SETUP_POWER_UP_INT_REF			0x10
 #define MAX1363_SETUP_POWER_DOWN_INT_REF		0x00
 
@@ -54,8 +55,8 @@
 #define MAX1363_SETUP_INT_CLOCK					0x00
 #define MAX1363_SETUP_UNIPOLAR					0x00
 #define MAX1363_SETUP_BIPOLAR					0x04
-#define MAX1363_SETUP_RESET						0x00
-#define MAX1363_SETUP_NORESET					0x02
+#define MAX1363_SETUP_RESETCFG					0x00
+#define MAX1363_SETUP_NORESETCFG				0x02
 
 /* max1363 only - though don't care on others.
  * For now monitor modes are not implemented as the relevant
@@ -124,6 +125,7 @@ int setup_i2c_MAX(int reentry);
 int i2c_scan(void);
 uint16_t adc_read(int channel);
 uint16_t max_read(uint8_t channel);
+int max_multiread(uint8_t channelend, uint16_t* adcdat);
 
 
 class MAX123X {
