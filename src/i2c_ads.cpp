@@ -131,13 +131,13 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 //***************************************************************
 uint16_t ads_read(int channel) {
 	esp_err_t esprc=ESP_ERR_NOT_SUPPORTED;
+	float voltage = 0;
 
 #ifdef ADS_CONFIG
 	int16_t adcdata;
 	ads111x_mux_t chn;
     bool busy;
 	static float gain_val;		// Gain value
-	float voltage = 0;
 
     BHLOG(LOGADS) Serial.printf("\n  ADS: Read from ADS-AIN%d: ", channel);
 	switch (channel){

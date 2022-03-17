@@ -41,6 +41,7 @@
 extern uint16_t	lflags; // BeeIoT log flag field
 extern dataset	bhdb;
 
+int	isscale = 0;		// =1 HX711 ADC connected
 HX711 scale;            // the one and only weight cell
 
 //*******************************************************************
@@ -52,27 +53,37 @@ float	scale_offs;
 
 #ifdef HX711_CONFIG
 // HX711 constructor:
-  BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
-  gpio_hold_dis(HX711_SCK);             // enable HX711_SCK for Dig.-IO
-  gpio_hold_dis(HX711_DT);              // enable HX711_DT for Dig.-IO
-  scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
-  scale.set_scale(scale_DIVIDER);       // define unit value per kg
+	BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
+	gpio_hold_dis(HX711_SCK);             // enable HX711_SCK for Dig.-IO
+	gpio_hold_dis(HX711_DT);              // enable HX711_DT for Dig.-IO
 
-  BHLOG(LOGHX) Serial.printf("  HX711: Weight Cfg.-Calib: %.3f kg\n", (float) bhdb.woffset/(-1000));
-  scale_offs = (float) scale_DIVIDER * ((float) bhdb.woffset/(-1000));	// get tare cfg. value as float
-  scale.set_offset((long)scale_offs);	// define base value for 0kg
-                  // (e.g. reflects weight of weight cell cover board)
+	// Actiovate Scale ADC IO Port
+	scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
 
-  BHLOG(LOGHX) Serial.print("  HX711: Offset(raw): ");
-  BHLOG(LOGHX) Serial.print(scale_offs, 10);
-  BHLOG(LOGHX) Serial.print(" - Unit(raw): ");
-  BHLOG(LOGHX) Serial.print(scale_DIVIDER, 10);
-  BHLOG(LOGHX) Serial.println(" per kg");
+	if(scale.wait_ready_timeout() == false){
+		isscale=0;
+		return(0);	// no weight scale device ADC connected
+	}
 
-  scale.power_down();
-#endif // HX711_CONFIG
 
-  return 1;   // HX711 & wight cell initialized
+	scale.set_scale(scale_DIVIDER);       // define unit value per kg
+
+	BHLOG(LOGHX) Serial.printf("  HX711: Weight Cfg.-Calib: %.3f kg\n", (float) bhdb.woffset/(-1000));
+	scale_offs = (float) scale_DIVIDER * ((float) bhdb.woffset/(-1000));	// get tare cfg. value as float
+	scale.set_offset((long)scale_offs);	// define base value for 0kg
+					// (e.g. reflects weight of weight cell cover board)
+
+	BHLOG(LOGHX) Serial.print("  HX711: Offset(raw): ");
+	BHLOG(LOGHX) Serial.print(scale_offs, 10);
+	BHLOG(LOGHX) Serial.print(" - Unit(raw): ");
+	BHLOG(LOGHX) Serial.print(scale_DIVIDER, 10);
+	BHLOG(LOGHX) Serial.println(" per kg");
+
+	scale.power_down();
+	isscale=1;
+	#endif // HX711_CONFIG
+
+  return isscale;   // HX711 & wight cell initialized
 } // end of setup_HX711Scale()
 
 

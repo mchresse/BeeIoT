@@ -69,7 +69,10 @@ esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 
 int setup_i2c_master(int reentry) {
 	esp_err_t	esprc;
-
+	isi2c = 0;
+	isadc = 0;
+	isrtc = 0;
+#ifdef ADS_CONFIG
 	BHLOG(LOGADS) Serial.printf("  I2C: Init I2C-Master port %d\n", I2C_PORT);
 	pinMode(I2C_SCL, OUTPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
     digitalWrite(I2C_SCL, HIGH);	// define default level
@@ -77,7 +80,6 @@ int setup_i2c_master(int reentry) {
 	gpio_hold_dis((gpio_num_t) I2C_SCL);  	// enable ADS_SCL for Dig.-IO I2C Master Mode
 	gpio_hold_dis((gpio_num_t) I2C_SDA);  	// enable ADS_SDA for Dig.-IO I2C Master Mode
 
-	isi2c = 0;
 	esprc=i2c_master_init(I2C_PORT, I2C_SDA, I2C_SCL);
 	if(esprc == ESP_OK){
 		i2c_master_port = I2C_PORT;	// I2C master Port driver initiated
@@ -86,6 +88,7 @@ int setup_i2c_master(int reentry) {
 			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
 		}
 	}
+#endif
 	return(isi2c);
 } // end of setup_i2c_master()
 
@@ -140,8 +143,6 @@ esp_err_t i2c_dev_write(const i2c_dev_t *dev, const void *out_reg, size_t out_re
 //			=1  I2C Device(s) detected -> isadc or isrtc
 //***************************************************************
 int i2c_scan(void) {
-  	isadc = 0;
-	isrtc = 0;
 
 	if(!isi2c)		// no I2C Master Port Init -> no Scan
 		return(0);

@@ -133,6 +133,7 @@ Preferences preferences;        // we must generate this object of the preferenc
 
 extern int iswifi;              // =1 WIFI flag o.k.
 extern int isi2c;				// =1 I2C Master Port initialized
+extern int isscale;				// =1 HX711 Scale ADC connected
 extern int isrtc;               // =1 RTC device discovered and time read
 extern int isadc;				// >0 => Addr of I2C ADC dev connected
 extern int isntp;               // =1 bhdb has latest timestamp
@@ -199,7 +200,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags=0;
+RTC_DATA_ATTR uint32_t lflags=65535;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -310,7 +311,7 @@ int rc;		// generic return code variable
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell");
-  if (!setup_hx711Scale(ReEntry)){
+  if (setup_hx711Scale(ReEntry)== 0){
     BHLOG(LOGBH) Serial.println("         HX711 setup failed");
     // enter here exit code, if needed
   }
@@ -388,7 +389,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   }
 //***************************************************************
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
-  if (!setup_epd(ReEntry)){
+  if (setup_epd(ReEntry) == 0){
     BHLOG(LOGBH)Serial.println("         ePaper Test failed");
     // enter exit code here, if needed
   }
@@ -440,19 +441,22 @@ void loop() {
 //***************************************************************
 // get Weight Scale values
 #ifdef HX711_CONFIG
-  float weight;
-  scale.power_up();  // HX711 WakeUp Device
+float weight =0;
 
-  // Acquire raw reading
-  // weight = HX711_read(0);
-  // BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
+	if(isscale==1){
+		scale.power_up();  // HX711 WakeUp Device
 
-  // Acquire unit reading
-  weight = HX711_read(1);	// get it in 10 Gr. steps
-  BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
-  bhdb.dlog[bhdb.loopid].HiveWeight = weight;
+		// Acquire raw reading
+		// weight = HX711_read(0);
+		// BHLOG(LOGHX) Serial.printf("  Loop: Weight(raw) : %d", (u_int) weight);
 
-  scale.power_down();
+		// Acquire unit reading
+		weight = HX711_read(1);	// get it in 10 Gr. steps
+		BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
+
+		scale.power_down();
+	}
+	bhdb.dlog[bhdb.loopid].HiveWeight = weight;
 #endif // HX711_CONFIG
 
 //***************************************************************
@@ -462,25 +466,25 @@ void loop() {
 	int owsensors = GetOWsensor(bhdb.loopid);
 
   if( owsensors == 0){
-		    BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
+		    BHLOG(LOGBH) Serial.printf("  OWBus: No OneWire Sensor found!\n");
   }else{
-		    // check if value of last of all 3 sensors is in range
-		    int retry=0;
-		    while((bhdb.dlog[bhdb.loopid].TempIntern == -99) ||
-				     ( bhdb.dlog[bhdb.loopid].TempExtern == -99) ||
-				     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
-        {  // if we have just started lets do it again to get right values
+	    // check if value of last of all 3 sensors is in range
+	    int retry=0;
+	    while((bhdb.dlog[bhdb.loopid].TempIntern == -99) ||
+			     ( bhdb.dlog[bhdb.loopid].TempExtern == -99) ||
+			     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
+	       {  // if we have just started lets do it again to get right values
             GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-            mydelay2(200,0);								// sleep 200ms for OW bus recovery
-            if (retry++ == ONE_WIRE_RETRY){
-              BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
-              break;
-            }
-		    }
-		    if(retry > 0)
-			      sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+       	    mydelay2(200,0);								// sleep 200ms for OW bus recovery
+           	if (retry++ == ONE_WIRE_RETRY){
+           	  BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
+           	  break;
+           	}
+	    }
+	    if(retry > 0)
+		      sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+		BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor s found and Data retrieved\n", owsensors);
 	}
-	BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 
 #endif // ONEWIRE_CONFIG
 
@@ -492,7 +496,7 @@ uint32_t addata = 0;   	// raw ADS Data buffer
 //uint32_t addata2 = 0;   	// raw ADS Data buffer2
 //uint32_t addata3 = 0;   	// raw ADS Data buffer3
 float x;              		// Volt calculation buffer
-
+if(isadc){
   // read out all ADS channels 0..3
   BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
 
@@ -532,6 +536,7 @@ float x;              		// Volt calculation buffer
 
   BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
   BHLOG(LOGADS) mydelay2(1000,0);
+} // end of isadc
 #endif // ADS_CONFIG
 
 
@@ -918,7 +923,7 @@ void ProcessAndValidateConfigValues(int countValues){
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
   if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
-    BHLOG(LOGSPI) Serial.println("  MAIN: shutdown IO devices");
+    BHLOG(LOGSPI) Serial.println("  Main: shutdown IO devices for sleep");
 
     // backup any needed memory values at wakeup here
     //			esp_bluedroid_disable();
@@ -1030,14 +1035,15 @@ esp_err_t  rc;
 
       		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
       		// Otherwise power it down.
-    	//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
+    		//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
     		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-    		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
+
+//    		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
     		gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
 			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
     		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", (uint32_t)waittime, EPD_KEY4);
 			if(rc != ESP_OK){
-				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep timer setup failed: %i\n", rc);
+				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep wakeup setup failed: %i\n", rc);
 			}else{
 				//	delay(initdelay); 					// set gracetime for timer activation
 			}
@@ -1047,7 +1053,7 @@ esp_err_t  rc;
 			// deep sleep was started, it will sleep forever unless hardware reset occurs.
 			esp_deep_sleep((uint64_t) waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
 
-			BHLOG(LOGBH) Serial.println("  Main: This should never be printed");
+			BHLOG(LOGBH) Serial.println("  Main: This should never be printed");	// restart with setup() instead
 			break;
 
 		case 2:		// LightSleepMode

@@ -140,6 +140,8 @@ if(!reentry){
 // -2			GPIO is not ready for ISR assignment
 //*************************************************************************
 int SetonKey(int key, void(*callback)(void)){
+#ifdef EPD_CONFIG
+
 	if(!callback)	// NULL ptr. can not be assigned
  		return(-1);
 
@@ -169,6 +171,7 @@ int SetonKey(int key, void(*callback)(void)){
 		return(-1);
 		break;
 	}
+#endif
 	return(0);
 }
 
@@ -199,7 +202,11 @@ void onKey4(void){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset of BHDB
 void showdata(int sampleID){
-  uint8_t rotation = display.getRotation();
+	if(isepd==0){
+		return;	// no EPD port no action
+	}
+
+uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
 
@@ -270,6 +277,10 @@ void showdata(int sampleID){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
 void showbeacon(int sampleID){
+	if(isepd==0){
+		return;	// no EPD port no action
+	}
+
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
