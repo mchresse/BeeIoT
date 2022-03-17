@@ -81,6 +81,9 @@
 #include <driver/i2c.h>         // from esp-idf/components/driver/I2C.h library @ GitHub
 #include "i2cdev.h"				// I2C master Port setup
 
+// ESP32-ADC
+#include "espadc.h"
+
 // Libraries for WIFI & to get time from NTP Server
 #include <WiFi.h>               // from espressif-esp32 library @ GitHub
 #include "wificfg.h"            // local
@@ -200,7 +203,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGADS;
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGLORAW;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -310,7 +313,7 @@ BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
   issdcard = setup_spi_VSPI(ReEntry);
   if (!issdcard){
-    BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not found.");
+    BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not detected");
     // enter here exit code, if needed
   }
 
@@ -400,9 +403,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   }
 
 //***************************************************************
-  Serial.println(" ");
-
-// while(1);  // for setup test purpose
+  Serial.println("");
 
 } // end of BeeIoT setup()
 
@@ -431,16 +432,6 @@ void loop() {
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
   sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.  ");
-
-
-//***************************************************************
-// Check for Web Config page update
-#ifdef WIFI_CONFIG
-  if(iswifi == 0){
-//      BHLOG(LOGLAN) Serial.println("  Loop: Check for new WebPage Client request...");
-//      CheckWebPage();
-  }
-#endif // WIFI_CONFIG
 
 //
 //***************************************************************
@@ -495,67 +486,32 @@ float weight =0;
 
 //***************************************************************
 // Monitor Analog Ports: e.g. of battery Control
-#ifdef ADS_CONFIG
-uint32_t addata = 0;   		// raw ADS Data buffer
-//uint32_t addata1 = 0;   	// raw ADS Data buffer1
-//uint32_t addata2 = 0;   	// raw ADS Data buffer2
-//uint32_t addata3 = 0;   	// raw ADS Data buffer3
-float x;              		// Volt calculation buffer
-  // read out all ADS channels 0..3
-  BHLOG(LOGADS) Serial.print("  Loop: ADSPort(0-3): ");
-/*
-  uint16_t addatax[4];
-  max_multiread(1, &addatax[0]);	// read AIN0..3
 
-  addata = (uint32_t) addatax[0] * 306 / 100;  			// get Level of Battery Charge Input from Ext-USB port
-  bhdb.dlog[bhdb.loopid].BattCharge = addata; 			//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
-  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  BHLOG(LOGADS) Serial.print("V - ");
-*/
-// 					Waage Wiese: * 316 / 100
-// 4,46V/1,44V=311/100
-  addata = (uint32_t)adc_read(0) * 311 / 100;  			// get Level of Battery Charge Input from Ext-USB port
-  bhdb.dlog[bhdb.loopid].BattCharge = addata; 			//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
-  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  BHLOG(LOGADS) Serial.print("V - ");
+// Read Analog Ports via internal ESP32-ADC
+  // read out all Aanalog channels:
+	BHLOG(LOGADS) Serial.print("  Loop: Get ADC Ports: Charge=");
+	uint32_t addata = 0;   		// raw ADS Data buffer
 
-// 					Waage Wiese: * 2
-  addata = (uint32_t)adc_read(1) * 310 / 100;         			// get 3.3V line value of ESP32 devKit in mV
-  bhdb.dlog[bhdb.loopid].ESP3V = (uint16_t) addata;		// AIN1 has 2x33k -> div by 2
-  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  BHLOG(LOGADS) Serial.print("V - ");
+	// Read Charging Power in Volt
+	addata=getespadc(Charge_pin)  * 311 / 100;
+  	bhdb.dlog[bhdb.loopid].BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+  	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
+  	BHLOG(LOGADS) Serial.print("V - Battery=");
 
-  // addata = adc_read(2);
-  addata = (uint32_t) adc_read(2) * 1;					// not connected
-  bhdb.dlog[bhdb.loopid].Board5V = (uint16_t) addata;	// value is useless
-  BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  BHLOG(LOGADS) Serial.println("V");
-
-// 					Waage Wiese: * 321/100
-// 4,16V/1,15V = 362
-  addata = (uint32_t)adc_read(3) * 310 / 100;			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
-// debouncing easier on HW side: by 100nF at AINx against Gnd -> we sample just static voltage levels
-//  	addata1 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
-//  	addata2 = (uint32_t)adc_read(3) * 3;       			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
-//  	addata3 = (uint32_t)adc_read(3) * 3;     			// Get Battery raw Capacity in Volt ((10%) 3.7V - 4.2V(100%))
-//	addata = (addata + addata1 + addata2 + addata3)/4;	// get avg. of 4 samples
-
-  // calculate Battery Load Level in %
-  x = ((float)(addata-BATTERY_MIN_LEVEL)/				//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
+  	// Get battery Powerlevel & calculate % Level
+	float x;              		// Volt calculation buffer
+	addata=getespadc(Battery_pin) * 310 / 100;
+  	x = ((float)(addata-BATTERY_MIN_LEVEL)/				//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
        (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
-  bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
-  bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
+  	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
+  	bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
 
-  if(x==0){
-    sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow");
+  	if(x==0){
+    	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
     // ToDO: set Bat Low Event here...
-  }
-  max_reset();	// reset MAX123x to default
+  	}
 
-  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-} // end of isadc
-#endif // ADS_CONFIG
-
+  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
 
 //***************************************************************
 // save all collected sensor data to SD and/or report via LoRa/Wifi
@@ -809,7 +765,7 @@ void InitConfig(int reentry){
 #endif
 #ifdef SD_CONFIG
 // can be actively switched on by HWconfig RX1 command later, but not now
-//		bhdb.hwconfig	  += HC_SDCARD;
+		bhdb.hwconfig	  += HC_SDCARD;
 #endif
 #ifdef WIFI_CONFIG
 		bhdb.hwconfig	  += HC_WIFI;
@@ -838,109 +794,23 @@ void InitConfig(int reentry){
 			strncpy(bhdb.dlog[i].comment, "OK/0", 3);
 		}
 	} // end of !reentry
-
-#ifdef WEB_CONFIG
-// Next settings are for Web based config Page:
-// see https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences/examples/StartCounter/StartCounter.ino
-  preferences.begin("MyJourney", false);
-
-  // takeout 4 Strings out of the Non-volatile storage
-  String strSSID        = preferences.getString("SSID", "");
-  String strPassword    = preferences.getString("Password", "");
-  String strDeviceID    = preferences.getString("DeviceID", "");
-  String strDeviceToken = preferences.getString("DeviceToken", "");
-
-  // reset all default config parameter sets
-  for (int count = 0; count < CONFIGSETS; count++){
-    ConfigName[count]   = "";
-    ConfigValue[count]  = "";
-    ConfigStatus[count] = 0;
-    ConfigType[count]   = 0;
-  }
-
-  // initialize config set values and set names
-  ConfigName[0] = "LED";
-  ConfigType[0] = 1;     // type textbox
-
-  ConfigName[1] = "SSID";
-  ConfigType[1] = 1;
-
-  ConfigName[2] = "PASSWORD";
-  ConfigType[2] = 1;
-
-  ConfigName[3] = "DEVICE ID";
-  ConfigType[3] = 1;
-
-  ConfigName[4] = "DEVICE TOKEN";
-  ConfigType[4] = 1;
-
-  // put the NVS stored values in RAM for the program
-  ConfigValue[1] = strSSID;
-  ConfigValue[2] = strPassword;
-  ConfigValue[3] = strDeviceID;
-  ConfigValue[4] = strDeviceToken;
-
-  MQTTClient_Connected = false;
-  CounterForMQTT = 0;
-#endif // WEB_CONFIG
-
 } // end of InitConfig()
 
-//*******************************************************************
-/// @brief check the ConfigValues and set ConfigStatus;
-/// process 4 config sets for LAN permission settings
-/// @param countValues Number of processed configsets
-/// @return void
-//*******************************************************************
-void ProcessAndValidateConfigValues(int countValues){
-#ifdef WEB_CONFIG
 
-  BHLOG(LOGLAN) Serial.printf("  Webserver: ProcessConfigValues(%i)\n", countValues);
-  if (countValues > CONFIGSETS) {
-    countValues = CONFIGSETS;
-  }
-
-  // store the second to fifth value in non-volatile storage
-  if (countValues > 4){
-    preferences.putString("SSID",        ConfigValue[1]);
-    preferences.putString("Password",    ConfigValue[2]);
-    preferences.putString("DeviceID",    ConfigValue[3]);
-    preferences.putString("DeviceToken", ConfigValue[4]);
-  }
-
-  // in our application the first value must be "00" or "FF" (as text string)
-  if ((ConfigValue[0].equals("00")) || (ConfigValue[0].equals("FF"))){
-    ConfigStatus[0] = 1;    // Value is valid
-    BHLOG(LOGLAN) Serial.printf("  Webserver: Processing command: %s\n", ConfigValue[0].c_str());
-  }else{
-    ConfigStatus[0] = -1;   // Value is not valid
-    BHLOG(LOGLAN) Serial.printf("  Webserver: Wrong command: %s\n", ConfigValue[0].c_str());
-  }
-
-  // processing command from here:
-  // first config value is used to switch LED ( = Actor)
-  if (ConfigValue[0].equals("00")){
-    digitalWrite(LED_RED, HIGH);
-    // do something with actors: SwitchActor(ACTOR_OFF);
-  } else if (ConfigValue[0].equals("FF")){
-    digitalWrite(LED_RED, LOW);
-    // do something other with actors: SwitchActor(ACTOR_ON);
-  }
-
-#endif // WEB_CONFIG
-}
 
 
 //*******************************************************************
 /// @brief biot_ioshutdown()
 /// disable all hi level IO protocol devices (e.g. SPI)
 /// and prepare IO ports for sleep mode accordingly,
+/// Be aware only GPIOs with RTC functionality can be stabilzated in
+/// a configured mode: 0,2,4,12-15,25-27,32-39
 /// @param sleepmode	wakeup mode
 /// @details 1 DeepSleep Mode; 2 LightSleep Mode; 3 ModemSleep; 4 Active wait loop
 /// @return void
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
-  if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
+ if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
     BHLOG(LOGSPI) Serial.println("  Main: shutdown IO devices for sleep");
 
     // backup any needed memory values at wakeup here
@@ -949,9 +819,11 @@ void biot_ioshutdown(int sleepmode){
 
 #ifdef WIFI_CONFIG
     if(iswifi){
+		adc_power_off()
+		Wifi.disconnect(true);
 	//	esp_wifi_stop();
-  		WiFi.disconnect(true);
-  		WiFi.mode(WIFI_OFF);
+  		WiFi.disconnect(true);	// disconnect curr. session
+  		WiFi.mode(WIFI_STA); // switch WIFI off
   	}
     iswifi = 0;
 #endif
@@ -963,65 +835,77 @@ void biot_ioshutdown(int sleepmode){
     if(issdcard){
       SD.end();   // unmount SD card
     }
-    digitalWrite(SD_CS, HIGH);
-    gpio_hold_en(SD_CS);      // SD_CS
-    issdcard = 0;
 #endif
+	pinMode(SD_CS, INPUT_PULLUP);		// xxx, bootstrap pin !
+//    digitalWrite(SD_CS, HIGH);
+    gpio_hold_en(SD_CS);      // stable state in Deep sleep
+    issdcard = 0;
 
 #ifdef EPD_CONFIG
     if(isepd){
       display.powerDown();
     }
-    digitalWrite(EPD_CS, HIGH);
-    digitalWrite(EPD_RST, HIGH);
-    gpio_hold_en(EPD_CS);     // EPD_CS
-    isepd = 0;
 #endif
+
+// SPI Bus shutdown: EPD + LORA + SD
+    pinMode(VSPI_MISO, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    pinMode(VSPI_MOSI, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    pinMode(VSPI_SCK, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+
+    isepd = 0;
+	pinMode(EPD_BUSY, INPUT);			// already driven by EPD
+	pinMode(EPD_CS, INPUT_PULLUP);		// needs ext- Pullup for DeepSleep -> no RTC GPIO, bootstrap pin
+	pinMode(EPD_RST, INPUT_PULLUP);		// needs ext- Pullup for DeepSleep -> no RTC GPIO
+	pinMode(EPD_DC, INPUT_PULLUP); 		// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    gpio_hold_en(EPD_CS);    // EPD_CS
+    gpio_hold_en(EPD_RST);   // EPD_RST
+    gpio_hold_en(EPD_DC);    // EPD_DC
+
+// High side power switch of SPI device has no effect
+// -> need low side switch by driving ext. MOSFET by GPIO
+	pinMode(EPD_LOWSW, OUTPUT);			// Open EPD Low side switch -> no ground to ePaper
+    digitalWrite(EPD_LOWSW, HIGH);		// High if P-channel MOSFET
+    gpio_hold_en(EPD_LOWSW);
+
 
 #ifdef LORA_CONFIG
     if(islora){
       LoRa.end();     // set LORA Radio to sleep mode and disable SPI
     }
-    digitalWrite(BEE_CS, HIGH);
-    digitalWrite(BEE_RST, HIGH);
+#endif
+    islora = 0;
+	pinMode(BEE_CS, INPUT_PULLUP);		// bootstrap pin
+	pinMode(BEE_RST, INPUT_PULLUP);
     gpio_hold_en(BEE_CS);     // BEE_CS
     gpio_hold_en(BEE_RST);    // BEE_RST
-    islora = 0;
-#endif
 
 #ifdef HX711_CONFIG
-    pinMode(HX711_DT, OUTPUT);
-    pinMode(HX711_SCK, OUTPUT);
-    digitalWrite(HX711_SCK, HIGH);
-    digitalWrite(HX711_DT, HIGH);
+// HX requires OUTPUT here to define data/clock line during sleep
+// otherwise +7mA consumption in sleep
+    pinMode(HX711_SCK, INPUT_PULLUP);	// could be INPUT_PULLUP as well
+    pinMode(HX711_DT, INPUT_PULLUP);	// could be INPUT_PULLUP as well
+//    digitalWrite(HX711_SCK, HIGH);
+//    digitalWrite(HX711_DT, HIGH);
     gpio_hold_en(HX711_SCK);  // HX711 SCK
     gpio_hold_en(HX711_DT);   // HX711 Data
 #endif
 
-#ifdef ADS_CONFIG
+
 //	i2c_driver_delete(i2c_master_port);
     // Set all I2C lines to high impedance -> open collector bus
-    pinMode(I2C_SCL, OUTPUT);
-    pinMode(I2C_SDA, OUTPUT);
-    digitalWrite(I2C_SCL, HIGH);
-    digitalWrite(I2C_SDA, HIGH);
-    pinMode(ADS_ALERT, OUTPUT);
-    digitalWrite(ADS_ALERT, HIGH);
+    pinMode(I2C_SCL, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
+    pinMode(I2C_SDA, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
     gpio_hold_en((gpio_num_t) I2C_SCL);    // ADS_SCL
     gpio_hold_en((gpio_num_t) I2C_SDA);    // ADS_SDA
-    gpio_hold_en((gpio_num_t) ADS_ALERT);  // ADS_Alert
-#endif
 
 #ifdef ONEWIRE_CONFIG
 // Set OW line to high impedance -> open collector bus
-     pinMode(ONE_WIRE_BUS, OUTPUT);
-     digitalWrite(ONE_WIRE_BUS, HIGH);
-     gpio_hold_en(ONE_WIRE_BUS); // OneWire Bus line
+    pinMode(ONE_WIRE_BUS, INPUT_PULLUP);	// finally with ex. pullup 10k -> set to RTC INPUT
+    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
 #endif
 
-    pinMode(LED_RED, OUTPUT);
-	digitalWrite(LED_RED, HIGH);    // signal Sleep Phase: LED OFf to save power
-    gpio_hold_en(LED_RED); // OneWire Bus line
+    pinMode(LED_RED, INPUT_PULLUP); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
+    gpio_hold_en(LED_RED); 			// OneWire Bus line
 
   } // end of sleepmode
 } // biot_ioshutdown()
@@ -1049,12 +933,11 @@ esp_err_t  rc;
     		//  Details at the API docs
 			//	http://esp-idf.readthedocs.io/en/latest/api-reference/system/deep_sleep.html
 
-      		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
+      		//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
+    		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
       		// Otherwise power it down.
-    		//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
     		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-
-//    		gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
+			gpio_pullup_en(EPD_KEY4);                  // use RTC_IO pullup on GPIO 35
     		gpio_pulldown_dis(EPD_KEY4);               // not use pulldown on GPIO 35
 			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY4, 0);	// select GPIO35 (blue button) as Wakup Trigger on low level
     		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key4)\n", (uint32_t)waittime, EPD_KEY4);
@@ -1220,108 +1103,6 @@ void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
 
 
 
-//*******************************************************************
-// CheckWebPage()
-/// @brief check web space for client request in case we are connected
-/// send a MQTT response
-/// @return void
-//*******************************************************************
-void CheckWebPage(){
-#ifdef WEB_CONFIG
-
-  int i;
-  String GETParameter = Webserver_GetRequestGETParameter();   // look for client request
-
-    if (GETParameter.length() > 0){        // we got a request, client connection stays open
-      BHLOG(LOGLAN) i = GETParameter.length();
-      BHLOG(LOGLAN) Serial.printf("  CheckWebPage: GETParameter[%i]=", i);
-      BHLOG(LOGLAN) Serial.println(GETParameter);
-      if (GETParameter.length() > 1){      // request contains some GET parameter
-
-          // decode the GET parameter and set ConfigValues
-          int countValues = DecodeGETParameterAndSetConfigValues(GETParameter);
-          BHLOG(LOGLAN) Serial.printf("  CheckWebPage: Interpreting <%i> parameters for %s\n", countValues, WebRequestHostAddress.c_str());
-
-          // the user entered this address in browser, with GET parameter values for configuration
-          // default: if (WebRequestHostAddress == "192.168.4.1"){
-          if (WebRequestHostAddress == bhdb.ipaddr){
-                // check and process 5 ConfigValues, switch the LED,
-                // store SSID, Password, DeviceID and DeviceToken in non-volatile storage
-                ProcessAndValidateConfigValues(5);
-
-                // takeout SSID and Password out of non-volatile storage
-                String strSSID = preferences.getString("SSID", "");
-                String strPassword = preferences.getString("Password", "");
-
-                // convert to char*: https://coderwall.com/p/zfmwsg/arduino-string-to-char
-                char* txtSSID = const_cast<char*>(strSSID.c_str());
-                char* txtPassword = const_cast<char*>(strPassword.c_str());
-                BHLOG(LOGLAN) Serial.printf("  WebServer: Reconnect SSID:%s - PWD:%s\n", txtSSID, txtPassword);
-
-                // disconnect from router network
-//                int successDisconnect = wifi_disconnect();
-                delay(1000);  // wait a second
-
-                // then try to connect once new with new login-data
-//                int successConnect = wifi_connect(txtSSID, txtPassword, HOSTNAME);
-                  int successConnect =1; // shortcut for test purpose
-
-                if (successConnect == 1){
-                    RouterNetworkDeviceState = NETWORKSTATE_LOGGED;                 // set the state
-                    CounterForMQTT = 0;
-                }else{
-                    RouterNetworkDeviceState = NETWORKSTATE_NOTLOGGED;              // set the state
-                }
-                MQTTClient_Connected = false;
-          }
-      }
-      String HTMLPage;
-
-      // the user entered this address in the browser, to get the configuration webpage
-      // default: if (WebRequestHostAddress == "192.168.4.1"){
-      if (WebRequestHostAddress == bhdb.ipaddr){
-          // build a new Configuration webpage with form and new ConfigValues entered in textboxes or represented by sliders
-          HTMLPage = EncodeFormHTMLFromValues("BeeIoT CONFIG Page", 5) +
-                "<br>IP Address  : " + WiFi_GetOwnIPAddressInRouterNetwork() +
-                "<br>Battery Load:";
-      }
-      Webserver_SendHTMLPage(HTMLPage);    // send out the webpage to client = webbrowser and close client connection
-    }
-
-/* by now no MQTT account
-  if (iswifi){             // if we are logged in
-    CounterForMQTT++;
-    if (CounterForMQTT > 40){   // do this approx every 2 seconds
-      CounterForMQTT = 0;
-      // not yet connected
-      if (MQTTClient_Connected == false){
-        // try to connect to AllThingsTalk MQTT Broker and switch RGB-LEDs
-        int NodeState = ConnectToATT();
-        if (NodeState > 0){   //  connection and subscription established successfully
-          MQTTClient_Connected = true;            // we can go in normal mode
-        }
-      }
-
-      // we successfully connected with MQTT broker and subscribed to topic and can go in normal mode
-      if (MQTTClient_Connected == true){
-        // generate virtual sensor data (10..40)
-        CurrentSensorDate++;
-        if (CurrentSensorDate > 40) {CurrentSensorDate = 10;};
-
-        // Send sensor data via MQTT to AllThingsTalk
-        SendSensorDateToATT("temperature", CurrentSensorDate);
-
-        // read the voltage at pin 36, divide by 64
-        int analog_value = analogRead(PIN_SENSOR) >> 6;
-
-        // Send sensor data via MQTT to AllThingsTalk
-        SendSensorDateToATT("light", analog_value);
-      }
-    }
-  }
-*/
-#endif // WEB_CONFIG
-} // end of CheckWebPage()
 
 
 //********************************************************************************

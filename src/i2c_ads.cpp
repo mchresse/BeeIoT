@@ -41,6 +41,7 @@ extern int adcaddr;						// I2C Dev.address of detected ADC
 extern i2c_port_t i2c_master_port;		// I2C master Port ID, defined in i2cdev.cpp
 extern i2c_config_t i2ccfg;				// Configset of I2C MasterPort
 
+#ifdef ADS_CONFIG
 static i2c_dev_t i2cads1115;			// Config settings of detected I2C device
 const float 	 adcfactor = 0.1875F;	// factor for 6.144V range
 
@@ -54,7 +55,7 @@ const float ads111x_gain_values[] = {
     [ADS111X_GAIN_0V256_2] = 0.256,
     [ADS111X_GAIN_0V256_3] = 0.256
 };
-
+#endif
 
 static esp_err_t read_reg(i2c_dev_t *dev, uint8_t reg, uint16_t *val);
 static esp_err_t write_reg(i2c_dev_t *dev, uint8_t reg, uint16_t val);
@@ -84,8 +85,6 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 #ifdef  ADS_CONFIG
 	uint16_t val;
 	BHLOG(LOGADS) Serial.printf("  ADS: Init I2C ADS device & Alert line\n");
-	pinMode(ADS_ALERT, INPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
-	gpio_hold_dis((gpio_num_t) ADS_ALERT);  // enable ADS_ALERT for Dig.-IO I2C Master Mode
 
 	//	I2C should have been scanned by I2c_master_init() already
 	if (adcaddr == ADS111X_ADDR_GND || adcaddr == ADS111X_ADDR_VCC ||
@@ -130,10 +129,11 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 //
 //***************************************************************
 uint16_t ads_read(int channel) {
-	esp_err_t esprc=ESP_ERR_NOT_SUPPORTED;
+	float voltage = 0;
 	float voltage = 0;
 
 #ifdef ADS_CONFIG
+	esp_err_t esprc=ESP_ERR_NOT_SUPPORTED;
 	int16_t adcdata;
 	ads111x_mux_t chn;
     bool busy;

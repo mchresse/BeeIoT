@@ -67,6 +67,9 @@ esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 }
 
 int setup_i2c_master(int reentry) {
+	isi2c = 0;
+	isadc = 0;
+	isrtc = 0;
 	esp_err_t	esprc;
 	isi2c = 0;
 	isadc = 0;
@@ -83,13 +86,11 @@ int setup_i2c_master(int reentry) {
 	if(esprc == ESP_OK){
 		i2c_master_port = I2C_PORT;	// I2C master Port driver initiated
 		isi2c = 1;	// we have a working I2C master port
-		// Scan always needed to preset isrtc and isadc and adcaddr
-		isi2c = i2c_scan();		// Discover I2C dev. Addresses once
-	}
+			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
+		// Scan always needed to preset isrtc and isadc and adcaddr	}
 
 	return(isi2c);
 } // end of setup_i2c_master()
-
 
 
 esp_err_t i2c_dev_read(const i2c_dev_t *dev, const void *out_data, size_t out_size, void *in_data, size_t in_size)

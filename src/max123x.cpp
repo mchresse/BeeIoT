@@ -165,8 +165,10 @@ uint16_t max_read(uint8_t channel) {
 	}
 	data = data / 2;	// get value in mV; 1LSB = 2.048V/4096 = 0,5mV => factor: 0,5
     return((uint16_t) data);	// get 12 bit conversion word
-
+#else
+	return(ret);
 #endif // ADS_CONFIG
+
 }
 
 //***************************************************************
@@ -185,11 +187,13 @@ uint16_t max_read(uint8_t channel) {
 //					=-2 sampling failed
 //************************************************************
 int max_multiread(uint8_t channelend, uint16_t* adcdat) {
-	uint8_t databuf[2 * 4];
-    int ret=0;
-	return(-1); 	// => not functional for > 2 Byte result yet
+    int ret=-1;
 
 #ifdef ADS_CONFIG
+	uint8_t databuf[2 * 4];
+
+	return(-1); 	// => not functional for > 2 Byte result yet
+
     BHLOG(LOGADS) Serial.printf("\n  MultiADC read AIN0 - AIN%d\n", channelend);
     // setup byte:   Ref.int., Vref=InternalOn, int.clock, unipolar, no reset cfg.register
 	uint8_t setupbyte 	= MAX1363_SETUPREG | MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT		// Default: 0xD2
@@ -263,7 +267,6 @@ int ret;
 // Not used by now !!!
 
 uint16_t max_read_core(uint8_t channel) {
-    int ret=0;
 #ifdef ADS_CONFIG
 
 	uint8_t		data_h;		// result high Byte
@@ -326,8 +329,10 @@ uint16_t max_read_core(uint8_t channel) {
 //  Serial.printf("  MAX-Port(%d): %i-%i", channel, data_h, data_l);
 
     return((uint16_t) (data_l + data_h * 256) & 0x0FFF);	// get 12 bit conversion word
-
+#else
+	return(0);
 #endif // ADS_CONFIG
+
 }
 
 

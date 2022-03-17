@@ -56,23 +56,23 @@ const int irqPin    = BEE_DIO0;	// change for your board; must be a hardware int
 // Lora Modem default configuration
 RTC_DATA_ATTR struct LoRaRadioCfg_t{
     // addresses of GW and node used for package identification -> might get updated by JOIN_CONFIG acknolewdge pkg
-    byte nodeid	= NODEIDBASE;	// My address/ID (of this node/device) -> Preset with JOIN defaults
+    byte nodeid	    = NODEIDBASE;	// My address/ID (of this node/device) -> Preset with JOIN defaults
     byte gwid		= GWIDx;		// My current gateway ID to talk with  -> Preset with JOIN defaults
     byte chcfgid	= 0;			// channel cfg ID of initialzed ChannelTab[]-config set: default id=0 => EU868_F1
 
     // following cfg parameters are redefined by a new channel-cfg set reflected by the channel ID provided via CONFIG CMD
-    long	freq	= FREQ;			// =EU868_F1..9,DN (EU868_F1: 868.1MHz)
-    s1_t	pw		= TXPOWER;		// =2-16  TX PA Mode (14)
-    sf_t	sf		= SPREADING;	// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
-    bw_t	bw		= SIGNALBW;		// =0..3 RFU Bandwidth 125-500 (0:125kHz)
-    cr_t	cr		= CODING;		// =0..3 Coding mode 4/5..4/8 (0:4/5)
-    int	  ih		= IHDMODE;		// =1 implicite Header Mode (0)
+    long freq	= FREQ;			// =EU868_F1..9,DN (EU868_F1: 868.1MHz)
+    s1_t pw		= TXPOWER;		// =2-16  TX PA Mode (14)
+    sf_t sf		= SPREADING;	// =0..8 Spreading factor FSK,7..12,SFrFu (1:SF7)
+    bw_t bw		= SIGNALBW;		// =0..3 RFU Bandwidth 125-500 (0:125kHz)
+    cr_t cr		= CODING;		// =0..3 Coding mode 4/5..4/8 (0:4/5)
+    int	 ih		= IHDMODE;		// =1 implicite Header Mode (0)
     u1_t ihlen	= IHEADERLEN;	// =0..n if IH -> header length (0)
     u1_t nocrc	= NOCRC;		// =0/1 no CRC check used for Pkg (0)
     u1_t noRXIQinversion = NORXIQINV;	// =0/1 flag to switch RX+TX IQinv. on/off (1)
     // runtime parameters for messages
-    int	msgCount = 0;			// gobal serial counter of outgoing messages 0..255 round robin
-    int	joinCount= 0;			// global JOIN packet counter
+    int	msgCount    = 0;			// gobal serial counter of outgoing messages 0..255 round robin
+    int	joinCount   = 0;			// global JOIN packet counter
     int	joinRetryCount= 0;		// # of JOIN+REJOIN Request Actions
 } LoRaCfg;
 

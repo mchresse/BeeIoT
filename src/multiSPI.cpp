@@ -66,7 +66,7 @@ extern uint16_t	lflags;     // BeeIoT log flag field
 // ePaper IO-SPI Object: arbitrary selection of DC + RST + BUSY
 // for defaults: C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
 // With defined WROVERB switch: EPD_BUSY = 39 !!!
-GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RST, EPD_BUSY); // (SPIclass, EPD_CS, DC, RST, backlight=0)
+GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RST, 0); // (SPIclass, EPD_CS, DC, RST, backlight=0)
 GxEPD_Class display(io, EPD_RST, EPD_BUSY);  // (io-class GxGDEW027C44, RST, BUSY)
 
 // #define SPISPEED    2000000  // SPI speed: 2MHz
@@ -84,15 +84,20 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
     issdcard = 0;
 
 // First disabe all SPI devices CS line to avoid collisions
-    pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
-    pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
+    pinMode(EPD_CS, OUTPUT);    	//VSPI SS for ePaper EPD
+    pinMode(SD_CS,  OUTPUT);    	//HSPI SS for SDCard Port
     pinMode(BEE_CS, OUTPUT);
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(SD_CS, HIGH);
     digitalWrite(BEE_CS, HIGH);
-    gpio_hold_dis(SD_CS);   // enable SD_CS
-    gpio_hold_dis(EPD_CS);   // enable EPD_CS
-    gpio_hold_dis(BEE_CS);  // enable BEE_CS
+    gpio_hold_dis(SD_CS);   		// enable SD_CS
+    gpio_hold_dis(EPD_CS);   		// enable EPD_CS
+    gpio_hold_dis(BEE_CS);  		// enable BEE_CS
+
+// Activate EPD low sid switch -> connect ground to epaper
+	pinMode(EPD_LOWSW, OUTPUT);
+	digitalWrite(EPD_LOWSW, LOW);
+    gpio_hold_dis(EPD_LOWSW);  		// enable BEE_CS
 
 // Setup VSPI BUS
     pinMode(VSPI_MISO, INPUT_PULLUP);
@@ -104,18 +109,21 @@ int setup_spi_VSPI(int reentry) {    // My SPI Constructor
 // Preset SPI dev: BEE-LoRa Module
     pinMode(BEE_RST, OUTPUT);
     digitalWrite(BEE_RST, HIGH);
-    gpio_hold_dis(BEE_RST);  // enable BEE_RST
+    gpio_hold_dis(BEE_RST);  		// enable BEE_RST
     pinMode(BEE_DIO0, INPUT);
-    pinMode(BEE_DIO1, INPUT);
-    pinMode(BEE_DIO2, INPUT);
-//    digitalWrite(BEE_MOSI, HIGH); // done via VSPI_MOSI if the same
-    LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0);// set CS, reset, IRQ pin
+//    pinMode(BEE_DIO1, INPUT);		// n.a.
+//    pinMode(BEE_DIO2, INPUT);		// n.a.
+
+// Configure LoRa Port
+    LoRa.setPins(BEE_CS, BEE_RST, BEE_DIO0); // set CS, reset, IRQ pin
 
 // Preset SPI dev: EPD Display Module
-    pinMode(EPD_RST, OUTPUT);
-    digitalWrite(EPD_RST, HIGH);
     pinMode(EPD_DC, OUTPUT);
+    pinMode(EPD_RST, OUTPUT);
     digitalWrite(EPD_DC, HIGH);
+    digitalWrite(EPD_RST, HIGH);
+    gpio_hold_dis(EPD_DC);
+    gpio_hold_dis(EPD_RST);
     pinMode(EPD_BUSY, INPUT);
 
     #ifdef SD_CONFIG
