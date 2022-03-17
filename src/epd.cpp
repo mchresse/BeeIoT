@@ -36,6 +36,7 @@
 // #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
 // #define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
 #include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
+// #include <GxGDEW029T5/GxGDEW029T5.h>     // 2.9" b/w
 
 #include <GxIO/GxIO_SPI/GxIO_SPI.cpp>
 #include <GxIO/GxIO.cpp>
@@ -113,13 +114,15 @@ if(!reentry){
 }
 
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
-  // EPD_KEY1 => GPIO00 == Boot Button
-  // EPD_KEY2 => EN     == Reset Button
-  // Key3 reused by BEE_DIO2 -> defined there
-  // pinMode(EPD_KEY3, INPUT_PULLUP);  // define as active 0: Key3
-	SetonKey(1, onKey1);
-	SetonKey(2, onKey2);
-	SetonKey(3, onKey3);
+  // EPD_KEY1 => n.a.
+  // EPD_KEY2 => n.a.
+  // EPD_KEY3 => ?
+  // EPD_KEY4 => (Deep-) Sleep Wakeup trigger
+
+// Assign Key-IRQ to callback function
+//	SetonKey(1, onKey1);
+//	SetonKey(2, onKey2);
+//	SetonKey(3, onKey3);
 	SetonKey(4, onKey4);
 #endif
 
@@ -140,25 +143,44 @@ if(!reentry){
 // -2			GPIO is not ready for ISR assignment
 //*************************************************************************
 int SetonKey(int key, void(*callback)(void)){
+#ifdef EPD_CONFIG
 	if(!callback)	// NULL ptr. can not be assigned
  		return(-1);
 
 	switch (key){
 	case 1: 			// EPD_KEY 1
-		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key1 reserved by Boot Funktion of DevKitC Board");
+		if(callback){
+//			pinMode(EPD_KEY1, INPUT);
+//  	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 undefined for V3.0 board");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
+		}
 		return(-2);
 		break;
 	case 2: 			// EPD_KEY 2
-		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key1 reserved by Reset Funktion of DevKitC Board");
-		return(-2);
-		break;
-	case 3: 			// EPD_KEY 3
-		BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key3 reserved by Bee-DIO2 Funktion of SX1276");
-		return(-2);
-		break;
-	case 4: 			// EPD_KEY 4
 		if(callback){
-			pinMode(EPD_KEY4, INPUT);	// /w ext 10k Pullup to 3.3V!
+//			pinMode(EPD_KEY2, INPUT);
+//  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 undefined for V3.0 board");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY2));
+		}
+		return(-2);
+		break;
+	case 3: 			// EPD_KEY 3 /w ext 10k Pullup to 3.3V!
+		if(callback){
+//			pinMode(EPD_KEY3, INPUT);
+//	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 with undefined usage");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY3));
+		}
+		return(-2);
+		break;
+	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
+		if(callback){
+			pinMode(EPD_KEY4, INPUT);
     		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
 			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 ISR assigned");
 		}else{
@@ -166,9 +188,10 @@ int SetonKey(int key, void(*callback)(void)){
 		}
 		break;
 	default:
-		return(-1);
+		return(-1);	// unsupported Key number
 		break;
 	}
+#endif
 	return(0);
 }
 
@@ -199,6 +222,10 @@ void onKey4(void){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset of BHDB
 void showdata(int sampleID){
+
+	if(isepd==0){
+		return;	// no EPD port no action
+	}
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
@@ -270,6 +297,9 @@ void showdata(int sampleID){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
 void showbeacon(int sampleID){
+	if(isepd==0){
+		return;	// no EPD port no action
+	}
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
