@@ -1,5 +1,7 @@
 # BeeIoT v2.0
-### Eine Bienenstockwaage im Eigenbau (mit IoT Technik)
+### Eine Bienenstockwaage im Eigenbau (mit IoT Technik) 
+*Auf Basis Espressif ESP32S* !
+
 <img src="./images_v2/BeeLogFront.jpg" width=250>
 
 **01.10.2019 by Randolph Esser**
@@ -256,19 +258,19 @@ Der ESP32 unterstützt folgende APIs:
 
 Zwar zeichnet sich ein Arduino 8266/UNO durch geringeren Stromverbrauch aus, der ESP32 hat aber mehr GPIO Leitungen, die wir dringend für alle verwendeten Module benötigen.
 
-Allerdings kommt hier nicht die standardmäßig verbaute **Wroom32** Version des ESP32 zum Einsatz, sondern der **Wrover32**:
+Hier kommt nur die standardmäßig verbaute **Wroom32** Version des ESP32 zum Einsatz.
+Die größere Variante **Wrover-B** hat 2 GPIo Leitung weniger, nd ist im aktuellen Board design nicht verwendbar.
 
 <img src="./images_v2/ESP32_WROOM-32D.jpg"> ==> <img src="./images_v2/ESP32_Wrover-B_2.jpg">
 
-Das ergibt die genaue Modul-Bezeichnung: **ESP32-DevKitC-Wrover-B**.
+Das ergibt die genaue Modul-Bezeichnung: **ESP32-DevKitC-Wroom32 V4**.
 
-Der **Wrover-B** hat neben dem 4MB Flash Memory auch noch einen zusätlichen 8-16MB PSRam Bereich, indem wir temporär anfallende residente Sensordaten ablegen/puffern können.
-Ansonsten sind sie Pin- und Code-Kompatibel so dass grundsätzlich auch der Wroom verwendet werden kann. Die Nutzung des PSRam erörtern wir später.
+Der **Wrover-B** hat allerdings neben dem 4MB Flash Memory auch einen zusätlichen 8-16MB PSRam Bereich, indem wir temporär anfallende residente Sensordaten ablegen/puffern könnten.
 
 Die Variante DevKit-C bringt bereits einige wichtige Betriebsfunktionen mit sich und ist durch ihr Standardsockelformat leichter auf ein 2,4" Lochrasterboard zu löten.
 OnBoard findet sich auch bereits eine Bluetooth (4.2 + BLE) und WiFI (IEE 802.11 b/g/n) Unterstützung mit onboard Antenne. Zur Reichweitenvergrößerung ist bei manchen Ausführungen ein weiterer Antennen-Stecker vorhanden, an den eine zusätzliche externe WiFI Antenne angeschlossen werden kann.
 
-#### ESP32 DevKitC Sockel Belegung
+#### ESP32 DevKitC-Wroom32 Sockel Belegung
 Zunächst das Standard-Pinning und die Default-Functional Overlays des DevKit C boards, wie sie durch den Microcode bei Power-ON voreingestellt sind:
 
 |         |         |      |    |PIN|*|PIN|     |      |         |       |
@@ -292,7 +294,7 @@ Zunächst das Standard-Pinning und die Default-Functional Overlays des DevKit C 
 |  U1-TXD |FLASH-D3 |GPIO10| SD3| 17|*| 22|  SD1|GPIO08|FLASH D1 | U2-CTS|
 |  U1-RTS |FLASH-CMD|GPIO11| CMD| 18|*| 21|  SD0|GPIO07|FLASH D0 | U2-RTS|
 |         |         |  Vin | +5V| 19|*| 20|  CLK|GPIO06|FLASH CLK| U1-CTS|
-**Pinning durch IDE board pre-selection = "esp32dev" für ESP32 DevKit-C boards **
+**Pinning durch IDE board pre-selection = "esp32dev" für ESP32 DevKit-C boards V4 **
 
 Welche default Einstellung pro Board bei der IDE gilt kann man bei Platformio z.B. hier finden:
 C:\Users\'benutzername'\.platformio\packages\framework-arduinoespressif32\variants\'boardtype'\pins_arduino.h
@@ -321,7 +323,7 @@ Der USB/UART Converter CP2102 schafft aber max. 921600 Baud rate.
 
 #### ESP32 GPIO Nutzung
 Und nun konkret die gewählte GPIO-Belegung der ESP32 DevKitC Sockel-Pins für das BeeIoT Projekt:
-(gilt für WROOM32D alsauch Wrover-B Module)
+(gilt nur für WROOM32D Module)
 
 |Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
 |---|------|------|----------|-------|----------|----------------|
@@ -378,7 +380,7 @@ Als IoT Sensoren werden folgende Elemente und Anschlüsse verwendet:
 	- Externe Temperatur
 	- Wägezellen Temperatur (ggfs. zur Kompensation einer Temperaturdrift)
 	- => Alle Temp. Sensoren sind über das OneWire Protokoll direkt an einen GPIO Port des ESP32 angeschlossen.
-+ 1x ADS1115 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung
++ 1x ADS1115/MAX1237 Messung des Batteriespannungspegel, Converter Ausgang (5V) sowie Ladespannung
 + 1x RTC Modul (I2C)(DS3231) incl. Eprom
 + 1x Micro SD Card Modul (SPI)
 + 1x ePaper 2.7" (SPI) + 4 F-Keys.
