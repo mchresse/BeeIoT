@@ -74,7 +74,6 @@
 //*******************************************************************
 // Define if ESP32 WROOM32, or WROVER-B is used
 // (Select only one define !)
-// #define WROVERB		// use IO Pinning for WROVERB: IO 16+17: NC (subst. by 4 + 15)
 #define WROOM			// use of WROOM32 Chip type
 // #define BEACON			// Work in Beacon Mode only -> Send LoRa Beacon only.
 
@@ -87,19 +86,6 @@
 //*******************************************************************
 
 // Specify workOn Modules of setup() and main loop()
-#ifdef WROVERB
-// ESP32 WROVER-B (-> with less GPIO ->see EPD pinning)
-#define HX711_CONFIG
-#define ADS_CONFIG
-#define ONEWIRE_CONFIG
-//#define WIFI_CONFIG
-//#define NTP_CONFIG
-//#define SD_CONFIG
-#define EPD_CONFIG
-#define LORA_CONFIG
-#else
-#ifdef WROOM
-
 #ifdef BEACON
 // ESP32 WROOM in beacon Mode -> Frequent Lora Connect only
 #define EPD_CONFIG
@@ -114,7 +100,7 @@
 
 #else	// ESP32 WROOM BeeHive Mode (Default)
 #define HX711_CONFIG
-#define ADS_CONFIG
+// #define ADS_CONFIG		// alternative: internal ESP32-ADC
 #define ONEWIRE_CONFIG
 // #define WIFI_CONFIG
 // #define NTP_CONFIG
@@ -123,8 +109,6 @@
 #define EPD_CONFIG
 #define LORA_CONFIG
 #endif	// Beacon
-#endif	// WROOM
-#endif	// WROVERB
 
 //*******************************************************************
 // Pin mapping when using SDCARD in SPI mode.
@@ -160,9 +144,6 @@
 #define I2C_SDA		GPIO_NUM_21     // def: SDA=21	common for all I2C dev.
 #define I2C_SCL		GPIO_NUM_22     // def. SCL=22	common for all I2C dev.
 
-// for ADS only:
-#define ADS_ALERT   GPIO_NUM_27     // arbitrary selection of ALERT line
-
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_32
 
@@ -170,23 +151,16 @@
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 // Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
-#define EPD_MISO	VSPI_MISO 	    // SPI MISO -> VSPI
-#define EPD_MOSI	VSPI_MOSI 	    // SPI MOSI -> VSPI
-#define EPD_SCK		VSPI_SCK     	// SPI SCLK -> VSPI
-#define EPD_CS		GPIO_NUM_5      // SPI SS   -> VSPI
-#ifdef WROVERB					// If ESP32 WROVERB is used IO16+17 are internally used.
-#define EPD_DC    GPIO_NUM_15		// DC use of LED_RED IO PIN !
-#define EPD_RST   GPIO_NUM_4		// RST use of EPD_BUSY PIN !
-#define EPD_BUSY  GPIO_NUM_39     	// No BUSY Mode !
-#define LED_RED   -1  			  	// GPIO number of red LED
-#else
+#define EPD_MISO  VSPI_MISO 	    // SPI MISO -> VSPI
+#define EPD_MOSI  VSPI_MOSI 	    // SPI MOSI -> VSPI
+#define EPD_SCK	  VSPI_SCK       	// SPI SCLK -> VSPI
+#define EPD_CS	  GPIO_NUM_5        // SPI SS   -> VSPI
 #define EPD_DC    GPIO_NUM_17		// arbitrary selection of DC   > def: 17
 #define EPD_RST   GPIO_NUM_16		// arbitrary selection of RST  > def: 16
-#define EPD_BUSY  GPIO_NUM_4     	// arbitrary selection of BUSY > def:  4  -> if 35 -> RD only GPIO !
-#define LED_RED   GPIO_NUM_15    	// GPIO number of red LED
-#endif
-#define EPD_KEY1  GPIO_NUM_0     	// via 40-pin RPi slot at ePaper Pin29 (P5)
-#define EPD_KEY2  EN     			// via 40-pin RPi slot at ePaper Pin31 (P6)
+#define EPD_BUSY  GPIO_NUM_27     	// arbitrary selection of BUSY > def: 27
+#define LED_RED   GPIO_NUM_15    	// GPIO number of red LED (=0 LedON)
+#define EPD_KEY1  na		     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
+#define EPD_KEY2  na     			// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
 #define EPD_KEY4  GPIO_NUM_35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
 
@@ -197,9 +171,9 @@
 #define BEE_CS   GPIO_NUM_12	    // CS = NSS
 #define BEE_RST	 GPIO_NUM_14  	    //
 #define BEE_DIO0 GPIO_NUM_33	    // RXDone, TXDone - Main Lora_Interrupt line
-#define BEE_DIO1 GPIO_NUM_13	    // RXTout - FSK
-#define BEE_DIO2 GPIO_NUM_34	    // not used by BEE_Lora;  EPD K3 -> but is a RD only GPIO !
-
+#define BEE_DIO1 na	    			// not used by BIOT_Lora !
+#define BEE_DIO2 na	    			// not used by BIOT_Lora !
+#define EPD_LOWSW GPIO_NUM_13		// EPD low side ground switch ()=0 in Deep Sleep)
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
 #define LOGBH		1		//    1: Behive Setup & Loop program flow control
@@ -359,5 +333,4 @@ void drawBitmaps_other(void);
 void showdata		(int sampleID);
 void showbeacon 	(int sampleID);
 
-// end of BeeIoT.h
-#endif // BeeIoT_h
+#endif // end of BeeIoT.h
