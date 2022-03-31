@@ -202,14 +202,16 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags=LOGBH;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
 
 void setup() {
 int rc;		// generic return code variable
+
   // put your setup code here, to run once:
+    gpio_deep_sleep_hold_dis();
 	pinMode(LED_RED,   OUTPUT);
 	digitalWrite(LED_RED, LOW); // signal Setup Phase
 	gpio_hold_dis(LED_RED);   	// enable SD_CS
@@ -454,29 +456,30 @@ void loop() {
 //***************************************************************
 // Scan OW Temp. Sensors
 #ifdef ONEWIRE_CONFIG
+
 	// Get all temp values directly into bhdb.dlog[]
 	int owsensors = GetOWsensor(bhdb.loopid);
 
-  if( owsensors == 0){
-		    BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
-  }else{
+    if(owsensors == 0){	// expected # of sensor data not found ?
 		    // check if value of last of all 3 sensors is in range
 		    int retry=0;
-		    while((bhdb.dlog[bhdb.loopid].TempIntern == -99) ||
-				     ( bhdb.dlog[bhdb.loopid].TempExtern == -99) ||
-				     ( bhdb.dlog[bhdb.loopid].TempHive == -99))
-        {  // if we have just started lets do it again to get right values
-            GetOWsensor(bhdb.loopid);                   // Get all temp values directly into bhdb
-            mydelay2(200,0);								// sleep 200ms for OW bus recovery
-            if (retry++ == ONE_WIRE_RETRY){
-              BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
-              break;
-            }
+		    while(	(bhdb.dlog[bhdb.loopid].TempIntern <= -98) ||
+				    (bhdb.dlog[bhdb.loopid].TempExtern <= -98) ||
+				    (bhdb.dlog[bhdb.loopid].TempHive   <= -98))
+        	{  // if we have just started lets do it again to get right values
+				GetOWsensor(bhdb.loopid);   // Get all temp values directly into bhdb
+				mydelay2(200,0);			// sleep 200ms for OW bus recovery
+				if (retry++ == ONE_WIRE_RETRY){
+					BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
+					break;
+				}
 		    }
 		    if(retry > 0)
 			      sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+		    BHLOG(LOGBH) Serial.printf("  OWBus: No Temp Sensor Data found!\n");
+    }else{
+		BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 	}
-	BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 
 #endif // ONEWIRE_CONFIG
 
@@ -526,9 +529,11 @@ void loop() {
 #endif
 #endif
 
+// end of sensor loop
+  digitalWrite(LED_RED, HIGH);	// show end of Loop phase
+
 //***************************************************************
 // Calculate next loop Index
-  digitalWrite(LED_RED, HIGH);	// show end of Loop phase
   bhdb.loopid++;     // Increment LoopID for next loop
   if (bhdb.loopid == datasetsize){  // Max. numbers of datarows filled ?
     bhdb.loopid = 0;  // reset datarow idx -> round robin buffer for 1 day only
@@ -833,7 +838,6 @@ void biot_ioshutdown(int sleepmode){
     }
 #endif
 	pinMode(SD_CS, INPUT_PULLUP);		// xxx, bootstrap pin !
-//    digitalWrite(SD_CS, HIGH);
     gpio_hold_en(SD_CS);      // stable state in Deep sleep
     issdcard = 0;
 
@@ -844,18 +848,18 @@ void biot_ioshutdown(int sleepmode){
 #endif
 
 // SPI Bus shutdown: EPD + LORA + SD
-    pinMode(VSPI_MISO, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    pinMode(VSPI_MOSI, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    pinMode(VSPI_SCK, INPUT_PULLUP);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    pinMode(VSPI_MISO, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    pinMode(VSPI_MOSI, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    pinMode(VSPI_SCK, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
 
     isepd = 0;
-	pinMode(EPD_BUSY, INPUT);			// already driven by EPD
-	pinMode(EPD_CS, INPUT_PULLUP);		// needs ext- Pullup for DeepSleep -> no RTC GPIO, bootstrap pin
-	pinMode(EPD_RST, INPUT_PULLUP);		// needs ext- Pullup for DeepSleep -> no RTC GPIO
-	pinMode(EPD_DC, INPUT_PULLUP); 		// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    gpio_hold_en(EPD_CS);    // EPD_CS
-    gpio_hold_en(EPD_RST);   // EPD_RST
-    gpio_hold_en(EPD_DC);    // EPD_DC
+	pinMode(EPD_BUSY, INPUT);	// already output by EPD
+	pinMode(EPD_CS, INPUT);		// needs ext- Pullup for DeepSleep -> no RTC GPIO, bootstrap pin
+	pinMode(EPD_RST, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+	pinMode(EPD_DC, INPUT); 	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+    gpio_hold_en(EPD_CS);    	// EPD_CS
+    gpio_hold_en(EPD_RST);   	// EPD_RST
+    gpio_hold_en(EPD_DC);    	// EPD_DC
 
 // High side power switch of SPI device has no effect
 // -> need low side switch by driving ext. MOSFET by GPIO
@@ -877,11 +881,8 @@ void biot_ioshutdown(int sleepmode){
 
 #ifdef HX711_CONFIG
 // HX requires OUTPUT here to define data/clock line during sleep
-// otherwise +7mA consumption in sleep
-    pinMode(HX711_SCK, INPUT_PULLUP);	// could be INPUT_PULLUP as well
-    pinMode(HX711_DT, INPUT_PULLUP);	// could be INPUT_PULLUP as well
-//    digitalWrite(HX711_SCK, HIGH);
-//    digitalWrite(HX711_DT, HIGH);
+    pinMode(HX711_SCK, INPUT_PULLUP);
+    pinMode(HX711_DT, INPUT_PULLUP);
     gpio_hold_en(HX711_SCK);  // HX711 SCK
     gpio_hold_en(HX711_DT);   // HX711 Data
 #endif
@@ -896,8 +897,8 @@ void biot_ioshutdown(int sleepmode){
 
 #ifdef ONEWIRE_CONFIG
 // Set OW line to high impedance -> open collector bus
-    pinMode(ONE_WIRE_BUS, INPUT_PULLUP);	// finally with ex. pullup 10k -> set to RTC INPUT
-    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
+//    pinMode(ONE_WIRE_BUS, INPUT_PULLUP);	// finally with ex. pullup 10k -> set to RTC INPUT
+//    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
 #endif
 
     pinMode(LED_RED, INPUT_PULLUP); 		// finally pullued up by LED, RTC GPIO, bootstrap pin

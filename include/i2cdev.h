@@ -3,8 +3,16 @@
 
 #include "driver/i2c.h"
 
-#define I2C_FREQ_HZ 	100000 	// Max 1MHz for esp32
-#define I2CDEV_TIMEOUT	2000		// ms
+// I2C Masterport for BIoT:
+//     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+//00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+//10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+//20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+//30: -- -- -- -- 34 -- -- -- -- -- -- -- -- -- -- --
+//40: -- -- -- -- -- -- -- -- 48(49 4A 4B)-- -- -- --
+//50: -- -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
+//60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+//70: -- -- -- -- -- -- -- --
 
 // I2C Address Ports
 #define ADS111X_ADDR_GND 0x48 //!< I2C device address with ADDR pin connected to ground
@@ -12,40 +20,32 @@
 #define ADS111X_ADDR_SDA 0x4a //!< I2C device address with ADDR pin connected to SDA
 #define ADS111X_ADDR_SCL 0x4b //!< I2C device address with ADDR pin connected to SCL
 
-// I2C Masterport for BIoT:
-//     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-//00:          -- -- -- -- -- -- -- -- -- -- -- -- --
-//10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-//20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-//30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-//40: -- -- -- -- -- -- -- -- 48 -- -- -- -- -- -- --
-//50: -- -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
-//60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
-//70: -- -- -- -- -- -- -- --
-
-#define ADS_ADDR  	ADS111X_ADDR_GND	// ADC ADS1115
-#define MAX_ADDR	0x34	// ADC MAX123x
-#define RTC_ADDR 	0x68	// RTC DS3231
-#define RTCF_ADDR	0x53	// RTC DS3231 FlashRam
+#define ADS_ADDR  	    ADS111X_ADDR_GND	// ADC ADS1115
+#define MAX_ADDR	    0x34	// ADC MAX123x
+#define RTC_ADDR 	    0x68	// RTC DS3231
+#define RTCF_ADDR	    0x53	// RTC DS3231 FlashRam
 
 // preselection of used ADC port
 #define ADC_ADDR	ADS_ADDR		// Select Device MAX or ADS by I2C_ADDRESS
 
+#define I2C_FREQ_HZ 	100000 		// Max 1MHz for esp32
+#define I2CDEV_TIMEOUT	2000		// ms
+
 // driver/i2c lib definitions:
-#define WRITE_BIT I2C_MASTER_WRITE // !< I2C master write
-#define READ_BIT  I2C_MASTER_READ  // !< I2C master read
-#define ACK_CHECK_EN	    0x1
-#define ACK_CHECK_DIS       0x0
-#define ACK_VAL             0x0    // !< I2C ack value
-#define NACK_VAL			0x1
+#define WRITE_BIT I2C_MASTER_WRITE	// !< I2C master write
+#define READ_BIT  I2C_MASTER_READ	// !< I2C master read
+#define ACK_CHECK_EN	0x1
+#define ACK_CHECK_DIS   0x0
+#define ACK_VAL         0x0		// !< I2C ack value
+#define NACK_VAL		0x1
 
 
 typedef struct {
-    i2c_port_t	port;            // I2C port number
-    uint8_t		addr;            // I2C address
-    gpio_num_t	sda_io_num;      // GPIO number for I2C sda signal
-    gpio_num_t	scl_io_num;      // GPIO number for I2C scl signal
-    uint32_t	clk_speed;       // I2C clock frequency for master mode
+    i2c_port_t	port;               // I2C port number
+    uint8_t		addr;               // I2C address
+    gpio_num_t	sda_io_num;         // GPIO number for I2C sda signal
+    gpio_num_t	scl_io_num;         // GPIO number for I2C scl signal
+    uint32_t	clk_speed;          // I2C clock frequency for master mode
 } i2c_dev_t;
 
 int 	  setup_i2c_master(int reentry);
