@@ -17,7 +17,7 @@
 #ifndef OWBUS_H
 #define OWBUS_H
 
-#define OW_MAXDEV  		  4		// #of instantiated device structs
+#define OW_MAXDEV  		3		// #of expected OW devices
 #define ONE_WIRE_RETRY	2		// number of retries if value is -99C
 
 // Physical ID of each DS18B20 OW Device
@@ -26,10 +26,10 @@
 #define TEMP_2   { 0x28, 0xAA, 0xE4, 0x6D, 0x18, 0x13, 0x02, 0x2F}    // -> BeeHive internal temperature
 
 // No. Bits	Max Conversion Time	Resolution	Bits to Ignore	Mask
-// 		9	  93.75ms			0.500°C			2,1,0			0x0FF8
+// 		9	93.75ms			0.500°C			2,1,0			0x0FF8
 // 		10	187.5ms			0.250°C			1,0				0x0FFC
-// 		11	375ms		  	0.125°C			0				  0x0FFE
-// 		12	750ms			  0.0625°C		-				  0x0FFF
+// 		11	375ms		  	0.125°C			0				0x0FFE
+// 		12	750ms			0.0625°C		-				0x0FFF
 #define TEMPRESOLUTION	10
 
 enum stype {	// sensor index to type assignment
