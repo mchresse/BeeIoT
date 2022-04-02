@@ -105,6 +105,8 @@
 #include "beelora.h"            // local: Lora Radio settings and BeeIoT WAN protocol definitions
 #include "beeiot.h"             // local: provides all GPIO PIN configurations of all sensor Ports !
 
+#include "DLED.h"				// local: Interface to RGB LED lib
+
 //************************************
 // Global data object declarations
 //************************************
@@ -193,7 +195,6 @@ void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
 extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
 
-
 //*******************************************************************
 /// @brief BeeIoT Setup Routine - Probe for all expected IO/Sensor devices
 /// Detect and check functionality incl. test output where applicable
@@ -213,9 +214,6 @@ int rc;		// generic return code variable
 
   // put your setup code here, to run once:
     gpio_deep_sleep_hold_dis();
-	pinMode(LED_RED,   OUTPUT);
-	digitalWrite(LED_RED, LOW); // signal Setup Phase
-	gpio_hold_dis(LED_RED);   	// enable SD_CS
 	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
     pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
     pinMode(BEE_CS, OUTPUT);
@@ -233,6 +231,9 @@ int rc;		// generic return code variable
 	Serial.begin(115200);       // enable Ser. Monitor Baud rate
 
  //  wiretest();                // for HW incompatibility tests og GPIOs
+	setup_RGB();				// define RGB-LED control pin
+	setRGB(255,0,0);			// start with Red LED
+//	RGBtest();
 
 //***************************************************************
   //Print the wakeup reason for ESP32
@@ -417,7 +418,8 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 //*******************************************************************
 void loop() {
 
-  digitalWrite(LED_RED, HIGH);  // show start of new loop() phase
+  setRGB(0,255,0);  // show start of new loop() phase: green
+
 //***************************************************************
 // get current time to bhdb
   if(getTimeStamp() == -2){   // no valid time source found
@@ -534,7 +536,7 @@ float weight =0;
 #endif
 
 // end of sensor loop
-  digitalWrite(LED_RED, HIGH);	// show end of Loop phase
+  setRGB(0,0,255);  // show end of loop() phase: blue
 
 //***************************************************************
 // Calculate next loop Index
@@ -682,12 +684,13 @@ void mydelay(int32_t tval){
   int fblink = tval / 1000;   // get # of seconds == blink frequence
   int i;
   for (i=0; i < fblink/2; i++){
-    digitalWrite(LED_RED, LOW);
+  setRGB(0,0,255);  // show start of delay loop
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
+
     mydelay2(250,0);  // wait 0.25 second
-    digitalWrite(LED_RED, HIGH);
+  setRGB(255,0,0);  // show start of new loop() phase
 //      if(iswifi == 0){
 //        CheckWebPage();
 //      }
@@ -713,6 +716,8 @@ esp_err_t mydelay2(int32_t waitms, int32_t initdelay){
 #define uS_TO_mS_FACTOR 1000LL  /* Conversion factor for micro seconds to milli seconds */
 esp_err_t rc;
 
+  	setRGB(0,0,255);  // show start of delay loop
+
 	// BHLOG(LOGBH) Serial.printf("  Main-Dly2: Light Sleep - Trigger: Timer(%i ms) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
 	gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 	esp_sleep_enable_gpio_wakeup();
@@ -732,6 +737,8 @@ esp_err_t rc;
 		delay(5000);	// wait some time to show the message
 		// ToDo: what to do i this error case ???
 	}
+  	setRGB(255,0,0);  // show sensor loop-phase
+
 	return(rc);
 }
 
@@ -816,7 +823,8 @@ void InitConfig(int reentry){
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
  if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
-    BHLOG(LOGSPI) Serial.println("  Main: shutdown IO devices for sleep");
+    BHLOG(LOGSPI) Serial.println("  MAIN: shutdown sensor devices");
+  	setRGB(0,0,0);  				// switch LED off
 
     // backup any needed memory values at wakeup here
     //			esp_bluedroid_disable();
@@ -901,12 +909,13 @@ void biot_ioshutdown(int sleepmode){
 
 #ifdef ONEWIRE_CONFIG
 // Set OW line to high impedance -> open collector bus
-//    pinMode(ONE_WIRE_BUS, INPUT_PULLUP);	// finally with ex. pullup 10k -> set to RTC INPUT
+      pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
 //    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
 #endif
 
-    pinMode(LED_RED, INPUT_PULLUP); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
-    gpio_hold_en(LED_RED); 			// OneWire Bus line
+    pinMode(LEDRGB, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
+//	digitalWrite(LEDRGB,LOW);
+    gpio_hold_en(LEDRGB); 			// OneWire Bus line
 
   } // end of sleepmode
 } // biot_ioshutdown()
