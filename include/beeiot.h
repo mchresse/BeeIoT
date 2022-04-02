@@ -132,8 +132,7 @@
 #define SD_SCK      VSPI_SCK        // SPI SCLK -> VSPI = 18
 #define SD_CS       GPIO_NUM_2      // SD card CS line - arbitrary selection !
 
-// reused by BEE_RST: Green LED not used anymore
-//#define LED_GREEN   14            // GPIO number of green LED
+#define LEDRGB      GPIO_NUM_15    	// GPIO number of RGB-LED DI (like WS2812B)
 
 // HX711 ADC GPIO Port to Espressif 32 board
 #define HX711_DT    GPIO_NUM_25     // serial dataline
@@ -145,7 +144,7 @@
 #define I2C_SCL		GPIO_NUM_22     // def. SCL=22	common for all I2C dev.
 
 // OneWire Data Port:
-#define ONE_WIRE_BUS GPIO_NUM_32
+#define ONE_WIRE_BUS GPIO_NUM_32	// with 10k Pullup external
 
 // WavePaper ePaper port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
@@ -158,7 +157,6 @@
 #define EPD_DC    GPIO_NUM_17		// arbitrary selection of DC   > def: 17
 #define EPD_RST   GPIO_NUM_16		// arbitrary selection of RST  > def: 16
 #define EPD_BUSY  GPIO_NUM_27     	// arbitrary selection of BUSY > def: 27
-#define LED_RED   GPIO_NUM_15    	// GPIO number of red LED (=0 LedON)
 #define EPD_KEY1  na		     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
 #define EPD_KEY2  na     			// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
