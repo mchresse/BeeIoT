@@ -103,7 +103,7 @@ int setup_rtc (int reentry) {
 	}
 
 	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
-	BHLOG(LOGBH)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
+	BHLOG(LOGADS)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
   // if NTC based adjustment is needed use:  static void adjust(const DateTime& dt);
   // or update by NTP: -> main() => ntp2rtc() automatically

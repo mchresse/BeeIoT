@@ -1,5 +1,5 @@
 //*******************************************************************
-// wifi.cpp - WiFi and Webservice support routines 
+// wifi.cpp - WiFi and Webservice support routines
 // from Project: https://github.com/mchresse/BeeIoT
 //
 // Description:
@@ -14,12 +14,12 @@
 // For used 3rd party open source see also Readme_OpenSource.txt
 //*******************************************************************
 //
-// This code provides incorporated code from 
-// - The "espressif/arduino-esp32/preferences" library, which is 
+// This code provides incorporated code from
+// - The "espressif/arduino-esp32/preferences" library, which is
 //   distributed under the Apache License, Version 2.0
-// - MQTT Library distributed under the MIT-License: 
+// - MQTT Library distributed under the MIT-License:
 //   https://opensource.org/licenses/mit-license.php
-//   
+//
 //*******************************************************************
 
 //*******************************************************************
@@ -54,7 +54,7 @@
 extern dataset bhdb;    // central BeeIo DB
 extern uint16_t	lflags;      // BeeIoT log flag field
 
-extern Preferences preferences;  
+extern Preferences preferences;
 
 // For WiFI & WebServer Instances
 int iswifi =0;               // WIFI flag; =1 connected
@@ -73,7 +73,7 @@ extern int    ConfigStatus[8];   // status of the value    0 = not set    1 = va
 extern int    ConfigType[8];     // type of the value    0 = not set    1 = String (textbox)   2 = Byte (slider)
 
 
-// Code from: MQTT Library distributed under the MIT-License: 
+// Code from: MQTT Library distributed under the MIT-License:
 //   https://opensource.org/licenses/mit-license.php
 
 // construct the object attTCPClient of class TCPClient
@@ -89,8 +89,7 @@ int setup_wifi(int reentry) { // WIFI Constructor
   iswifi = 0;
 
 #ifdef WIFI_CONFIG
-		BHLOG(LOGLAN) Serial.println("  WiFi: Init port to station mode");
-
+		BHLOG(LOGLAN) println();
 		WiFi.mode(WIFI_STA);        // set WIFI chip to station (client) mode
 		BHLOG(LOGLAN) wifi_scan();  // show me all networks in space
 
@@ -159,7 +158,7 @@ int i;
       }
     }else{
       // Got IPv4 string assumed IP is in v4 format !!! v6 not supported her => cut off
-      strncpy(bhdb.ipaddr, WiFi.localIP().toString().c_str(),LENIPADDR); 
+      strncpy(bhdb.ipaddr, WiFi.localIP().toString().c_str(),LENIPADDR);
       BHLOG(LOGLAN) Serial.printf("ed with %s", ssid);
       BHLOG(LOGLAN) Serial.printf(" - IP: %s\n", bhdb.ipaddr);
       if (MDNS.begin("BeeIoT")) {
@@ -168,7 +167,7 @@ int i;
       return 0; // connected
     }
   }
-  
+
 BHLOG(LOGLAN) Serial.println("  WiFi: Connection failed");
 #endif // WIFI_CONFIG
 
@@ -182,7 +181,7 @@ return -1;  // not connected
 int wifi_disconnect(){
   int success = -1;
   int WiFiConnectTimeOut = 0;
-  
+
   WiFi.disconnect();
   while ((WiFi.status() == WL_CONNECTED) && (WiFiConnectTimeOut < WIFI_RETRIES))  {
     // try it more than once
@@ -194,7 +193,7 @@ int wifi_disconnect(){
   if (WiFi.status() != WL_CONNECTED) {
     success = 1;
   }
-  
+
   BHLOG(LOGLAN) Serial.println("WiFi: Disconnected.");
 
   return success;
@@ -206,7 +205,7 @@ int wifi_disconnect(){
 // Initialize Soft Access Point with ESP32
 // ESP32 establishes its own WiFi network, one can choose the SSID
 //*******************************************************************
-int WiFi_AccessPointStart(char* AccessPointNetworkSSID){ 
+int WiFi_AccessPointStart(char* AccessPointNetworkSSID){
   WiFi.softAP(AccessPointNetworkSSID);
 
   // printout the ESP32 IP-Address in own network, per default it is "192.168.4.1".
@@ -250,29 +249,29 @@ void Webserver_Start(){
 //*******************************************************************************
 String Webserver_GetRequestGETParameter(){
   String GETParameter = "";
-  
+
   myclient = server.available();   // listen for incoming clients
   //Serial.print(".");
-  
+
   if (myclient) {                            // if you get a client,
     BHLOG(LOGLAN) Serial.println("    WebGet: New WebClient detected");           // print a message out the serial port
     String currentLine = "";                 // make a String to hold incoming data from the client
-    
+
     while (myclient.connected()) {           // loop while the client's connected
-      if (myclient.available()) {            // if there are bytes to read from the client,        
+      if (myclient.available()) {            // if there are bytes to read from the client,
         char c = myclient.read();            // read a byte, then
         BHLOG(LOGLAN) Serial.write(c);       // print it out the serial monitor
 
         if (c == '\n') {                     // if the byte is a newline character
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request
-          if (currentLine.length() == 0) {            
+          if (currentLine.length() == 0) {
             if (GETParameter == "") {GETParameter = "-";};    // if no "GET /?" was found so far in the request bytes, return "-"
             // break out of the while loop:
-            break;        
+            break;
           } else {    // if you got a newline, then clear currentLine:
             currentLine = "";
-          }          
+          }
         } else if (c != '\r') {  // if you got anything else but a carriage return character,
           currentLine += c;      // add it to the end of the currentLine
         }
@@ -291,7 +290,7 @@ String Webserver_GetRequestGETParameter(){
 
           // extract everything behind the space character and store Server IP-Address of HTTP-Request
           WebRequestHostAddress = currentLine.substring(IndexOfBlank + 1, currentLine.length());
-        }        
+        }
       }
     }
   }
@@ -318,13 +317,13 @@ void Webserver_SendHTMLPage(String HTMLPage){
 
   // The HTTP response ends with a blank line:
    httpResponse += "\r\n";
-    
-  // send it out to TCP/IP client = webbrowser 
+
+  // send it out to TCP/IP client = webbrowser
    myclient.println(httpResponse);
 
   // close the connection
   myclient.stop();
-  BHLOG(LOGLAN) Serial.println("  WebServer: Client Disconnected.");   
+  BHLOG(LOGLAN) Serial.println("  WebServer: Client Disconnected.");
 };
 
 
@@ -345,17 +344,17 @@ String EncodeFormHTMLFromValues(String TitleOfForm, int CountOfConfigValues){
       if (ConfigStatus[c] == -1) { StyleHTML = " Style =\"background-color: #FA8072;\" " ;};  // red
 
       String TableRowHTML = "";
-  
+
       if (ConfigType[c] == 1){    //  string value, entered in text box
-        // build the HTML code for a table row with configuration value name and the value itself inside a textbox   
+        // build the HTML code for a table row with configuration value name and the value itself inside a textbox
         TableRowHTML = "<tr><th>" + ConfigName[c] + "</th><th><input name=\"" + ConfigName[c] + "\" value=\"" + ConfigValue[c] + "\" " + StyleHTML + " /></th></tr>";
       }
-  
+
       if (ConfigType[c] == 2){
-        // build the HTML code for a table row with configuration value name and the byte value represented by a slider 
+        // build the HTML code for a table row with configuration value name and the byte value represented by a slider
         TableRowHTML = "<tr><th>" + ConfigName[c] + "</th><th><input type=\"range\" min=\"1\"  max=\"255\" name=\"" + ConfigName[c] + "\" value=\"" + ConfigValue[c] + "\" " + StyleHTML + " /></th></tr>";
       }
-      
+
       // add the table row HTML code to the page
       HTMLPage += TableRowHTML;
    }
@@ -365,7 +364,7 @@ String EncodeFormHTMLFromValues(String TitleOfForm, int CountOfConfigValues){
 
    // footer of the webpage
    HTMLPage += "</form></body></html>";
-   
+
    return HTMLPage;
 }
 
@@ -374,7 +373,7 @@ String EncodeFormHTMLFromValues(String TitleOfForm, int CountOfConfigValues){
 // Decodes a GET parameter (expression after ? in URI (URI = expression entered in address field of webbrowser)), like "Country=Germany&City=Aachen"
 // and set the ConfigValues
 //*************************************************************************
-int DecodeGETParameterAndSetConfigValues(String GETParameter){  
+int DecodeGETParameterAndSetConfigValues(String GETParameter){
    int posFirstCharToSearch = 1;
    int count = 0;
 
@@ -386,14 +385,14 @@ int DecodeGETParameterAndSetConfigValues(String GETParameter){
    while (GETParameter.indexOf('&', posFirstCharToSearch) > -1){
      int posOfSeparatorChar = GETParameter.indexOf('&', posFirstCharToSearch);  // position of & after start position
      int posOfValueChar = GETParameter.indexOf('=', posFirstCharToSearch);      // position of = after start position
-  
+
      ConfigValue[count] = GETParameter.substring(posOfValueChar + 1, posOfSeparatorChar);  // extract everything between = and & and enter it in the ConfigValue
-      
-     posFirstCharToSearch = posOfSeparatorChar + 1;  // shift the start position to search after the &-char 
+
+     posFirstCharToSearch = posOfSeparatorChar + 1;  // shift the start position to search after the &-char
      count++;
    }
 
-   // no more '&' chars found   
+   // no more '&' chars found
    int posOfValueChar = GETParameter.indexOf('=', posFirstCharToSearch);       // search for =
    ConfigValue[count] = GETParameter.substring(posOfValueChar + 1, GETParameter.length());  // extract everything between = and end of string
    count++;
@@ -407,20 +406,20 @@ int DecodeGETParameterAndSetConfigValues(String GETParameter){
 
 
 // Connect to AllThingsTalk MQTT Broker and switch RGB-LEDs
-int ConnectToATT(){   
+int ConnectToATT(){
     int NodeState;
     char AttPath[] = "api.allthingstalk.io";
 
     // closes TCP connection
     attTCPClient.Close();
-       
+
     // TCP-connect to AllThingsTalk MQTT Server
     int TCP_Connect_Result = attTCPClient.Connect(AttPath, 1883);
-    
+
     // Success?
     if (TCP_Connect_Result != 1){
       // no = red LED
-       NodeState = NODESTATE_NOTCPCONNECTION;  
+       NodeState = NODESTATE_NOTCPCONNECTION;
     } else {
       // take authentication strings for AllThingsTalk out of controller memory
       String strDeviceID = preferences.getString("DeviceID", "");
@@ -431,10 +430,10 @@ int ConnectToATT(){
       if (MQTT_Connect_Result == 1){
         // connected
         NodeState = NODESTATE_OK;
-        Serial.println("MQTT connected.");        
+        Serial.println("MQTT connected.");
       } else {
         // not connected
-        NodeState = NODESTATE_NOMQTTCONNECTION;  
+        NodeState = NODESTATE_NOMQTTCONNECTION;
 
         Serial.println("MQTT not connected.");
       }
@@ -450,7 +449,7 @@ int ConnectToATT(){
 void SendSensorDateToATT(String SensorName, byte SensorDate){
     // Dummy for message payload in JSON format
     String MString = "{\"value\": 00.0}";
-  
+
     int Slength = MString.length();
 
     // copy the bytes of the Dummy string in the payload buffer
