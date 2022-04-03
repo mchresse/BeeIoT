@@ -1,8 +1,7 @@
 FILENAME_BUILDNO = 'versioning'
 FILENAME_VERSION_H = 'include/version.h'
-vmajor = '1'
+vmajor = '3'
 vminor = '0'
-vrev   = '01'
 
 import datetime
 
@@ -15,7 +14,7 @@ except:
     build_no = 1
 with open(FILENAME_BUILDNO, 'w+') as f:
     f.write(str(build_no))
-    print('Build number: {}.{}.{}.{}'.format(vmajor, vminor, vrev, build_no))
+    print('Build number: {}.{}.{}'.format(vmajor, vminor, build_no))
 
 hf = """
 #ifndef VMAJOR
@@ -24,23 +23,19 @@ hf = """
 #ifndef VMINOR
   #define VMINOR "{}"
 #endif
-#ifndef VREV
-  #define VREV "{}"
-#endif
 #ifndef BUILD_NUMBER
   #define VBUILD "{}"
 #endif
 #ifndef VERSION
-  #define VERSION "v{}.{}.{}.{} - {}"
+  #define VERSION "v{}.{}.{} - {}"
 #endif
 #ifndef VERSION_SHORT
-  #define VERSION_SHORT "v{}.{}.{}.{}"
+  #define VERSION_SHORT "v{}.{}.{}"
 #endif
 """.format( vmajor,
-			vminor, 
-			vrev, 
-			build_no, 
-			vmajor, vminor, vrev, build_no, datetime.datetime.now(),
-			vmajor, vminor, vrev, build_no)
+			vminor,
+			build_no,
+			vmajor, vminor, build_no, datetime.datetime.now(),
+			vmajor, vminor, build_no)
 with open(FILENAME_VERSION_H, 'w+') as f:
     f.write(hf)

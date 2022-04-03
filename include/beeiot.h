@@ -66,8 +66,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-
-
 //*******************************************************************
 // Device configuration Matrix field (default: all active)
 // 0 = active, uncomment = inactive
@@ -174,6 +172,7 @@
 #define EPD_LOWSW GPIO_NUM_13		// EPD low side ground switch ()=0 in Deep Sleep)
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
+#define LOGNOP		0		//    0: No Log Messages at all.
 #define LOGBH		1		//    1: Behive Setup & Loop program flow control
 #define LOGOW		2		//    2: 1-wire discovery and value read
 #define LOGHX		4		//    4: HX711 init & get values
@@ -189,12 +188,13 @@
 #define LOGBIOT		4096	// 4096: BIoT	Application class
 #define LOGGH		8192	// 8192: GH		Application class
 #define LOGTURTLE  16384	//16384: Turtle	Application class
+#define LOGRGB	   32768	//32768: SHow RGB LED Log Pattern
 
 //#define RELMODE
-#ifdef RELMODE
-#define	BHLOG(m)	if(lflags & 0)	// Skip any  Log printing
+#ifdef RELMODE						// Release Mode enabled
+#define	BHLOG(m)	if(lflags & LOGNOP)	// Skip any  Log printing
 #else
-#define	BHLOG(m)	if(lflags & m)	// macro for Log prints (type: uint)
+#define	BHLOG(m)	if(lflags & m)	// macro for Log prints (type: uint16_t)
 #endif
 
 #define NETWORKSTATE_LOGGED       1

@@ -53,6 +53,7 @@
 #include <Fonts/FreeMonoBold24pt7b.h>
 #include <Fonts/FreeSansBold24pt7b.h>
 
+#include <version.h>
 #include <beeiot.h>
 #include <BeeIoTWan.h>
 #include <beelora.h>
@@ -98,8 +99,9 @@ if(!reentry){
 
     display.setFont(&FreeMonoBold24pt7b);
     display.setCursor(0, 2*24);
-    display.println("BeeIoT.v2");
+    display.println("  BeeIoT");
     display.setFont(&FreeMonoBold12pt7b);
+    display.printf ("       v%s.%s\n\n", VMAJOR, VMINOR);
     display.println("     by R.Esser");
     display.setFont(&FreeMonoBold9pt7b);
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
@@ -240,7 +242,7 @@ uint8_t rotation = display.getRotation();
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2 #%i C%i", (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
+  display.printf("BeeIoT.v%s #%i C%i", VMAJOR, (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -248,9 +250,12 @@ uint8_t rotation = display.getRotation();
 //  display.setTextColor(GxEPD_RED);
   display.printf("%s %s", bhdb.date, bhdb.time);
 
-  display.setTextColor(GxEPD_BLACK);
+//  display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold12pt7b);
   display.println();
+
+//  display.drawLine(0, 9+12+9+12, GxEPD_HEIGHT, 9+12+9+12, GxEPD_BLACK);
+  display.drawRect(5, 9+12+9+12, GxEPD_HEIGHT-(2*5), GxEPD_WIDTH - (9+12+9+12 + 9+9+9+9), GxEPD_BLACK);
 
   display.print(" Gewicht:  ");
   display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
@@ -264,7 +269,7 @@ uint8_t rotation = display.getRotation();
   display.print(" TempIntern: ");
   display.println(String(bhdb.dlog[sampleID].TempIntern,2));
 
-  display.setTextColor(GxEPD_BLACK);
+// display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Batt[V]: ");
   display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
@@ -274,7 +279,7 @@ uint8_t rotation = display.getRotation();
   display.print(String((float)bhdb.dlog[sampleID].BattCharge/1000,2));
   display.println();
 
-  display.setTextColor(GxEPD_BLACK);
+//  display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Status : ");
 	if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
@@ -289,7 +294,7 @@ uint8_t rotation = display.getRotation();
 //  display.print(bhdb.ipaddr);
 //  display.print(")");
 
-  display.setTextColor(GxEPD_BLACK);
+//  display.setTextColor(GxEPD_BLACK);
 //  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
 
   display.update();				// WakeUp -> update display -> BusyWait -> Sleep
