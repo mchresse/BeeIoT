@@ -24,7 +24,7 @@
 #define scale_DIVIDER 44000     // Kilo unit value (2mV/V, GAIN=128 Vdd=3.3V)
 
 // HX711 Weight Scale offset values for 0.000 kg
-#define scale_OFFSET 6748   // in kg -> 297000 = 44000 * 6,748kg (of the cover weight)
+#define scale_OFFSET -6748   // in kg -> 297000 = 44000 * 6,748kg (of the cover weight)
 
 
 #endif // end of HX711Scale.h

@@ -192,6 +192,7 @@ void biot_ioshutdown(int sleepmode);
 void get_efuse_ident(void);
 void wiretest();
 void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
+void reset_RTCIO(void);
 
 extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
@@ -225,11 +226,9 @@ int rc;		// generic return code variable
     gpio_hold_dis(EPD_CS);   	// enable EPD_CS
     gpio_hold_dis(BEE_CS);  	// enable BEE_CS
 
-//	mydelay2(500); 				//delay nicht entfernen wg Wakeup mode !
-
   // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect UART to computer terminal
-	Serial.begin(115200);       // enable Ser. Monitor Baud rate
+		Serial.begin(115200);   // enable Ser. Monitor Baud rate
 
 //  wiretest();                 // for HW incompatibility tests og GPIOs
 
@@ -525,14 +524,22 @@ float weight =0;
   	// Get battery Powerlevel & calculate % Level
 	float x;              		// Volt calculation buffer
 	addata=getespadc(Battery_pin) * 310 / 100;
-  	x = ((float)(addata-BATTERY_MIN_LEVEL)/				//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
-       (float)(BATTERY_MAX_LEVEL-BATTERY_MIN_LEVEL) )* 100;
-  	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
+	if( (x = ((float)(addata-BATTERY_SHUTDOWN_LEVEL))) < 0){
+	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
+
+	}else{
+		x=0;
+	}
+	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   	bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
 
-  	if(x==0){
+  	if(addata <= BATTERY_MIN_LEVEL){
     	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
-    // ToDO: set Bat Low Event here...
+		// ToDO: prepare for Batt. Warning Event here...
+  	}
+  	if(addata <= BATTERY_SHUTDOWN_LEVEL){
+    	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattDamage!");
+		// ToDO: prepare for Batt. Shutdown Event here...
   	}
 
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
@@ -770,7 +777,7 @@ esp_err_t rc;
 void InitConfig(int reentry){
   int i;
 
-	if(!reentry){ // do init only once afetr Power Reset
+	if(!reentry){ // do init only once after Power-On
 		bhdb.loopid       = 0;
 		bhdb.laps         = 0;
 		bhdb.formattedDate[0] = 0;
@@ -778,7 +785,7 @@ void InitConfig(int reentry){
 		bhdb.time[0]      = 0;
 		bhdb.ipaddr[0]    = 0;
 		bhdb.chcfgid	  = 0;
-		bhdb.woffset	  = -scale_OFFSET;
+		bhdb.woffset	  = (int) scale_OFFSET;
 
 	// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
 		bhdb.hwconfig	  = 0;
@@ -789,7 +796,7 @@ void InitConfig(int reentry){
 		bhdb.hwconfig	  += HC_EPD;
 #endif
 #ifdef SD_CONFIG
-// can be actively switched on by HWconfig RX1 command later, but not now
+// can be actively switched on/off by HWconfig RX1 command later; default=on
 		bhdb.hwconfig	  += HC_SDCARD;
 #endif
 #ifdef WIFI_CONFIG
@@ -1165,5 +1172,26 @@ void wiretest(){
   while(1);
 }
 
+
+void reset_RTCIO(void){
+	gpio_reset_pin(GPIO_NUM_0);
+	gpio_reset_pin(GPIO_NUM_2);
+	gpio_reset_pin(GPIO_NUM_4);
+	gpio_reset_pin(GPIO_NUM_12);
+	gpio_reset_pin(GPIO_NUM_13);
+	gpio_reset_pin(GPIO_NUM_14);
+	gpio_reset_pin(GPIO_NUM_15);
+	gpio_reset_pin(GPIO_NUM_25);
+	gpio_reset_pin(GPIO_NUM_26);
+	gpio_reset_pin(GPIO_NUM_27);
+	gpio_reset_pin(GPIO_NUM_32);
+	gpio_reset_pin(GPIO_NUM_33);
+	gpio_reset_pin(GPIO_NUM_34);
+	gpio_reset_pin(GPIO_NUM_35);
+	gpio_reset_pin(GPIO_NUM_36);
+	gpio_reset_pin(GPIO_NUM_37);
+	gpio_reset_pin(GPIO_NUM_38);
+	gpio_reset_pin(GPIO_NUM_39);
+}
 
 // end of BeeIoT main
