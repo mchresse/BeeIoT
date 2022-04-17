@@ -70,28 +70,25 @@ int setup_owbus(int reentry) {
 	OWsensors.begin();    // Init OW bus devices
 	// Grab a count of devices on the wire
 
-  	int numberOfDevices = OWsensors.getDeviceCount();
- 	BHLOG(LOGOW) Serial.printf("  OWBus: Lib Device count: %i\n", numberOfDevices);
+// does not work for ESP32 implementation
+//  int numberOfDevices = OWsensors.getDeviceCount();
+// 	BHLOG(LOGOW) Serial.printf("  OWBus: Lib Device count: %i\n", numberOfDevices);
 
 	OWsensors.setResolution(10);	// set 10Bit rsolution: +-0,25°C, 186ms conv.time
+	owdata.resolution = OWsensors.getResolution();	// save configured resolution
 
     // locate devices on the bus
 	// scan OW Bus by # of expected devices on the bus
-	if(!ScanOwBus(OW_MAXDEV)){	// scan OW Bus and update owdata accordingly
-		return(owdata.numdev);				// expected # of sensors not found
+	if(!ScanOwBus(OW_MAXDEV)){			// scan OW Bus and update owdata accordingly
+		return(owdata.numdev);			// expected # of sensors not found
 	}
 
-	// just warn if ext. cfg. has changed; the code itself expects no pariste power
+	// just warn if external configuration has changed (Powerline broken);
+	// The code itself expects no pariste power
 	if(OWsensors.isParasitePowerMode()){
 		BHLOG(LOGOW) Serial.print("  OWBus requests parasite power !\n");
 	}
 
-	owdata.resolution = OWsensors.getResolution();
-  	if(owdata.resolution != TEMPRESOLUTION){
-	  // set the requested global resolution
-  		OWsensors.setResolution(TEMPRESOLUTION);
-		owdata.resolution = OWsensors.getResolution();
-	}
 
   	BHLOG(LOGOW) Serial.printf("  OWBus: OW sensors found: %i, Resolution: %ibit\n",
 	  			owdata.numdev, OWsensors.getResolution());
@@ -170,8 +167,9 @@ int printAddress(DeviceAddress deviceAddress)
   for (uint8_t i = 0; i < 8; i++)
   {
     // zero pad the address if necessary
-    if (deviceAddress[i] < 16)
-      BHLOG(LOGOW) Serial.print("0");
+    if (deviceAddress[i] < 16){
+      	BHLOG(LOGOW) Serial.print("0");
+	}
     BHLOG(LOGOW) Serial.print(deviceAddress[i], HEX);
   }
   BHLOG(LOGOW) Serial.print(" ");
@@ -187,7 +185,7 @@ int printAddress(DeviceAddress deviceAddress)
 //										= -99C -> device not scanned
 //										= -98C -> scanned nbut disconnected
 //*******************************************************************
-int GetOWsensor(int sample){
+int GetOWsensor(int dbidx){
 	float value;	// temperature value for evaluation
 	int   datacount=0;
 
@@ -210,7 +208,7 @@ int GetOWsensor(int sample){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[sample].TempIntern = value;		// save result to BHDB
+	bhdb.dlog[dbidx].TempIntern = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: Int.Temp.Sensor (°C): %.2f\n", value);
 
 	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
@@ -223,7 +221,7 @@ int GetOWsensor(int sample){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[sample].TempExtern = value;		// save result to BHDB
+	bhdb.dlog[dbidx].TempExtern = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: Ext.Temp.Sensor (°C): %.2f\n", value);
 
 	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
@@ -236,7 +234,7 @@ int GetOWsensor(int sample){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[sample].TempHive = value;		// save result to BHDB
+	bhdb.dlog[dbidx].TempHive = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: HiveTemp.Sensor (°C): %.2f\n", value);
 
 #endif // ONEWIRE_CONFIG
