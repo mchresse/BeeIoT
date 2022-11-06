@@ -43,7 +43,7 @@ enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
 typedef struct {
     byte idx;           // index of sent message: 0..255 (round robin)
     byte retries;       // number of initiated retries
-	byte ack;			// ack flag 1 = message received
+	byte ack;			// ack flag =CMD_ACK: message received + RX1, =CMD_ACKNORX1 -> Msg o.k, but no RX1
     beeiotpkg_t * pkg;  // real TX pkg struct
 } beeiotmsg_t;
 

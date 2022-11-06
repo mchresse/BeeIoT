@@ -72,6 +72,8 @@ extern byte BeeIoTStatus;
 extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
 							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 
+bool	EPDupdate=true;		// =true: EPD update requested
+
 uint16_t read16(SdFile& f);
 uint32_t read32(SdFile& f);
 int SetonKey(int key, void(*callback)(void));
@@ -201,22 +203,26 @@ int SetonKey(int key, void(*callback)(void)){
 // onKeyx() ISR of EPD-Keyx	-> Yellow Button
 void onKey1(void){
 	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+	EPDupdate=true;	// EPD update requested
 }
 //*************************************************************************
 // onKeyx() ISR of EPD-Keyx	-> Red Button
 void onKey2(void){
 	BHLOG(LOGBH) Serial.println("  onKey2: EPD-Key2 IRQ: Red Key");
+	EPDupdate=true;	// EPD update requested
 }
 //*************************************************************************
 // onKeyx() ISR of EPD-Keyx	-> Green Button
 void onKey3(void){
 	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Green Key");
+	EPDupdate=true;	// EPD update requested
 }
 //*************************************************************************
 // onKeyx() ISR of EPD-Keyx	-> Blue button
 void onKey4(void){
 	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
  	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
+	EPDupdate=true;	// EPD update requested
 }
 
 
@@ -225,9 +231,11 @@ void onKey4(void){
 // Input: sampleID= Index ond Sensor dataset of BHDB
 void showdata(int sampleID){
 
-	if(isepd==0){
-		return;	// no EPD port no action
+	// No EPD panel connected or no Update request pending
+	if(isepd==0 || 	EPDupdate==false){
+		return;	// no EPD port -> no action
 	}
+
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
@@ -239,7 +247,7 @@ void showdata(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v%s #%i C%i", VMAJOR, (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
+  display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -296,6 +304,8 @@ void showdata(int sampleID){
 
   display.update();				// WakeUp -> update display -> BusyWait -> Sleep
   display.setRotation(rotation); // restore
+
+  EPDupdate=false;				// EPD update request completed -> reset flag
 } // end of ShowData()
 
 

@@ -49,9 +49,9 @@ extern unsigned int	lflags;		// BeeIoT log flag field (masks see beeiot.h)
 int     islora=0;				// =1: we have an active LoRa Node
 
 // GPIO PINS of current connected LoRa Modem chip (SCK, MISO & MOSI are system default)
-const int csPin     = BEE_CS;	// LoRa radio chip select
-const int resetPin  = BEE_RST;	// LoRa radio reset
-const int irqPin    = BEE_DIO0;	// change for your board; must be a hardware interrupt pin
+const int csPin     = LoRa_CS;	// LoRa radio chip select
+const int resetPin  = LoRa_RST;	// LoRa radio reset
+const int irqPin    = LoRa_DIO0;// change for your board; must be a hardware interrupt pin
 
 // Lora Modem default configuration
 RTC_DATA_ATTR struct LoRaRadioCfg_t{
@@ -686,15 +686,12 @@ int ackloop;  // ACK wait loop counter
 	rc = WaitForAck(&BeeIoTStatus, &MyMsg, &MyTXData, &LoRa);
 	if(rc < 0){
 		return(rc);	// No Ack received even not after amount of retries: give up
-		// => JOIN Mode has been entered
+		// => JOIN Mode has been entered already
 	}
 
-    // Release TX Session buffer: reset ACK & Retry flags again
-    MyMsg.ack     = 0;    // probably for a RETRY session by BIoTParse()
-    MyMsg.retries = 0;
-
-    // We got ACK flag from ISR: But it could be from CMD_ACK, CMD_RETRY or CMD_JOIN package)
+    // We got ACK flag from ISR: But it could be from CMD_ACK, CMD_ACKNORX1, CMD_RETRY or CMD_JOIN package)
     //    if(CMD_ACK)   -> nothing to do: ISR has left RX Queue empty => room for another RX1 package by GW
+    //    if(CMD_ACKNORX1) -> nothing to do: ISR has left RX Queue empty => no RX1 package by GW expected
     //    if(CMD_RETRY || CMD_REJOIN) -> ISR has filled up RXQUEUE buffer and incr. BeeIotRXFlag++
     // If RETRY or REJOIN: no RX1 job can be expected from GW
     //    => RX1 loop will
@@ -703,21 +700,30 @@ int ackloop;  // ACK wait loop counter
     //        - if REJOIN: BIoTParse has just set REJOIN Status -> RX1 loop ends doing nothing
     //        - if a new RX1 package has arrived (ISR has increment BeeIotRXFlag): process RX Queue as usual.
 
-    // 11. Start RX1 Window: TX session Done (ACK received):
-    //  Give the GW an option for another Job
-    BeeIoTStatus  = BIOT_RX;  // enter RX1 window session
-    LoRa.receive(0);          // Activate: RX-Continuous in expl. Header mode
+	if(rc == CMD_ACKRX1){	// Got ACK with request to open RX1 wait window
+		// Release TX Session buffer: reset ACK & Retry flags again
+		MyMsg.ack     = 0;    // probably for a RETRY session by BIoTParse()
+		MyMsg.retries = 0;
 
-    ackloop=0;                // reset wait counter
-    BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX1 Pkg. (RXCont):");
-    while (!BeeIotRXFlag & (ackloop < WAITRX1PKG*2)){  // wait till RX pkg arrived or max. wait time is over
-        BHLOG(LOGLORAW) Serial.print("o");
-        mydelay2(500,0);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
-        ackloop++;
-    }
+		// 11. Start RX1 Window: TX session Done (ACK received):
+		//  Give the GW an option for another Job
+		BeeIoTStatus  = BIOT_RX;  // enter RX1 window session
+		LoRa.receive(0);          // Activate: RX-Continuous in expl. Header mode
 
-    // 12. ACK TO condition reached ?
-    if(ackloop >= WAITRX1PKG*2){ // Yes, no RX1 pkg received -> we are done
+		ackloop=0;                // reset wait counter
+		BHLOG(LOGLORAW) Serial.printf("\n  LoRaLog: wait for add. RX1 Pkg. (RXCont):");
+		while (!BeeIotRXFlag & (ackloop < WAITRX1PKG*2)){  // wait till RX pkg arrived or max. wait time is over
+			BHLOG(LOGLORAW) Serial.print("o");
+			mydelay2(500,0);             // wait time (in msec.) -> frequency to check RXQueue: 0.5sec
+			ackloop++;
+		}
+	}
+
+	if(rc == CMD_ACK){	// Normal ACK received and no RX1 window requested
+		rc=0;	 // Bypass RX1 window
+
+    	// 12. ACK TO condition reached ?
+    } else if(ackloop >= WAITRX1PKG*2){ // Yes, no RX1 pkg received -> we are done
         // nothing else to do: no ACK -> no RX Queue handling needed
         BHLOG(LOGLORAW) Serial.println(" None.\n");
         // RX Queue should still be empty: just check it
@@ -798,7 +804,8 @@ int ackloop;  // ACK wait loop counter
 //	Msg			Protocol status of last sent LoRa message
 // 	Modem		Detected RFM95 LoRa device
 // Return:
-//	=  0		Ack received
+//	= CMD_ACK	Ack received + RX1 requested by GW
+//  = CMD_ACKNORX1 ACK received + no RX1 window requested by GW
 //  = -99		Max # of retries reached -> No Ack received
 //				=> Modem entered JOIN mode again
 // Global:
@@ -817,7 +824,7 @@ int WaitForAck(byte *BIOTStatus, beeiotmsg_t *Msg, beeiotpkg_t * Pkg, LoRaClass 
     mydelay2(MSGRESWAIT,0);          // min. wait time for ACK to arrive -> polling rate
 
     ackloop=0;                       // preset RX-ACK wait loop counter
-    while(!Msg->ack){                // wait till TX got committed by ACK-Flag => set by LoRa-ISR routine
+    while(Msg->ack == 0){            // wait till TX got committed by ACK-info => set by LoRa-ISR routine
 
       // 8. No ACK received -> Check for ACK Wait Timeout
       if(ackloop++ > MAXRXACKWAIT){   // max # of wait loops reached ? -> yes, ACK RX timed out
@@ -866,7 +873,7 @@ int WaitForAck(byte *BIOTStatus, beeiotmsg_t *Msg, beeiotpkg_t * Pkg, LoRaClass 
 
     } // while(no ACK)
 
-	return(0);
+	return(Msg->ack);
 }
 
 
@@ -1009,23 +1016,24 @@ int rc;
 	case CMD_RETRY:
 		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: RETRY-Request: send same message again\n", msg->hd.pkgid);
 		if(MyMsg.pkg->hd.pkgid == msg->hd.pkgid){    // do we talk about the same Node-TX message we are waiting for ?
-		BeeIoTStatus = BIOT_TX;             // Retry Msg -> in TX mode again
-		while(!sendMessage(&MyTXData, 0));   // No, send same pkg /w same msgid + MIC in sync mode again
-		MyMsg.retries++;                     // remember # of retries
-		rc=CMD_RETRY;                        // -> wait for ACK by upper layer required
+			BeeIoTStatus = BIOT_TX;              // Retry Msg -> in TX mode again
+			while(!sendMessage(&MyTXData, 0));   // No, send same pkg /w same msgid + MIC in sync mode again
+			MyMsg.retries++;                     // remember # of retries
+			rc=CMD_RETRY;                        // -> wait for ACK by upper layer required
 		}else{
-		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse: RETRY but new MsgID[%i] does not match to TXpkg[%i] ->ignored\n",
-				msg->hd.pkgid, MyMsg.pkg->hd.pkgid);
-		rc = -1;  // retry requested but not for last sent message -> obsolete request
+			BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse: RETRY but new MsgID[%i] does not match to TXpkg[%i] ->ignored\n",
+					msg->hd.pkgid, MyMsg.pkg->hd.pkgid);
+			rc = -1;  // retry requested but not for last sent message -> obsolete request
 		}
 		break;
 
-	case CMD_ACK:   // we should not reach this point -> covered by ISR
-		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Should have been done by ISR ?!\n", msg->hd.pkgid);
-		//  Already done by onReceive() implicitely
-		// BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Data transfer done.\n", msg->index);
+	case CMD_ACK:	// we should not reach this point -> covered by ISR
+	case CMD_ACKRX1:
+		BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACKRX1 received -> Should have been processed by ISR ?!\n", msg->hd.pkgid);
+		//  No action: Already done by onReceive() implicitely
+		// BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACKRX1 received -> Data transfer done.\n", msg->index);
 		if(MyMsg.pkg->hd.pkgid == msg->hd.pkgid){    // save link to User payload data
-			MyMsg.ack = 1;                        // confirm Acknowledge flag
+			MyMsg.ack = CMD_ACK;                     // confirm Acknowledge flag
 		}
 		rc = CMD_ACK;   // Message sending got acknowledged
 		break;
@@ -1034,7 +1042,7 @@ int rc;
     	// BHLOG(LOGLORAW) Serial.printf("  BeeIoTParse[%i]: ACK received -> Data transfer done.\n", msg->index);
 		BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN + msg->hd.frmlen + BIoT_MICLEN);
 		if(MyMsg.pkg->hd.pkgid == msg->hd.pkgid){    // save link to User payload data
-			MyMsg.ack = 1;                        // confirm Acknowledge flag
+			MyMsg.ack = CMD_ACK;                     // confirm Acknowledge info
 		}
 		ackbcn = (ackbcn_t*) & msg->data;   // get ptr. on beaon ack data
 		bhdb.rssi = ackbcn->rssi; // save RSSI for EPD
@@ -1235,12 +1243,12 @@ byte * ptr;
   // some debug output: assumed all is o.k.
 	BHLOG(LOGLORAW) Serial.printf("onReceive: RX(0x%02X>0x%02X)", (unsigned char)msg->hd.sendID, (unsigned char)msg->hd.destID);
 	BHLOG(LOGLORAW) Serial.printf("[%i]:(cmd=%i: %s) ", (unsigned char) msg->hd.pkgid, (unsigned char) msg->hd.cmd, beeiot_ActString[msg->hd.cmd]);
-  BHLOG(LOGLORAW) Serial.printf("DataLen=%i Bytes\n", msg->hd.frmlen);
+	BHLOG(LOGLORAW) Serial.printf("DataLen=%i Bytes\n", msg->hd.frmlen);
 
   // if it is CMD_ACK pkg -> lets commit to waiting TX-Msg
-  if(msg->hd.cmd == CMD_ACK){
+  if( (msg->hd.cmd == CMD_ACK) || (msg->hd.cmd == CMD_ACKRX1)){
     if(msg->hd.pkgid == MyMsg.idx){  // is last TX task waiting for this ACK ?
-      MyMsg.ack = 1;              // ACK flag hopefully still polled by waiting TX service
+      MyMsg.ack = msg->hd.cmd;       // ACK info hopefully still polled by waiting TX service
     }else{                        // noone is waiting for this ACK -> ignore it, but leave a note
       BHLOG(LOGLORAR) Serial.printf("onReceive: ACK received -> with no matching msg.index: %i\n", msg->hd.pkgid);
     } // skip RX Queue handling for ACK pkgs.
@@ -1249,7 +1257,7 @@ byte * ptr;
     // keep ACKBCN, RETRY or REJOIN as ACK to satisfy ACK wait loop at LoRaLog()
     if((msg->hd.cmd == CMD_RETRY) || (msg->hd.cmd == CMD_REJOIN) || (msg->hd.cmd == CMD_ACKBCN)){
       if(msg->hd.pkgid == MyMsg.idx){  // is the last TX task waiting for an ACK  but got RETRY now ?
-        MyMsg.ack = 1;              // fake an ACK flag hopefully still polled by waiting TX service
+        MyMsg.ack = CMD_ACK;        // fake an ACK cmd -> hopefully still polled by waiting TX service
       }else{                        // noone is waiting for an ACK -> but we will process it anyway
         BHLOG(LOGLORAR) Serial.printf("onReceive: RETRY/REJOIN/ACKBCN received -> with no matching msg.index: %i\n", msg->hd.pkgid);
       } // nothing done for RETRY here, but parse routine will do the rest---
@@ -1262,8 +1270,9 @@ byte * ptr;
     }
     BeeIotRXFlag++;   // tell parsing service, we have a new package for him
   }
+	// print ISR notes in real time
+  	// Serial.flush();
 
-  Serial.flush(); // print ISR notes in real time
   return;
 } // end of RX ISR process
 

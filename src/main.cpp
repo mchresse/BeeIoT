@@ -111,8 +111,8 @@
 // Global data object declarations
 //************************************
 
-#define LOOPTIME    60		// [sec] Loop wait time: 60 for 1 Minute
-#define SLEEPTIME   60		// RTC sleep time in seconds
+#define LOOPTIME    10		// [sec] Loop wait time: 60 for 1 Minute
+#define SLEEPTIME   10		// RTC sleep time in seconds
 #ifdef BEACON
 #define SLEEPMODE	  BEACONSLEEP  // =0 initial startup needed(after reset); =1 after deep sleep;
 								   // =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
@@ -145,11 +145,13 @@ extern int issdcard;            // =1 SDCard found flag o.k.
 extern int isepd;               // =1 ePaper found
 extern int islora;              // =1 LoRa client is active
 
+extern SPIClass SPI2;			// Master SPI device
 extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
+extern bool	EPDupdate;			// =true: EPD update requested
 extern HX711        scale;      // managed in HX711Scale module
 extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 extern int 			adcaddr;	// I2C Dev.address of detected ADC
-extern OneWire ds;				// OneWire Bus object
+extern OneWire 		ds;			// OneWire Bus object
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -205,7 +207,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags=LOGBH;
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGSPI+LOGLORAW;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -217,13 +219,13 @@ int rc;		// generic return code variable
     gpio_deep_sleep_hold_dis();
 	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
     pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
-    pinMode(BEE_CS, OUTPUT);
+    pinMode(LoRa_CS, OUTPUT);
     digitalWrite(EPD_CS, HIGH);
     digitalWrite(SD_CS, HIGH);
-    digitalWrite(BEE_CS, HIGH);
+    digitalWrite(LoRa_CS, HIGH);
     gpio_hold_dis(SD_CS);   	// enable SD_CS
     gpio_hold_dis(EPD_CS);   	// enable EPD_CS
-    gpio_hold_dis(BEE_CS);  	// enable BEE_CS
+    gpio_hold_dis(LoRa_CS);  	// enable BEE_CS
 
   // If Ser. Diagnostic Port connected
 	while(!Serial);             // wait to connect UART to computer terminal
@@ -245,8 +247,8 @@ int rc;		// generic return code variable
 			// increment WakeUp boot counter and check if loop wait time reached -> if not: sleep again
 			if(++bootCount < (report_interval/TIME_TO_SLEEP)){  // needed in case looptime exceed std. sleep time
 				// Start deep sleep again -> split in chunks of sleep windows
-        // if deep sleep time == report_interval no boot counter needed:
-        //				prepare_sleep_mode(ReEntry, report_interval);
+				// if deep sleep time == report_interval no boot counter needed:
+				//				prepare_sleep_mode(ReEntry, report_interval);
 			}
 		}
 		// ReEntry > 1 <predefined startup/sleep mode set at end of Loop()>
@@ -283,6 +285,8 @@ int rc;		// generic return code variable
 //***************************************************************
   BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
   BHLOG(LOGBH) setRGB(0,0,0); // end blinking of Red LED -> Start Setup Phase
+  pinMode(LEDRED, OUTPUT);
+  digitalWrite(LEDRED, LOW);
 
 //***************************************************************
 // Preset BeeIoT runtime config values
@@ -316,7 +320,7 @@ int rc;		// generic return code variable
 
 //***************************************************************
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
-  issdcard = setup_spi_VSPI(ReEntry);
+  issdcard = setup_spi(ReEntry);
   if (!issdcard){
     BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not detected");
     // enter here exit code, if needed
@@ -409,6 +413,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 
 //***************************************************************
   Serial.println("");
+  digitalWrite(LEDRED, HIGH);
 
 } // end of BeeIoT setup()
 
@@ -434,6 +439,7 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 /// @return none
 //*******************************************************************
 void loop() {
+int cnum;
 
   BHLOG(LOGBH) setRGB(0,255,0);  // show start of new loop() phase: green
 
@@ -452,7 +458,9 @@ void loop() {
 					bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
 
   bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-  sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.  ");
+  cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.");
+  if(cnum>0)
+	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 
   BHLOG(LOGBH) setRGB(0,0,0);  // show start of new loop() phase: green blink ends
 
@@ -479,7 +487,6 @@ void loop() {
 #ifdef ONEWIRE_CONFIG
 	int owsensors;
 	int retry=0;
-
 	// Get all temp values directly into bhdb.dlog[]
 	do{
 		owsensors = GetOWsensor(bhdb.loopid);
@@ -497,7 +504,9 @@ void loop() {
 		retry++;
 		mydelay2(200,0);			// sleep 200ms for OW bus recovery
 		if(retry > 0)
-			sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+			cnum = sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+			if(cnum>0)
+				bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 	} while (retry <= ONE_WIRE_RETRY);
 
 #endif // ONEWIRE_CONFIG
@@ -519,21 +528,25 @@ void loop() {
   	// Get battery Powerlevel & calculate % Level
 	float x;              		// Volt calculation buffer
 	addata=getespadc(Battery_pin) * 310 / 100;
-	if( (x = ((float)(addata-BATTERY_SHUTDOWN_LEVEL))) < 0){
+	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
+	if( x > 0.0){
 	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
-
 	}else{
 		x=0;
 	}
 	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   	bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
 
-  	if(addata <= BATTERY_MIN_LEVEL){
-    	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
+  	if((float) addata <= BATTERY_MIN_LEVEL){
+    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
+		if(cnum>0)
+			bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 		// ToDO: prepare for Batt. Warning Event here...
   	}
-  	if(addata <= BATTERY_SHUTDOWN_LEVEL){
-    	sprintf(bhdb.dlog[bhdb.loopid].comment, "BattDamage!");
+  	if((float) addata <= BATTERY_SHUTDOWN_LEVEL){
+    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattDamage!");
+		if(cnum>0)
+			bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 		// ToDO: prepare for Batt. Shutdown Event here...
   	}
 
@@ -593,7 +606,7 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
   	sample = (bhdb.laps*datasetsize) + bhdb.loopid;
 
-#ifdef DSENSOR2
+#ifdef DSENSOR2		// Create bin data based sensor report stream
   	dsensor.logid		= sample;
   	dsensor.year2k		= bhdb.stime.tm_year - 100;	// rebase 1900 -> 2000
 	dsensor.month		= bhdb.stime.tm_mon+1;		// 1-12
@@ -612,10 +625,11 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 	dsensor.battload	= bhdb.dlog[bhdb.loopid].BattLoad;
 	dsensor.battlevel	= bhdb.dlog[bhdb.loopid].BattLevel;
 
-	dsensor.tlen = snprintf((char*) dsensor.notice, BIoT_NOTICELEN, "%s", (char*) bhdb.dlog[bhdb.loopid].comment);
+	dsensor.tlen = strlen(bhdb.dlog[bhdb.loopid].comment);
 	if(dsensor.tlen > BIoT_NOTICELEN){
 		dsensor.tlen = BIoT_NOTICELEN;	// assure max. text length value (normally already done by snprintf)
 	}
+	dsensor.tlen = snprintf((char*) dsensor.notice, dsensor.tlen , "%s", (char*) bhdb.dlog[bhdb.loopid].comment);
 	if(dsensor.tlen < 0){
 		dsensor.tlen = 0;	// if snprintf failed -> define no text field
 	}
@@ -636,7 +650,7 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 #endif	// No BEACON
 
 #else // DSENSOR2
-// Create Status Report based on the sensor readings
+// Create ASCII Status Report based on the sensor readings
   dataMessage =
               String(bhdb.date) + " " +
               String(bhdb.time) + "," +
@@ -770,8 +784,8 @@ esp_err_t rc;
 /// @return void
 //*******************************************************************
 void InitConfig(int reentry){
-  int i;
-
+  	int i;
+	int cnum;
 	if(!reentry){ // do init only once after Power-On
 		bhdb.loopid       = 0;
 		bhdb.laps         = 0;
@@ -818,7 +832,9 @@ void InitConfig(int reentry){
 			bhdb.dlog[i].BattCharge  =0;
 			bhdb.dlog[i].BattLoad    =0;
 			bhdb.dlog[i].BattLevel   =0;
-			strncpy(bhdb.dlog[i].comment, "OK/0", 3);
+			cnum=sprintf(bhdb.dlog[i].comment, "OK");
+			if(cnum>0)
+				bhdb.dlog[i].comment[cnum]=0;
 		}
 	} // end of !reentry
 } // end of InitConfig()
@@ -860,60 +876,74 @@ void biot_ioshutdown(int sleepmode){
     isntp = 0;
 #endif
 
+// Shutdown all SPI devices
+
 #ifdef SD_CONFIG
     if(issdcard){
       SD.end();   // unmount SD card
+	  issdcard = 0;
     }
 #endif
-	pinMode(SD_CS, INPUT_PULLUP);		// xxx, bootstrap pin !
-    gpio_hold_en(SD_CS);      // stable state in Deep sleep
-    issdcard = 0;
 
 #ifdef EPD_CONFIG
     if(isepd){
       display.powerDown();
+      isepd = 0;
     }
 #endif
 
-// SPI Bus shutdown: EPD + LORA + SD
-    pinMode(VSPI_MISO, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    pinMode(VSPI_MOSI, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    pinMode(VSPI_SCK, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
+#ifdef LORA_CONFIG
+    if(islora){
+      LoRa.end();     // set LORA Radio to sleep mode and disable SPI
+      islora = 0;
+    }
+#endif
 
-    isepd = 0;
-	pinMode(EPD_BUSY, INPUT);	// already output by EPD
-	pinMode(EPD_CS, INPUT);		// needs ext- Pullup for DeepSleep -> no RTC GPIO, bootstrap pin
-	pinMode(EPD_RST, INPUT);	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-	pinMode(EPD_DC, INPUT); 	// needs ext- Pullup for DeepSleep -> no RTC GPIO
-    gpio_hold_en(EPD_CS);    	// EPD_CS
-    gpio_hold_en(EPD_RST);   	// EPD_RST
-    gpio_hold_en(EPD_DC);    	// EPD_DC
+	SPI2.end();		// Detach all SPI Bus pins
+
+	pinMode(SD_CS, INPUT_PULLUP);		// xxx, bootstrap pin !
+    gpio_hold_en(SD_CS);      // stable state in Deep sleep
+
+// SPI Bus shutdown: EPD + LORA + SD
+    pinMode(SPI_MISO, INPUT);	// needs ext- Pullup for DeepSleep
+    pinMode(SPI_MOSI, INPUT);	// needs ext- Pullup for DeepSleep
+    pinMode(SPI_SCK,  INPUT);	// needs ext- Pullup for DeepSleep
+//	gpio_hold_en(SPI_MISO);
+//	gpio_hold_en(SPI_MOSI);
+//	gpio_hold_en(SPI_SCK);
+	rtc_gpio_isolate(SPI_MISO);
+	rtc_gpio_isolate(SPI_MOSI);
+	rtc_gpio_isolate(SPI_SCK);
+
+	pinMode(EPD_BUSY, INPUT);		// already output by EPD normally
+	pinMode(EPD_CS,  INPUT);		// needs ext- Pullup for DeepSleep -> no RTC GPIO, bootstrap pin
+	pinMode(EPD_RST, INPUT);		// needs ext- Pullup for DeepSleep
+	pinMode(EPD_DC,  INPUT); 		// needs ext- Pullup for DeepSleep
+//	gpio_hold_en(EPD_BUSY);    			// EPD_BUSY
+//	gpio_hold_en(EPD_CS);    			// EPD_CS
+//  gpio_hold_en(EPD_RST);   			// EPD_RST
+//  gpio_hold_en(EPD_DC);    			// EPD_DC
+	rtc_gpio_isolate(EPD_BUSY);
+	rtc_gpio_isolate(EPD_CS);
+	rtc_gpio_isolate(EPD_RST);
+	rtc_gpio_isolate(EPD_DC);
 
 // High side power switch of SPI device has no effect
 // -> need low side switch by driving ext. MOSFET by GPIO
 	pinMode(EPD_LOWSW, OUTPUT);			// Open EPD Low side switch -> no ground to ePaper
     digitalWrite(EPD_LOWSW, HIGH);		// High if P-channel MOSFET
-    gpio_hold_en(EPD_LOWSW);
+
+	pinMode(LoRa_CS, INPUT_PULLUP);		// bootstrap pin
+	pinMode(LoRa_RST, INPUT_PULLUP);
+    gpio_hold_en(LoRa_CS);     // BEE_CS
+    gpio_hold_en(LoRa_RST);    // BEE_RST
 
 
-#ifdef LORA_CONFIG
-    if(islora){
-      LoRa.end();     // set LORA Radio to sleep mode and disable SPI
-    }
-#endif
-    islora = 0;
-	pinMode(BEE_CS, INPUT_PULLUP);		// bootstrap pin
-	pinMode(BEE_RST, INPUT_PULLUP);
-    gpio_hold_en(BEE_CS);     // BEE_CS
-    gpio_hold_en(BEE_RST);    // BEE_RST
-
-#ifdef HX711_CONFIG
 // HX requires OUTPUT here to define data/clock line during sleep
     pinMode(HX711_SCK, INPUT_PULLUP);
     pinMode(HX711_DT, INPUT_PULLUP);
     gpio_hold_en(HX711_SCK);  // HX711 SCK
     gpio_hold_en(HX711_DT);   // HX711 Data
-#endif
 
 
 //	i2c_driver_delete(i2c_master_port);
@@ -923,16 +953,20 @@ void biot_ioshutdown(int sleepmode){
     gpio_hold_en((gpio_num_t) I2C_SCL);    // ADS_SCL
     gpio_hold_en((gpio_num_t) I2C_SDA);    // ADS_SDA
 
-#ifdef ONEWIRE_CONFIG
 // Set OW line to high impedance -> open collector bus
-      pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
+    pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
 //    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
-#endif
 
   	BHLOG(LOGBH) setRGB(0,0,0);		// Stop blink of SHutdown phase by Blue LED
     pinMode(LEDRGB, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
 //	digitalWrite(LEDRGB,LOW);
-    gpio_hold_en(LEDRGB); 			// OneWire Bus line
+    gpio_hold_en(LEDRGB);
+
+// Switch off Low side power switch of SPI device back to LOW
+	delay(1000);		// wait 1000ms to empty remaining capacity loads ePaper side
+	// Low during deepslepp allows recognition of pressed Key1..4 at ePaper module hat
+    digitalWrite(EPD_LOWSW, LOW);		// Low if P-channel MOSFET
+    gpio_hold_en(EPD_LOWSW);
 
   } // end of sleepmode
 } // biot_ioshutdown()
@@ -1005,7 +1039,7 @@ esp_err_t  rc;
 				// ToDo: what to do i this error case ???
 			}
 
-			// BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
+			BHLOG(LOGBH) Serial.println("  Main: Continue from LightSleep...");
 			break;
 
 		case 3:		// ModemSleepMode
@@ -1042,18 +1076,46 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 	wakeup_reason = esp_sleep_get_wakeup_cause();
 
 	switch(wakeup_reason)  {
-		case ESP_SLEEP_WAKEUP_EXT0:       BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-		case ESP_SLEEP_WAKEUP_EXT1:       BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-		case ESP_SLEEP_WAKEUP_TIMER:      BHLOG(LOGBH)Serial.println("Wakeup caused by timer"); break;
-		case ESP_SLEEP_WAKEUP_TOUCHPAD:   BHLOG(LOGBH)Serial.println("Wakeup caused by touchpad"); break;
-		case ESP_SLEEP_WAKEUP_ULP:        BHLOG(LOGBH)Serial.println("Wakeup caused by ULP program"); break;
-		case ESP_SLEEP_WAKEUP_GPIO:       BHLOG(LOGBH)Serial.println("Wakeup caused by GPIO"); break;
-		case ESP_SLEEP_WAKEUP_UART:       BHLOG(LOGBH)Serial.println("Wakeup caused by UART (light sleep only)"); break;
-		case ESP_SLEEP_WAKEUP_ALL:        BHLOG(LOGBH)Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source"); break;
-		case ESP_SLEEP_WAKEUP_UNDEFINED:  BHLOG(LOGBH)Serial.println("Reset or unknown WakeUp cause"); break;
+		case ESP_SLEEP_WAKEUP_EXT0:
+				BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_IO");
+				EPDupdate=true;		// Update EPD by Key reboot request
+				break;
+		case ESP_SLEEP_WAKEUP_EXT1:
+		       	BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_CNTL");
+				EPDupdate=true;		// Update EPD by Key reboot request
+				break;
+		case ESP_SLEEP_WAKEUP_TIMER:
+		      	BHLOG(LOGBH)Serial.println("Wakeup caused by timer");
+				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+				break;
+		case ESP_SLEEP_WAKEUP_TOUCHPAD:
+		   		BHLOG(LOGBH)Serial.println("Wakeup caused by touchpad");
+				EPDupdate=true;		// Update EPD by Key reboot request
+				break;
+		case ESP_SLEEP_WAKEUP_ULP:
+		        BHLOG(LOGBH)Serial.println("Wakeup caused by ULP program");
+				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+				break;
+		case ESP_SLEEP_WAKEUP_GPIO:
+		       	BHLOG(LOGBH)Serial.println("Wakeup caused by GPIO");
+				EPDupdate=true;		// Update EPD by Key reboot request
+				break;
+		case ESP_SLEEP_WAKEUP_UART:
+		       	BHLOG(LOGBH)Serial.println("Wakeup caused by UART (light sleep only)");
+				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+				break;
+		case ESP_SLEEP_WAKEUP_ALL:
+		        BHLOG(LOGBH)Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source");
+				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+				break;
+		case ESP_SLEEP_WAKEUP_UNDEFINED:
+				BHLOG(LOGBH)Serial.println("Reset or unknown WakeUp cause");
+				EPDupdate=true;		// Update EPD by Key reboot request
+				break;
 		default :
-			BHLOG(LOGBH)Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
-			return(ESP_SLEEP_WAKEUP_UNDEFINED);
+				BHLOG(LOGBH)Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
+				EPDupdate=true;		// Update EPD
+				wakeup_reason = ESP_SLEEP_WAKEUP_UNDEFINED;
 	}
 	return(wakeup_reason);
 }

@@ -21,43 +21,43 @@
 |Pin| Ref. |  IO# |  DevKitC |       | Protocol |  Components    |
 |---|------|------|----------|-------|----------|----------------|
 |  1| +3.3V|      |          |       |    +3.3V | -              |
-|  2|    EN|      |   SW2    |       |          | ePaper-Key2    |
-|  3|*  SVP|GPIO36|  Sens-VP | ADC1-0|        - | -              |
-|  4|*  SVN|GPIO39|  Sens-VN | ADC1-3|        - | -              |
-|  5|* IO34|GPIO34|          | ADC1-6|          | ePDK3/LoRa DIO2|
-|  6|* IO35|GPIO35|          | ADC1-7|          | ePaper-Key4    |
-|  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| DS18B20(3x)    |
-|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | LoRa DIO0      |
-|  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | HX711-DT       |
+|  2|    EN|      |   SW2    |       |          | Reset\         |
+|  3|*  SVP|GPIO36|  Sens-VP | ADC1-0|        - | ADC_Charge     |
+|  4|*  SVN|GPIO39|  Sens-VN | ADC1-3|        - | ADC_Batt       |
+|  5|* IO34|GPIO34|          | ADC1-6|          | EPD_Key3       |
+|  6|* IO35|GPIO35|          | ADC1-7|          | EPD_Key4       |
+|  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| OW-DS18B20 (3x)|
+|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | SPI_Pwr HSwitch|
+|  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | EPD_RST\       |
 | 10|  IO26|GPIO26|     DAC2 | ADC2-9|  Wire-Clk| HX711-SCK      |
-| 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| ADS1115/BMS    |
-| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| LoRa RST       |
-| 13|  IO12|GPIO12| HSPI-MISO| ADC2-5| SPI1-MISO| LoRa CS\       |
-| 14|   GND|      |          |       |       GND| -              |
-| 15|  IO13|GPIO13| HSPI-MOSI| ADC2-4| SPI1-MOSI| LoRa DIO1      |
-| 16|   SD2|GPIO09|FLASH-D2  | U1-RXD|        - | -              |
-| 17|   SD3|GPIO10|FLASH-D3  | U1-TXD|        - | -              |
-| 18|   CMD|GPIO11|FLASH-CMD | U1-RTS|        - | -              |
-| 19|   +5V|      |          |       |      +5V | -              |
-| 20|   CLK|GPIO06|FLASH-CLK | U1-CTS|        - | -              |
-| 21|   SD0|GPIO07|FLASH-D0  | U2-RTS|        - | -              |
-| 22|   SD1|GPIO08|FLASH-D1  | U2-CTS|        - | -              |
-| 23|  IO15|GPIO15| HSPI-SS  | ADC2-3|MonLED-red| Red LED        |
-| 24|  IO02|GPIO02| HSPI-4WP | ADC2-2|  SPI-CS  | SDcard CS\     |
-| 25|  IO00|GPIO00|   SW1    | ADC2-1|          | ePaper-Key1    |
-| 26|  IO04|GPIO04| HSPI-4HD | ADC2-0|      CLK | ePaper BUSY    |
-| 27|  IO16|GPIO16|UART2-RXD |       |      DT  | ePaper RST     |
-| 28|  IO17|GPIO17|UART2-TXD |       |          | ePaper D/C     |
-| 29|  IO05|GPIO05| VSPI-SS  |       | SPI0-CS0 | ePD CS\        |
-| 30|  IO18|GPIO18| VSPI-CLK |       | SPI0-Clk | ePD/SD/LoRa Clk|
-| 31|  IO19|GPIO19| VSPI-MISO| U0-CTS| SPI0-MISO| SD/LoRa MISO   |
-| 32|   GND|      |          |       |      GND | -              |
-| 33|  IO21|GPIO21| VSPI-4HD |       |  I2C-SDA | ADS1115/BMS    |
-| 34|  RXD0|GPIO03|UART0-RX  | U0-RXD| -> USB   | -              |
-| 35|  TXD0|GPIO01|UART0-TX  | U0-TXD| -> USB   | -              |
-| 36|  IO22|GPIO22| VSPI-4WP | U0-RTS|  I2C-SCL | ADS1115/BMS    |
-| 37|  IO23|GPIO23| VSPI-MOSI|       | SPI0-MOSI|ePD/SD/LoRa MOSI|
-| 38|   GND|      |          |       |       GND| -              |
+| 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| EPD_Gnd LSwitch|
+| 12|  IO14|GPIO14| HSPI-CLK | ADC2-6|Status-LED| SPI_Clk        |
+| 13|  IO12|GPIO12| HSPI-MISO| ADC2-5| SPI1-MISO| SPI_MISO       |
+| 14|   GND|      |          |       |       GND| GND            |
+| 15|  IO13|GPIO13| HSPI-MOSI| ADC2-4| SPI1-MOSI| SPI_MOSI       |
+| 16|   SD2|GPIO09|FLASH-D2  | U1-RXD|        - | nc             |
+| 17|   SD3|GPIO10|FLASH-D3  | U1-TXD|        - | nc             |
+| 18|   CMD|GPIO11|FLASH-CMD | U1-RTS|        - | nc             |
+| 19|   +5V|      |          |       |      +5V | nc             |
+| 20|   CLK|GPIO06|FLASH-CLK | U1-CTS|        - | nc             |
+| 21|   SD0|GPIO07|FLASH-D0  | U2-RTS|        - | nc             |
+| 22|   SD1|GPIO08|FLASH-D1  | U2-CTS|        - | nc             |
+| 23|  IO15|GPIO15| HSPI-SS  | ADC2-3|MonLED-red| LoRa_CS\       |
+| 24|  IO02|GPIO02| HSPI-4WP | ADC2-2|  SPI-CS  | SD_CS\         |
+| 25|  IO00|GPIO00|   SW1    | ADC2-1|          | LoRa_RST\      |
+| 26|  IO04|GPIO04| HSPI-4HD | ADC2-0|      CLK | ePaper CS      |
+| 27|  IO16|GPIO16|UART2-RXD |       |      DT  |     <free>     |
+| 28|  IO17|GPIO17|UART2-TXD |       |          | ePaper DC      |
+| 29|  IO05|GPIO05| VSPI-SS  |       | SPI0-CS0 | LED_RGB DI     |
+| 30|  IO18|GPIO18| VSPI-CLK |       | SPI0-Clk | HX711-DT       |
+| 31|  IO19|GPIO19| VSPI-MISO| U0-CTS| SPI0-MISO| LoRa DIO0      |
+| 32|   GND|      |          |       |      GND | GND            |
+| 33|  IO21|GPIO21| VSPI-4HD |       |  I2C-SDA | I2C_SDA        |
+| 34|  RXD0|GPIO03|UART0-RX  | U0-RXD| -> USB   | RX-D0          |
+| 35|  TXD0|GPIO01|UART0-TX  | U0-TXD| -> USB   | TX-D0          |
+| 36|  IO22|GPIO22| VSPI-4WP | U0-RTS|  I2C-SCL | I2C_SCL        |
+| 37|  IO23|GPIO23| VSPI-MOSI|       | SPI0-MOSI| ePaper BUSY    |
+| 38|   GND|      |          |       |       GND| GND            |
 */
 //*******************************************************************
 #ifndef BEEIOT_h
@@ -112,28 +112,24 @@
 // Pin mapping when using SDCARD in SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
 
-// HSPI not used here -> IO ports reused for STd. GPIO
-// #define HSPI_MISO   GPIO_NUM_12  // PIN_NUM_MISO
-// #define HSPI_MOSI   GPIO_NUM_13  // PIN_NUM_MOSI
-// #define HSPI_SCK    GPIO_NUM_14  // PIN_NUM_CLK
-// #define HSPI_CS     GPIO_NUM_15  // PIN_NUM_CS
+// ESP32 HSPI port pins for SD/EPD/BEE:
+#define SPI_MISO   GPIO_NUM_12  // HSPI_MISO	=12
+#define SPI_MOSI   GPIO_NUM_13  // HSPI_MOSI	=13
+#define SPI_SCK    GPIO_NUM_14  // HSPI_CLK		=14
+//#define SPI_MISO   GPIO_NUM_19      // VSPI_MISO    = 19
+//#define SPI_MOSI   GPIO_NUM_23      // VSPI_MOSI    = 23
+//#define SPI_SCK    GPIO_NUM_18      // VSPI_CLK     = 18
 
-// ESP32 default SPI port pins for SD/EPD/BEE:
-#define VSPI_MISO   MISO            // PIN_NUM_MISO    = 19
-#define VSPI_MOSI   MOSI            // PIN_NUM_MOSI    = 23
-#define VSPI_SCK    SCK             // PIN_NUM_CLK     = 18
-
-#define VSPI_CS     SS              // PIN_NUM_CS      = 5
-
-#define SD_MISO     VSPI_MISO       // SPI MISO -> VSPI = 19
-#define SD_MOSI     VSPI_MOSI       // SPI MOSI -> VSPI = 23
-#define SD_SCK      VSPI_SCK        // SPI SCLK -> VSPI = 18
+#define SD_MISO     SPI_MISO        // SPI MISO
+#define SD_MOSI     SPI_MOSI        // SPI MOSI
+#define SD_SCK      SPI_SCK         // SPI CLK
 #define SD_CS       GPIO_NUM_2      // SD card CS line - arbitrary selection !
 
-#define LEDRGB      GPIO_NUM_15    	// GPIO number of RGB-LED DI (like WS2812B)
+#define LEDRGB      GPIO_NUM_5    	// GPIO number of RGB-LED DI (like WS2812B)
+#define LEDRED		GPIO_NUM_16     // <free GPIO> here: used as Red Test LED
 
 // HX711 ADC GPIO Port to Espressif 32 board
-#define HX711_DT    GPIO_NUM_25     // serial dataline
+#define HX711_DT    GPIO_NUM_18     // serial dataline
 #define HX711_SCK   GPIO_NUM_26     // Serial clock line
 
 // Used I2C Port: 0
@@ -148,28 +144,28 @@
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 // Default: BUSY -> 4,       RST -> 16, 	  DC  -> 17, 	CS -> SS(5),
 // 			CLK  -> SCK(18), DIN -> MOSI(23), GND -> GND, 3.3V -> 3.3V
-#define EPD_MISO  VSPI_MISO 	    // SPI MISO -> VSPI
-#define EPD_MOSI  VSPI_MOSI 	    // SPI MOSI -> VSPI
-#define EPD_SCK	  VSPI_SCK       	// SPI SCLK -> VSPI
-#define EPD_CS	  GPIO_NUM_5        // SPI SS   -> VSPI
+#define EPD_MISO  SPI_MISO 	        // SPI MISO
+#define EPD_MOSI  SPI_MOSI 	        // SPI MOSI
+#define EPD_SCK	  SPI_SCK       	// SPI SCLK
+#define EPD_CS	  GPIO_NUM_4        // EPD-CS
 #define EPD_DC    GPIO_NUM_17		// arbitrary selection of DC   > def: 17
-#define EPD_RST   GPIO_NUM_16		// arbitrary selection of RST  > def: 16
-#define EPD_BUSY  GPIO_NUM_27     	// arbitrary selection of BUSY > def: 27
+#define EPD_RST   GPIO_NUM_25		// arbitrary selection of RST  > def: 16
+#define EPD_BUSY  GPIO_NUM_23     	// arbitrary selection of BUSY > def: 27
 #define EPD_KEY1  na		     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
 #define EPD_KEY2  na     			// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_34     	// via 40-pin RPi slot at ePaper Pin33 (P13)
 #define EPD_KEY4  GPIO_NUM_35     	// via 40-pin RPi slot at ePaper Pin35 (P19)
+#define EPD_LOWSW GPIO_NUM_27		// EPD low side ground switch (=0 in Deep Sleep)
 
 // LoRa-Bee Board
-#define BEE_MISO VSPI_MISO	        // SPI MISO -> VSPI:	19
-#define BEE_MOSI VSPI_MOSI	        // SPI MOSI -> VSPI:	23
-#define BEE_SCK  VSPI_SCK	        // SPI SCLK -> VSPI: 	18
-#define BEE_CS   GPIO_NUM_12	    // CS = NSS
-#define BEE_RST	 GPIO_NUM_14  	    //
-#define BEE_DIO0 GPIO_NUM_33	    // RXDone, TXDone - Main Lora_Interrupt line
-#define BEE_DIO1 na	    			// not used by BIOT_Lora !
-#define BEE_DIO2 na	    			// not used by BIOT_Lora !
-#define EPD_LOWSW GPIO_NUM_13		// EPD low side ground switch ()=0 in Deep Sleep)
+#define LoRa_MISO SPI_MISO	        // SPI MISO
+#define LoRa_MOSI SPI_MOSI	        // SPI MOSI
+#define LoRa_SCK  SPI_SCK	        // SPI SCLK
+#define LoRa_CS   GPIO_NUM_15	    // LoRa CS
+#define LoRa_RST  GPIO_NUM_0  	    // LoRa Reset
+#define LoRa_DIO0 GPIO_NUM_19	    // LoRa RXDone, TXDone - Main Lora_Interrupt line
+#define LoRa_DIO1 na	    		// not used by BIOT_Lora !
+#define LoRa_DIO2 na	    		// not used by BIOT_Lora !
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
 #define LOGNOP		0		//    0: No Log Messages at all.
@@ -212,9 +208,9 @@
 
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4200 // mV	= 100%
-    #define BATTERY_MIN_LEVEL        3200 // mV =  33%
-    #define BATTERY_SHUTDOWN_LEVEL   3000 // mV =   0% -> Limit from ESP32 Min Power level.
+    #define BATTERY_MAX_LEVEL        4200.0 // mV	= 100%
+    #define BATTERY_MIN_LEVEL        3200.0 // mV =  33%
+    #define BATTERY_SHUTDOWN_LEVEL   3000.0 // mV =   0% -> Limit from ESP32 Min Power level.
 #endif
 
 
@@ -278,7 +274,7 @@ int setup_ntp		(int mode);
 int setup_i2c_ADS	(int mode);
 int setup_i2c_MAX	(int mode);
 int setup_rtc		(int mode);		// in rtc.cpp
-int setup_spi_VSPI	(int mode);		// in multiSPI.cpp
+int setup_spi    	(int mode);		// in multiSPI.cpp
 int setup_sd		(int mode);		// in sdcard.cp
 int setup_epd		(int mode);		// in epd.cpp
 
