@@ -186,13 +186,13 @@ int printAddress(DeviceAddress deviceAddress)
 //										= -98C -> scanned nbut disconnected
 //*******************************************************************
 int GetOWsensor(int dbidx){
-	float value;	// temperature value for evaluation
-	int   datacount=0;
-
 	if(owdata.numdev < OW_MAXDEV)	// no OW devices detected, nothing to do
 		return(0);
 
 #ifdef ONEWIRE_CONFIG
+	float value;	// temperature value for evaluation
+	int   datacount=0;
+
 	BHLOG(LOGOW) Serial.println("  OWBus: Requesting temperatures...");
 
 	OWsensors.requestTemperatures(); // Send the command to prepare temperatures (all at once)

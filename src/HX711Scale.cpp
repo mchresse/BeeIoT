@@ -49,9 +49,9 @@ HX711 scale;            // the one and only weight cell
 //*******************************************************************
 int setup_hx711Scale(int reentry) {
 // put your setup code here, to run once:
+#ifdef HX711_CONFIG
 float	scale_offs;
 
-#ifdef HX711_CONFIG
 // HX711 constructor:
 	BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
 	gpio_hold_dis(HX711_SCK);             // enable HX711_SCK for Dig.-IO

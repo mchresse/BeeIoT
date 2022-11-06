@@ -23,7 +23,7 @@ using namespace std;
 // BIoT Version Format: maj.min	>	starting with V1.0
 // - used for protocol backward compat. and pkg evaluation
 #define BIoT_VMAJOR		1		// Major version
-#define BIoT_VMINOR		8		// Minor
+#define BIoT_VMINOR		9		// Minor
 // History:
 // Version Date		Comment:
 // 1.0	01.01.2020	Initial setup
@@ -42,6 +42,7 @@ using namespace std;
 //					Add weight-offset to devcfg_t
 // 1.7  08.01.2022  add RX-cmd + SD-dir + SD-data package definition
 // 1.8  13-01-2022  Node HWConfig flag field in devcfg_t structure
+// 1.9  05-10-2022  Add ACKRX1 Command to request RX1 cmd window.
 //
 //***********************************************
 
@@ -130,7 +131,7 @@ enum {
 	CMD_LOGSTATUS,	// process Sensor log data set in ASCII Format
 	CMD_GETSDLOG,	// get one more line of SD card log file from node (chunk of 116 By.)
 	CMD_RETRY,		// Tell target: Package corrupt, do it again
-	CMD_ACK,		// Received message complete
+	CMD_ACK,		// Received message completed (no RX1 window)
 	CMD_CONFIG,		// exchange new set of runtime configuration parameters
 	CMD_EVENT,		// Node Event, exceptional
 	CMD_BEACON,		// Send beacon e.g. for distance test
@@ -139,7 +140,8 @@ enum {
 	CMD_RESET,		// Reset GW->Node: reset counter, clear SD, initiate JOIN
 	CMD_NOP,		// do nothing -> for xfer test purpose
 	CMD_DSENSOR,	// process Sensor log data set in binary format
-	CMD_GETSDDIR	// get one more line(string) of SD directory structure (1..254)
+	CMD_GETSDDIR,	// get one more line(string) of SD directory structure (1..254)
+	CMD_ACKRX1,		// Received message completed + add RX1 Phase command to be expected
 };
 
 #ifndef BEEIOT_ACTSTRINGS
@@ -162,7 +164,8 @@ const char * beeiot_ActString[] = {
 	[CMD_RESET]		= "RESET",
 	[CMD_NOP]		= "NOP",
 	[CMD_DSENSOR]	= "DSENSOR",
-	[CMD_GETSDDIR]	= "GETSDDIR"
+	[CMD_GETSDDIR]	= "GETSDDIR",
+	[CMD_ACKRX1]	= "ACKRX1",
 };
 #endif
 
