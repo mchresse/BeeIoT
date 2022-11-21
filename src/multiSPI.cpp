@@ -97,10 +97,10 @@ int setup_spi(int reentry) {    // My SPI Constructor
     gpio_hold_dis(EPD_CS);   		// enable EPD_CS
     gpio_hold_dis(LoRa_CS);  		// enable BEE_CS
 
-// Activate EPD low sid switch -> connect ground to epaper
+// Activate EPD low side switch -> connect ground to epaper
 	pinMode(EPD_LOWSW, OUTPUT);
-	digitalWrite(EPD_LOWSW, LOW);
-    gpio_hold_dis(EPD_LOWSW);  		// enable BEE_CS
+	digitalWrite(EPD_LOWSW, LOW);	// enable EPD-Ground
+    gpio_hold_dis(EPD_LOWSW);
 
 // Setup SPI BUS
     pinMode(SPI_MISO, INPUT);

@@ -5,6 +5,12 @@
 void setup_RGB(void);
 void setRGB(uint8_t r, uint8_t g, uint8_t b);
 
+void setup_LED(void);
+void LEDOn(void);
+void LEDOff(void);
+void LEDtoggle(void);
+void LEDpulse(int dtime);
+
 void RGBtest();
 void colorWipe(uint32_t c, uint8_t wait);
 void rainbow(uint8_t wait);
