@@ -62,6 +62,40 @@ void setRGB(uint8_t r, uint8_t g, uint8_t b){
     strip.show();
 }
 
+//=========================================================
+// Setup Test LED Pin
+int LEDstate=HIGH;	// LED status =High:Off, =Low:On
+void setup_LED(void){
+	pinMode(LEDRED, OUTPUT);
+	LEDOff();
+}
+
+// Switch LED pin ON (assumed connected to 3.3V)
+void LEDOn(void){
+	LEDstate =LOW;
+	digitalWrite(LEDRED, LEDstate);
+}
+
+// Switch LED pin Off (assumed connected to 3.3V)
+void LEDOff(void){
+	LEDstate =HIGH;
+	digitalWrite(LEDRED, LEDstate);
+}
+
+// Toggle LED pin ON/Off (assumed connected to 3.3V)
+void LEDtoggle(void){
+	LEDstate ^= 1;	// Xor LED state
+	digitalWrite(LEDRED, LEDstate);
+}
+
+// Show shortest pulse on LED pin Off/On/Off (assumed connected to 3.3V)
+void LEDpulse(int dtime){
+	LEDOn();
+	delay(dtime);
+	LEDOff();
+}
+
+//=========================================================
 
 
 void RGBtest() {

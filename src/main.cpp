@@ -207,7 +207,7 @@ extern void hexdump(unsigned char * msg, int len);
 /// @return void
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
 RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGSPI+LOGLORAW;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
@@ -215,6 +215,8 @@ RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGSPI+LOGLORAW;
 
 void setup() {
 int rc;		// generic return code variable
+
+	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED On
 
   // put your setup code here, to run once:
     gpio_deep_sleep_hold_dis();
@@ -265,9 +267,11 @@ int rc;		// generic return code variable
 	// ReEntry mode was defined at start of sleep mode (end of loop) already
 	// wakeup by Reset -> start initial setup code and reset counter anyway
 	bootCount = 0;
+  	BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // Print welcome text
+// +2ms
 	if(!ReEntry) { // only at new POn cycle once
 		if(lflags > 0){
 			Serial.println();
@@ -276,40 +280,41 @@ int rc;		// generic return code variable
 			Serial.println("> by R.Esser (c) 2020-2022");
 			Serial.println(">***********************************<");
 		}
-		BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
+	BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 
 		//***************************************************************
 		// get bhdb.BoardID (=WiFI MAC), .ChipID and .ChipREV from eFuse area
 		get_efuse_ident();
 	}
-
-//***************************************************************
   BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
   BHLOG(LOGBH) setRGB(0,0,0); // end blinking of Red LED -> Start Setup Phase
-  pinMode(LEDRED, OUTPUT);
-  digitalWrite(LEDRED, LOW);
 
 //***************************************************************
 // Preset BeeIoT runtime config values
+// +25ms
   BHLOG(LOGBH) Serial.println("  Setup: Init runtime config settings");
   InitConfig(ReEntry);
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // I2C_master() has to be started always before setup_rtc() and setup_i2c_ADC/MAX()
+// +2.8ms
   BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init & Scan");
   isi2c = setup_i2c_master(ReEntry);
   if (!isi2c){
     BHLOG(LOGBH) Serial.println("         I2c Master port failed ");
     // enter here exit code, if needed
   }
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
-	BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
-		if (!setup_rtc(ReEntry)){
-			BHLOG(LOGBH) Serial.println("         RTC setup failed");
-			// enter exit code here, if needed (monitoring is hard without correct timestamp)
-			// isrtc should be 0 here; hopefully NTP can help out later on
-		}else{
+// +25 ms
+  BHLOG(LOGBH) Serial.println("  Setup: Init RTC Module DS3231 ");
+  if (!setup_rtc(ReEntry)){
+	BHLOG(LOGBH) Serial.println("         RTC setup failed");
+	// enter exit code here, if needed (monitoring is hard without correct timestamp)
+	// isrtc should be 0 here; hopefully NTP can help out later on
+  }else{
 			BHLOG(LOGLAN) rtc_test();
 //			while(1){
 //				digitalWrite(LED_RED, LOW);
@@ -317,26 +322,32 @@ int rc;		// generic return code variable
 //				digitalWrite(LED_RED, HIGH);
 //				delay(10);
 //			}
-		}
+  }
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
+// +3ms
   BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
   issdcard = setup_spi(ReEntry);
   if (!issdcard){
     BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not detected");
     // enter here exit code, if needed
   }
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
+// +240 ms
   BHLOG(LOGBH) Serial.println("  Setup: HX711 Weight Cell");
   if (setup_hx711Scale(ReEntry)== 0){
     BHLOG(LOGBH) Serial.println("         HX711 setup failed");
     // enter here exit code, if needed
   }
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
-if(isadc){	// I2C Master Port active + ADC detected ?
-// only one ADC dev. type accepted -> as set by adcaddr in i2c_scan()
+// +400 ms.
+  if(isadc){	// I2C Master Port active + ADC detected ?
+  // only one ADC dev. type accepted -> as set by adcaddr in i2c_scan()
   	BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
 	if (!setup_i2c_ADS(ReEntry)){
     	BHLOG(LOGBH) Serial.println("         ADS11x5 setup failed");
@@ -348,11 +359,13 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   		BHLOG(LOGBH) Serial.println("         MAX123x setup failed");
    		// enter here exit code, if needed
 	}
-}
+  }
+  BHLOG(LOGBH) LEDpulse(1);
 
 
 //***************************************************************
 // setup Wifi & NTP & RTC time & Web service
+// + ? (No Wifi: 1usec.)
   BHLOG(LOGBH) Serial.print("  Setup: Wifi in Station Mode");
   if (!setup_wifi(ReEntry)){
     BHLOG(LOGBH) Serial.println(" -> No Wifi > No NTP");
@@ -373,14 +386,16 @@ if(isadc){	// I2C Master Port active + ADC detected ?
 	  }
     }
 
-// start the webserver to listen for request of clients (in LAN or own ESP32 network)
-//    BHLOG(LOGBH) Serial.println("  Setup: Start Webserver");
-//    Webserver_Start();
+	// start the webserver to listen for request of clients (in LAN or own ESP32 network)
+	//    BHLOG(LOGBH) Serial.println("  Setup: Start Webserver");
+	//    Webserver_Start();
   }
-
   getTimeStamp();  // get curr. time either by NTP or RTC -> update bhdb
 
+  BHLOG(LOGBH) LEDpulse(1);
+
 //***************************************************************
+// + ? (no SD: 10usec.)
   BHLOG(LOGBH) Serial.println("  Setup: SD Card");
   if((issdcard) && (bhdb.hwconfig & HC_SDCARD)){
     if (!setup_sd(ReEntry)){
@@ -388,16 +403,19 @@ if(isadc){	// I2C Master Port active + ADC detected ?
       // enter exit code here, if needed
     }
   }
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
+// +2ms
   BHLOG(LOGBH) Serial.println("  Setup: LoRa SPI device & Base layer");
   if (!setup_LoRa(ReEntry)){
     BHLOG(LOGBH) Serial.println("         LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
-
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
+// +22ms
   BHLOG(LOGBH) Serial.println("  Setup: OneWire Bus setup");
   if (setup_owbus(ReEntry) == 0){
     BHLOG(LOGBH) Serial.println("         No OneWire devices found");
@@ -405,7 +423,10 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   }else{
     // GetOWsensor(0); // read temperature the first time
   }
+  BHLOG(LOGBH) LEDpulse(1);
+
 //***************************************************************
+// +1,2ms
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
   if (setup_epd(ReEntry) == 0){
     BHLOG(LOGBH)Serial.println("         ePaper Test failed");
@@ -413,8 +434,10 @@ if(isadc){	// I2C Master Port active + ADC detected ?
   }
 
 //***************************************************************
+  BHLOG(LOGBH) LEDOn();
+	delay(50);
+  BHLOG(LOGBH) LEDOff();
   Serial.println("");
-  digitalWrite(LEDRED, HIGH);
 
 } // end of BeeIoT setup()
 
@@ -446,6 +469,7 @@ int cnum;
 
 //***************************************************************
 // 1. Get current time to bhdb
+// +4,7ms
   if(getTimeStamp() == -2){   // no valid time source found (RTC or NTP)
     strncpy(bhdb.dlog[bhdb.loopid].timeStamp, "0000-00-00 00:00:00", LENTMSTAMP);
   }else{
@@ -454,7 +478,8 @@ int cnum;
   }
 
   BHLOG(LOGBH) Serial.println(">************************************************<");
-  BHLOG(LOGBH) Serial.printf ("> Start of BeeIoT Weight Scale loop %i\n", bhdb.loopid + (bhdb.laps*datasetsize));
+  BHLOG(LOGBH) Serial.printf ("> Start of BeeIoT Weight Scale loop %i\n",
+  					bhdb.loopid + (bhdb.laps*datasetsize));
   BHLOG(LOGBH) Serial.printf ("> (Laps: %i, BHDB[%i]) %s\n\n",
 					bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
 
@@ -464,9 +489,11 @@ int cnum;
 	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 
   BHLOG(LOGBH) setRGB(0,0,0);  // show start of new loop() phase: green blink ends
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 2. Get Weight Scale values
+// +840ms
 #ifdef HX711_CONFIG
 float weight =0;
 
@@ -486,9 +513,11 @@ float weight =0;
 	}
 	bhdb.dlog[bhdb.loopid].HiveWeight = weight;
 #endif // HX711_CONFIG
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 3. Scan OW Temp. Sensors
+// +600ms
 #ifdef ONEWIRE_CONFIG
 	int owsensors;
 	int retry=0;
@@ -515,9 +544,11 @@ float weight =0;
 	} while (retry <= ONE_WIRE_RETRY);
 
 #endif // ONEWIRE_CONFIG
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 4. Monitor Battery Power via ESP32 analog ports
+// +0.6ms
 
   // Read Analog Ports via internal ESP32-ADC
   // read out all Aanalog channels:
@@ -555,14 +586,19 @@ float weight =0;
 		// ToDO: prepare for Batt. Shutdown Event here...
   	}
 
-  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
+  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 5.+ 6.+ 7.  save all collected sensor data to SD and/or report via LoRa/Wifi
-	Logdata();
+// + 840 ms
+
+  Logdata();
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 8. Update ePaper
+// 2440ms
 #ifdef EPD_CONFIG
     BHLOG(LOGEPD) Serial.println("  EPD: Update ePaper - Show Sensor Data");
 #ifdef BEACON
@@ -577,6 +613,7 @@ float weight =0;
 
 // end of sensor loop
   BHLOG(LOGRGB) setRGB(0,0,255);  // show end of loop() phase: blue
+  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 9. Calculate next loop Index
@@ -585,6 +622,7 @@ float weight =0;
     bhdb.loopid = 0;  // reset datarow idx -> round robin buffer for 1 day only
     bhdb.laps++;      // remember how many times we had a bhdb bufferoverflow.
   }
+  BHLOG(LOGBH) LEDOn();
 
 //***************************************************************
 // 10. End of Main Loop ->  Save data and enter Sleep/Delay Mode
@@ -989,9 +1027,11 @@ void biot_ioshutdown(int sleepmode){
 void prepare_sleep_mode(int mode, uint64_t waittime){
 esp_err_t  rc;
 
+
 	switch(mode){
 		case 1:		// DeepSleepMode
 			biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
+			BHLOG(LOGBH) LEDOff();
 
 			// Next we decide what all peripherals to shut down/keep on.
 			//	By default, ESP32 will automatically power down the peripherals
