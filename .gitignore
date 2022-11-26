@@ -3,6 +3,6 @@
 .piolibdeps
 .vscode
 .travis.yml
-examples
+/examples
 schema
 platformio.ini
