@@ -72,7 +72,7 @@ int setup_i2c_master(int reentry) {
 	isi2c = 0;
 	isadc = 0;
 	isrtc = 0;
-#ifdef ADS_CONFIG
+
 	BHLOG(LOGADS) Serial.printf("  I2C: Init I2C-Master port %d\n", I2C_PORT);
 	pinMode(I2C_SCL, OUTPUT);		// prepare Alert input line of connected ADS1511S at I2C Bus
     digitalWrite(I2C_SCL, HIGH);	// define default level
@@ -84,13 +84,14 @@ int setup_i2c_master(int reentry) {
 	if(esprc == ESP_OK){
 		i2c_master_port = I2C_PORT;	// I2C master Port driver initiated
 		isi2c = 1;	// we have a working I2C master port
-		if(!reentry){
-			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
-		}
+		// Scan always needed to preset isrtc and isadc and adcaddr
+		isi2c = i2c_scan();		// Discover I2C dev. Addresses once
 	}
-#endif
+
 	return(isi2c);
 } // end of setup_i2c_master()
+
+
 
 esp_err_t i2c_dev_read(const i2c_dev_t *dev, const void *out_data, size_t out_size, void *in_data, size_t in_size)
 {

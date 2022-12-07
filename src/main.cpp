@@ -200,9 +200,8 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW;
-RTC_DATA_ATTR uint32_t lflags=65535;
-//	lflags = 65535;
-// works only in setup phase till LoRa-JOIN received Cfg data
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD;	// 65535;
+// works only in setup phase till LoRa-JOIN received new Cfg data from GW
 // final value will be defined in BeeIoTParseCfg() by GW config data
 
 void setup() {
