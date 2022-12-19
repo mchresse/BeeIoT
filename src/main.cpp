@@ -107,6 +107,8 @@
 
 #include "DLED.h"				// local: Interface to RGB LED lib
 
+// #include <esp_task_wdt.h>
+
 //************************************
 // Global data object declarations
 //************************************
