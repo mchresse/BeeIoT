@@ -1,6 +1,6 @@
 # BeeIoT v2.0
 ### Eine Bienenstockwaage im Eigenbau (mit IoT Technik) 
-*Auf Basis Espressif ESP32S* !
+*Auf Basis Espressif ESP32S WROOM* !
 
 <img src="./images_v2/BeeLogFront.jpg" width=250>
 
