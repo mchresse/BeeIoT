@@ -113,7 +113,7 @@
 // Global data object declarations
 //************************************
 
-#define LOOPTIME    10		// [sec] Loop wait time: 60 for 1 Minute
+#define LOOPTIME    10		// [sec] Loop wait time: in Minutes
 #define SLEEPTIME   10		// RTC sleep time in seconds
 #ifdef BEACON
 #define SLEEPMODE	  BEACONSLEEP  // =0 initial startup needed(after reset); =1 after deep sleep;
@@ -157,7 +157,7 @@ extern OneWire 		ds;			// OneWire Bus object
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
-RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG
+RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG [Sec.]
 char LoRaBuffer[256];			// buffer for LoRa Packages
 
 // construct the object attTCPClient of class TCPClient
@@ -178,6 +178,9 @@ int    ConfigType[CONFIGSETS];     // type of the value    0 = not set    1 = St
 
 extern String WebRequestHostAddress;     // global variable used to store Server IP-Address of HTTP-Request
 extern byte   RouterNetworkDeviceState;
+
+//Battery Status
+RTC_DATA_ATTR uint8_t bat_status = BAT_UNKNOWN;	// Status of battery state machine
 
 //************************************
 // Global function declarations
@@ -435,6 +438,13 @@ int rc;		// generic return code variable
   }
 
 //***************************************************************
+// Init battery State machine
+  if (ReEntry==0){
+  	BHLOG(LOGBH)Serial.println("   Start: Battery State control");
+  	bat_control(0.0, 0);	// (re-)initialize Battery state machine
+  }
+
+//***************************************************************
   BHLOG(LOGBH) LEDOn();
 	delay(50);
   BHLOG(LOGBH) LEDOff();
@@ -569,22 +579,12 @@ int cnum;
 	}
 	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
   	bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
+  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
 
-  	if((float) addata <= BATTERY_MIN_LEVEL){
-    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
-		if(cnum>0)
-			bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
-		// ToDO: prepare for Batt. Warning Event here...
-  	}
-  	if((float) addata <= BATTERY_SHUTDOWN_LEVEL){
-    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattDamage!");
-		if(cnum>0)
-			bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
-		// ToDO: prepare for Batt. Shutdown Event here...
-  	}
+	// Update Charge Control State machine by Battery Power Level
+	bat_control(addata, 1);	// Evaluate BAT Level + Error handling
 
-  BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
-  BHLOG(LOGBH) LEDpulse(1);
+  BHLOG(LOGBH) LEDpulse(1);	// Batter handling done
 
 //***************************************************************
 // 5.+ 6.+ 7.  save all collected sensor data to SD and/or report via LoRa/Wifi
@@ -1003,10 +1003,14 @@ void biot_ioshutdown(int sleepmode){
     gpio_hold_en(LEDRGB);
 
 // Switch off Low side power switch of SPI device back to LOW
+// ToDo: Is this 1 sec really needed ? ???
 	delay(1000);		// wait 1000ms to empty remaining capacity loads ePaper side
 	// Low during deepslepp allows recognition of pressed Key1..4 at ePaper module hat
     digitalWrite(EPD_LOWSW, LOW);		// Low if P-channel MOSFET
     gpio_hold_en(EPD_LOWSW);
+
+	// Keep BAT Charge control pin as it is
+    gpio_hold_en((gpio_num_t) BATCHARGEPIN);
 
   } // end of sleepmode
 } // biot_ioshutdown()
@@ -1233,7 +1237,131 @@ void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
 }
 
 
+//*******************************************************************
+/// @brief bat_control()  Battery Charging Control by BATT - VoltLevel
+/// @brief 1. Initialize Battery Statemachine (init=1)
+/// @brief 2. Evaluate Bat Charge enable/disable (init=0) by Battery level and status
+/// @brief 3. Report Warning/Error Message via LoRa pkg if BAT-Damaged
+/// @return =0	Battery is o.k. => level in range of load/charge control
+/// @return =1  Battery is damaged (not charging / out of range)
+//*******************************************************************
+// start battery charging
+void Enable_bat_charge(void){
+	digitalWrite(BATCHARGEPIN, LOW);	// switch Charge control On
+	pinMode(BATCHARGEPIN, INPUT);		// better set it to High Impedance -> good for sleep mode
+	return;
+}
+// stop charging -> battery just serves the load
+void Disable_bat_charge (void){
+	pinMode(BATCHARGEPIN,  OUTPUT);
+	digitalWrite(BATCHARGEPIN, HIGH);	// need to stay high in sleep mode as well.
+	return;
+}
 
+
+int bat_control(float batlevel, int binit){
+int rc=0;
+int cnum=0;
+
+	if(!binit){		// called by setup phase -> ignore batlevel by now
+		bat_status = BAT_UNKNOWN;	// have to wait for first Bat.Level.Value
+		// Enter Reset-default mode: Charge Control On	( if not already there)
+		pinMode(BATCHARGEPIN, INPUT);		// to High Impedance
+		gpio_hold_dis(BATCHARGEPIN);
+		return(rc);
+	}
+
+	switch(bat_status){
+	case(BAT_LOAD):		// in Discharging phase
+		if( batlevel <= BATTERY_MIN_LEVEL ){	// Emergency case: No Load Power of batter damaged ?!
+			bat_status = BAT_DAMAGED;
+			Enable_bat_charge();		// but lets hope power comes back
+			BHLOG(LOGBH) Serial.println("  BAT-DAMAGED State entered");
+			rc=1;
+		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ? 
+			bat_status = BAT_CHARGING;
+			Enable_bat_charge();
+			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State entered");
+			rc=0;
+		}else{
+		// else: simply remain in Un charging phase
+			Disable_bat_charge();
+			BHLOG(LOGBH) Serial.println("  BAT-LOAD State");
+		}
+		gpio_hold_dis(BATCHARGEPIN);
+		break;
+
+	case(BAT_CHARGING):
+		if( batlevel >= BATTERY_MAX_LEVEL ){	// battery full level reached ?
+			bat_status = BAT_LOAD;
+			Disable_bat_charge();
+			BHLOG(LOGBH) Serial.println("  BAT-LOAD State entered");
+		}else{
+			// else: remain in charging phase
+			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State");
+			Enable_bat_charge();
+			rc=0;
+		}
+		gpio_hold_dis(BATCHARGEPIN);
+		break;
+
+	case(BAT_UNKNOWN):
+		if( batlevel < BATTERY_NORM_LEVEL ){
+			bat_status = BAT_CHARGING;
+			Enable_bat_charge();
+			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State entered");
+		}else{
+			bat_status = BAT_LOAD;
+			Disable_bat_charge();
+			BHLOG(LOGBH) Serial.println("  BAT-LOAD State entered");
+		}
+		rc=0;
+		gpio_hold_dis(BATCHARGEPIN);
+		break;
+
+	case(BAT_DAMAGED): // or also BAT_LOW
+		// do nothing: but wait till power comes back...
+
+		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
+			BHLOG(LOGBH) Serial.println("  BAT-DAMAGED State");
+			Enable_bat_charge();		// but lets hope power comes back
+			report_interval = 60*60;	// set sleep time to very long: 1Hr -> save the LiPo battery 
+			rc=1;
+			// Send a BAT Damage note via LoRa message for service
+   			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattBAD!");
+			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+
+		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
+			BHLOG(LOGBH) Serial.println("  Battery recovered -> Enter CHARGING State");
+			bat_status = BAT_CHARGING;	// bring battery back to normal mode
+			Enable_bat_charge();		// but lets hope power comes back
+			report_interval = 10*60;	// set Report. Interval to default=10Min.-> update at next JOIN
+			rc=0;
+			// Send a BAT Ok again  note via LoRa message for service
+   			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattOk");
+			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+
+		}else{ 							// we are in <= BATTERY_MIN_LEVEL
+			BHLOG(LOGBH) Serial.println("  BAT-LOW State entered");
+			Enable_bat_charge();		// but lets hope power comes back
+			report_interval = 30*60;	// set sleep time to 1/2 hour -> save power
+			rc=1;
+			// Send a BAT Low warning note via LoRa message for service
+	    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
+			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+		}
+		gpio_hold_dis(BATCHARGEPIN);
+		break;
+
+	default:
+		rc=0;
+		BHLOG(LOGBH) Serial.println("BAT-DEFAULT -> should never happen!");
+		gpio_hold_dis(BATCHARGEPIN);
+		break;
+	} // end of Switch
+
+	return(rc);	// return battery state
+}
 
 
 //********************************************************************************
