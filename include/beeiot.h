@@ -27,7 +27,7 @@
 |  5|* IO34|GPIO34|          | ADC1-6|          | EPD_Key3       |
 |  6|* IO35|GPIO35|          | ADC1-7|          | EPD_Key4       |
 |  7|  IO32|GPIO32|   XTAL32 | ADC1-4|OneWire-SD| OW-DS18B20 (3x)|
-|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | SPI_Pwr HSwitch|
+|  8|  IO33|GPIO33|   XTAL32 | ADC1-5|          | BatCharge En.  |
 |  9|  IO25|GPIO25|     DAC1 | ADC2-8|  Wire-DT | EPD_RST\       |
 | 10|  IO26|GPIO26|     DAC2 | ADC2-9|  Wire-Clk| HX711-SCK      |
 | 11|  IO27|GPIO27|          | ADC2-7| ADS-Alert| EPD_Gnd LSwitch|
@@ -206,13 +206,24 @@
 #define NODESTATE_NOMQTTSUBSCRIPTION      -3    // E3 = broker rejected subscription attempt
 #define NODESTATE_NOPING                  -4    // E4 = ping was not successful, connection lost
 
+
+//*******************************************************************
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-    #define BATTERY_MAX_LEVEL        4200.0 // mV	= 100%
-    #define BATTERY_MIN_LEVEL        3200.0 // mV =  33%
-    #define BATTERY_SHUTDOWN_LEVEL   3000.0 // mV =   0% -> Limit from ESP32 Min Power level.
+#define BATTERY_MAX_LEVEL       4200.0 // mV = 100%
+#define BATTERY_NORM_LEVEL		3700.0 // mV = 50% => nominal LiPo Volt.Level
+#define BATTERY_MIN_LEVEL       3200.0 // mV = 33%
+#define BATTERY_SHUTDOWN_LEVEL  3000.0 // mV = 0% -> Limit from ESP32 Min Power level.
 #endif
-
+// Battery Chareg Enable:			Controlled by Batt.Charge/Load-Hysteresis
+// =1 -> Disable; =0/Z Enables charging of Battery
+#define BATCHARGEPIN   			GPIO_NUM_33		// with 100k Pulldown external
+// Charge till 100% reached -> Unload till 33% reached -> charge again...
+#define BATCHRGSTART    BATTERY_MIN_LEVEL // Start charging again when 33% reached
+#define BAT_LOAD		0			// Battery under Load -> discharging
+#define BAT_CHARGING	1			// Battery in charging phase
+#define BAT_UNKNOWN		3			// Battery not initialized
+#define BAT_DAMAGED		4			// Battery value o.o.R
 
 //*******************************************************************
 // Global data declarations
@@ -277,6 +288,7 @@ int setup_rtc		(int mode);		// in rtc.cpp
 int setup_spi    	(int mode);		// in multiSPI.cpp
 int setup_sd		(int mode);		// in sdcard.cp
 int setup_epd		(int mode);		// in epd.cpp
+int bat_control		(float batlevel, int reentry);  // in main
 
 // in hx711Scale.cpp
 float   HX711_read  (int mode);
