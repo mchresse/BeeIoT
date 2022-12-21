@@ -21,7 +21,12 @@
 #define ADC1_IN5  33 // GPIO 33 is Now AN Input 6 ADC1-channel 5
 #define ADC2_IN7  27 // GPIO 27 is Now AN Input 7 ADC2-channel 7
 
-#define ADC_INCompensation 87
+// ESP ADC Level Comepnsation (rewired for  Vin range between 0..2,8V)
+// (by now not used)
+#define ADC_BaseComp  0		// Corr. Start level of samples
+#define ADC_Factor   100	// factorized angle correction (e.g. *107/100)
+
+#define ADC_MaxVal	 3100	// ADC Sample 4096 = 3,100V
 
 // assign analog ADC pin to BeeIot board
 #define	Battery_pin  ADC1_IN3

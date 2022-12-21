@@ -220,7 +220,7 @@
 #define BATCHARGEPIN   			GPIO_NUM_33		// with 100k Pulldown external
 // Charge till 100% reached -> Unload till 33% reached -> charge again...
 #define BATCHRGSTART    BATTERY_MIN_LEVEL // Start charging again when 33% reached
-#define BAT_LOAD		0			// Battery under Load -> discharging
+#define BAT_UNCHARGE	0			// Battery under Load -> discharging
 #define BAT_CHARGING	1			// Battery in charging phase
 #define BAT_UNKNOWN		3			// Battery not initialized
 #define BAT_DAMAGED		4			// Battery value o.o.R

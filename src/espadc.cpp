@@ -20,7 +20,8 @@ extern uint16_t	lflags;      			// BeeIoT log flag field
 //**************************************************************
 //* getespadc(pin)
 //* Read Sample value from ESP32-port by internal ADC machine.
-//*
+//* Good Values only between 0 - 2,8V achievable !!
+//* 	>2,8V curve flatening undershooting by up to 0,25V (3,3V)
 //* Input
 //*		pin		GPIO pin # of analog port
 //* Output
@@ -30,9 +31,11 @@ extern uint16_t	lflags;      			// BeeIoT log flag field
 uint32_t getespadc(int pin){
 uint32_t ADC_Result;	// adc sample value
 
-	ADC_Result = analogRead(pin) + ADC_INCompensation; // read sample value and compensate base level
-	ADC_Result = ADC_Result * 3300 / 4095;	// return value in mV
-
+	ADC_Result = (analogRead(pin) + ADC_BaseComp) * ADC_Factor/100; 	// read sample value and compensate base level
+//  	Serial.printf(" ADC(%d) Sample = %i", pin, ADC_Result);
+	ADC_Result = ADC_Result * ADC_MaxVal / 4095;						// return value in mV (by 12 Bit sampling)
+//  	Serial.printf(" -> %imV  =>", ADC_Result);
+ 	
 return ADC_Result;
 }
 

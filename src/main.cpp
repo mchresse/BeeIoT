@@ -123,16 +123,30 @@
 							    // =3 ModemSleep Mode; =4 Active Wait Loop
 #endif
 
+// Define deep sleep options
+// The requested sleep time (=Looptime) by GW for each new sensor support is set in 'report_interval'.
+// Preset by LOOPTIME as default, but will finally redefined during JOIN Config request
+// IF the requested report time is beyond max. RTC-Sleep time window we need loops of sleep phases:
+// bootcounter = report interval / TIME_TO_SLEEP -> amount of sleep phases to reach tim of next reporting.
+// Without JOIN-CFG we get: 
+// if report_interval < 78 Minutes (max RTC sleep time at once: 32bit counter in usec.: 2^32/1000000 = 4296 sec. / 60 = 71,58Min. ):
+// 		report_interval = LOOPTME
+// else: 
+// We need a counter of multiple of Sleeptime windows
+// 		bootcount = report_interval / TIME_TO_SLEEP	-> amount of sleep loops by SLEEPTIME windows.
+int TIME_TO_SLEEP	= SLEEPTIME;   // [sec.] default RTC sleep time window used in a sleep loop
+// Default total sleep time (if LOOPTIME < 78Mn)
+RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // [sec.] initial interval between BIoT Reports; will be overwritten by CONFIG
+RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
+
 // WakeUp Source control
 bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
 RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset);   =1 after deep sleep;
 								// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
-
-// Define deep sleep options
+// RTC timer is set in usec. -> so we need a factor 
 #define uS_TO_S_FACTOR  1000000LL  // Conversion factor for micro seconds to seconds
 #define uS_TO_mS_FACTOR    1000LL  // Conversion factor for micro seconds to milli seconds
-int TIME_TO_SLEEP	= SLEEPTIME;   // RTC sleep in seconds
+
 
 // Central Database of all measured values and runtime parameters
 RTC_DATA_ATTR dataset		bhdb;
@@ -158,7 +172,6 @@ extern OneWire 		ds;			// OneWire Bus object
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
-RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // initial interval between BIoT Reports; can be overwritten by CONFIG [Sec.]
 char LoRaBuffer[256];			// buffer for LoRa Packages
 
 // construct the object attTCPClient of class TCPClient
@@ -213,7 +226,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGSPI+LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGADS;
 //	lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -568,14 +581,16 @@ float weight =0;
 	uint32_t addata = 0;   		// raw ADS Data buffer
 
 	// Read Charging Power in Volt
-	addata=getespadc(Charge_pin)  * 311 / 100;
+	#define VUSB_LEVEL	260
+	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 310 / 100;			// get ADC Vin corrected by ext. Resistance devider
   	bhdb.dlog[bhdb.loopid].BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   	BHLOG(LOGADS) Serial.print("V - Battery=");
 
   	// Get battery Powerlevel & calculate % Level
+	#define VBAT_LEVEL	77
 	float x;              		// Volt calculation buffer
-	addata=getespadc(Battery_pin) * 310 / 100;
+	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 360 / 100;			// get ADC Vin corrected by ext. Resistance devider
 	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
 	if( x > 0.0){
 	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
@@ -1277,7 +1292,7 @@ int cnum=0;
 	}
 
 	switch(bat_status){
-	case(BAT_LOAD):		// in Discharging phase
+	case(BAT_UNCHARGE):		// in Discharging phase
 		if( batlevel <= BATTERY_MIN_LEVEL ){	// Emergency case: No Load Power of batter damaged ?!
 			bat_status = BAT_DAMAGED;
 			Enable_bat_charge();		// but lets hope power comes back
@@ -1291,16 +1306,16 @@ int cnum=0;
 		}else{
 		// else: simply remain in Un charging phase
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-LOAD State");
+			BHLOG(LOGBH) Serial.println("  BAT-UNCHARGING State");
 		}
 		gpio_hold_dis(BATCHARGEPIN);
 		break;
 
 	case(BAT_CHARGING):
 		if( batlevel >= BATTERY_MAX_LEVEL ){	// battery full level reached ?
-			bat_status = BAT_LOAD;
+			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-LOAD State entered");
+			BHLOG(LOGBH) Serial.println("  BAT Full -> UNCHARGING State entered");
 		}else{
 			// else: remain in charging phase
 			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State");
@@ -1316,9 +1331,9 @@ int cnum=0;
 			Enable_bat_charge();
 			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State entered");
 		}else{
-			bat_status = BAT_LOAD;
+			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-LOAD State entered");
+			BHLOG(LOGBH) Serial.println("  BAT-CHARGING State entered");
 		}
 		rc=0;
 		gpio_hold_dis(BATCHARGEPIN);
@@ -1330,7 +1345,7 @@ int cnum=0;
 		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
 			BHLOG(LOGBH) Serial.println("  BAT-DAMAGED State");
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 60*60;	// set sleep time to very long: 1Hr -> save the LiPo battery 
+			report_interval = 6*LOOPTIME*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery 
 			rc=1;
 			// Send a BAT Damage note via LoRa message for service
    			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattBAD!");
@@ -1340,7 +1355,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.println("  Battery recovered -> Enter CHARGING State");
 			bat_status = BAT_CHARGING;	// bring battery back to normal mode
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 10*60;	// set Report. Interval to default=10Min.-> update at next JOIN
+			report_interval = LOOPTIME*60;	// set Report. Interval to default [sec.]-> update at next JOIN
 			rc=0;
 			// Send a BAT Ok again  note via LoRa message for service
    			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattOk");
@@ -1349,7 +1364,7 @@ int cnum=0;
 		}else{ 							// we are in <= BATTERY_MIN_LEVEL
 			BHLOG(LOGBH) Serial.println("  BAT-LOW State entered");
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 30*60;	// set sleep time to 1/2 hour -> save power
+			report_interval = 3*LOOPTIME*60;	// set sleep time [sec] to 1/2 hour -> save power
 			rc=1;
 			// Send a BAT Low warning note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
