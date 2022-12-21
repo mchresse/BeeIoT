@@ -1,16 +1,16 @@
 
 #ifndef VMAJOR
-  #define VMAJOR "2"
+  #define VMAJOR "3"
 #endif
 #ifndef VMINOR
-  #define VMINOR "0"
+  #define VMINOR "1"
 #endif
 #ifndef BUILD_NUMBER
-  #define VBUILD "278"
+  #define VBUILD "279"
 #endif
 #ifndef VERSION
-  #define VERSION "v3.0.278 - 2022-12-21 00:15:18.165428"
+  #define VERSION "v3.1.279 - 2022-12-21 22:48:57.096615"
 #endif
 #ifndef VERSION_SHORT
-  #define VERSION_SHORT "v3.0.278"
+  #define VERSION_SHORT "v3.1.279"
 #endif
