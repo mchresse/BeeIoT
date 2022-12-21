@@ -1,7 +1,7 @@
 FILENAME_BUILDNO = 'versioning'
 FILENAME_VERSION_H = 'include/version.h'
-vmajor = '1'
-vminor = '0'
+vmajor = '2'
+vminor = '7'
 vrev   = '01'
 
 import datetime
