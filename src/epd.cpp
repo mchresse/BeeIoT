@@ -239,8 +239,6 @@ void showdata(int sampleID){
 
   uint8_t rotation = display.getRotation();
 
-uint8_t rotation = display.getRotation();
-
   display.fillScreen(GxEPD_WHITE);
 
   display.setTextColor(GxEPD_BLACK);

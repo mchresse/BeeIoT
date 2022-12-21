@@ -85,10 +85,10 @@ int setup_i2c_master(int reentry) {
 	esprc=i2c_master_init(I2C_PORT, I2C_SDA, I2C_SCL);
 	if(esprc == ESP_OK){
 		i2c_master_port = I2C_PORT;	// I2C master Port driver initiated
-		isi2c = 1;	// we have a working I2C master port
-			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
+		isi2c = 1;				// we have a working I2C master port
+		isi2c = i2c_scan();		// Discover I2C dev. Addresses once
 		// Scan always needed to preset isrtc and isadc and adcaddr	}
-
+	}
 	return(isi2c);
 } // end of setup_i2c_master()
 

@@ -40,7 +40,6 @@
 //*******************************************************************
 extern uint16_t	lflags; // BeeIoT log flag field
 extern dataset	bhdb;
-int isscale=0;
 int	isscale = 0;		// =1 HX711 ADC connected
 HX711 scale;            // the one and only weight cell
 
