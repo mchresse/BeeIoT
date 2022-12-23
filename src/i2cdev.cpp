@@ -88,7 +88,7 @@ int setup_i2c_master(int reentry) {
 		isi2c = 1;	// we have a working I2C master port
 			isi2c = i2c_scan();		// Discover I2C dev. Addresses once
 		// Scan always needed to preset isrtc and isadc and adcaddr	}
-
+	}
 	return(isi2c);
 } // end of setup_i2c_master()
 

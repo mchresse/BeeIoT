@@ -130,7 +130,6 @@ int setup_i2c_ADS(int reentry) {  // ADS1115S constructor
 //***************************************************************
 uint16_t ads_read(int channel) {
 	float voltage = 0;
-	float voltage = 0;
 
 #ifdef ADS_CONFIG
 	esp_err_t esprc=ESP_ERR_NOT_SUPPORTED;
