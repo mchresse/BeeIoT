@@ -6,3 +6,4 @@
 /examples
 schema
 platformio.ini
+/include/sdkconfig.h
