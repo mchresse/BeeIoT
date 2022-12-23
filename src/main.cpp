@@ -725,7 +725,7 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 #ifdef DMSG
     LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
 #else
-//    LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
+ //   LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
 #endif // DMSG
 
 #endif // BEACON
