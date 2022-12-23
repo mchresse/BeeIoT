@@ -55,8 +55,8 @@ esp_err_t i2c_master_init(i2c_port_t port, gpio_num_t sda, gpio_num_t scl){
 
 	// ESP IDF I2C port configuration object
 	i2ccfg.mode 		 = I2C_MODE_MASTER;
-	i2ccfg.sda_io_num 	 = sda;
-	i2ccfg.scl_io_num 	 = scl;
+	i2ccfg.sda_io_num 	 = (gpio_num_t) I2C_SDA;
+	i2ccfg.scl_io_num 	 = (gpio_num_t) I2C_SCL;
 	i2ccfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
 	i2ccfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
 	i2ccfg.master.clk_speed = I2C_FREQ_HZ;
