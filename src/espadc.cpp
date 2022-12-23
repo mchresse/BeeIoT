@@ -31,10 +31,16 @@ extern uint16_t	lflags;      			// BeeIoT log flag field
 uint32_t getespadc(int pin){
 uint32_t ADC_Result;	// adc sample value
 
-	ADC_Result = (analogRead(pin) + ADC_BaseComp) * ADC_Factor/100; 	// read sample value and compensate base level
-//  	Serial.printf(" ADC(%d) Sample = %i", pin, ADC_Result);
-	ADC_Result = ADC_Result * ADC_MaxVal / 4095;						// return value in mV (by 12 Bit sampling)
-//  	Serial.printf(" -> %imV  =>", ADC_Result);
+	adcAttachPin(pin);
+
+//	ADC_Result = analogRead(pin);
+//	Serial.printf("\n    ADC(%d) Sample = %i  -", pin, ADC_Result);
+//	ADC_Result = (ADC_Result + ADC_BaseComp) * ADC_Factor/100; 			// read raw sample value and compensate base level
+//	ADC_Result = ADC_Result * ADC_MaxVal / 4095;						// return value in mV (by 12 Bit sampling: 0..4095)
+// 	Serial.printf(" -> %imV  =>", ADC_Result);
+
+	ADC_Result = analogReadMilliVolts(pin); 							// read mV sample value and compensate base level
+//  	Serial.printf(" - AD-Sample = %imV\n", ADC_Result);
  	
 return ADC_Result;
 }

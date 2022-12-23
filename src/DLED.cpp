@@ -49,7 +49,7 @@ void setup_RGB(void) {
   // End of trinket special code
 	pinMode(LEDRGB, OUTPUT);
 	digitalWrite(LEDRGB, HIGH); // signal Setup Phase
-	gpio_hold_dis(LEDRGB);   	// enable SD_CS
+	gpio_hold_dis(LEDRGB); 
 
   strip.begin();
   strip.setBrightness(50);
@@ -65,6 +65,7 @@ void setRGB(uint8_t r, uint8_t g, uint8_t b){
 //=========================================================
 // Setup Test LED Pin
 int LEDstate=HIGH;	// LED status =High:Off, =Low:On
+
 void setup_LED(void){
 	pinMode(LEDRED, OUTPUT);
 	LEDOff();

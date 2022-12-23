@@ -82,7 +82,7 @@ int issdcard =0;       // =1 SDCard found
 // SPI Port Setup Routine for 2 SPI ports: SDCard + ePaper  + LoRa Module at VSPI
 //*******************************************************************
 int setup_spi(int reentry) {    // My SPI Constructor
-    BHLOG(LOGSPI) Serial.println("  MSPI: VSPI port for 3 devices");
+    BHLOG(LOGSPI) Serial.println("  MultiSPI: Setup HSPI port for 3 devices");
     isepd = 0;
     issdcard = 0;
 
@@ -97,10 +97,10 @@ int setup_spi(int reentry) {    // My SPI Constructor
     gpio_hold_dis(EPD_CS);   		// enable EPD_CS
     gpio_hold_dis(LoRa_CS);  		// enable BEE_CS
 
-// Activate EPD low side switch -> connect ground to epaper
-	pinMode(EPD_LOWSW, OUTPUT);
-	digitalWrite(EPD_LOWSW, LOW);	// enable EPD-Ground
-    gpio_hold_dis(EPD_LOWSW);
+// Activate SPI Power switch -> connect 3.3V to epaper/LoRA/SD
+	pinMode(SPIPWREN, OUTPUT);
+	digitalWrite(SPIPWREN, HIGH);		// enable SPI Power
+    gpio_hold_dis(SPIPWREN);
 
 // Setup SPI BUS
     pinMode(SPI_MISO, INPUT);
@@ -115,9 +115,6 @@ int setup_spi(int reentry) {    // My SPI Constructor
 	SPI2.begin(SPI_SCK, SPI_MISO, SPI_MOSI, LoRa_CS);
 
 // Preset SPI dev: LoRa Module
-    pinMode(LoRa_RST, OUTPUT);
-    digitalWrite(LoRa_RST, HIGH);
-    gpio_hold_dis(LoRa_RST);
     pinMode(LoRa_DIO0, INPUT);
     gpio_hold_dis(LoRa_DIO0);
 //    pinMode(LoRa_DIO1, INPUT);		// n.a.

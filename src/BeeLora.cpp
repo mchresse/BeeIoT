@@ -25,6 +25,7 @@
 #include <string.h>
 #include <time.h>
 #include "RTClib.h"
+#include "soc/rtc_wdt.h"
 
 // #include <board.h>
 // #include <BIoTaes.h>
@@ -50,7 +51,7 @@ int     islora=0;				// =1: we have an active LoRa Node
 
 // GPIO PINS of current connected LoRa Modem chip (SCK, MISO & MOSI are system default)
 const int csPin     = LoRa_CS;	// LoRa radio chip select
-const int resetPin  = LoRa_RST;	// LoRa radio reset
+const int resetPin  = 0;	// LoRa radio reset not used
 const int irqPin    = LoRa_DIO0;// change for your board; must be a hardware interrupt pin
 
 // Lora Modem default configuration
@@ -1199,6 +1200,9 @@ byte * ptr;
 	BHLOG(LOGLORAW) Serial.println();
     BHLOG(LOGLORAR) Serial.printf("onReceive: got Pkg: len 0x%02X\n", packetSize);
 
+	// Satisfy the ESP IWDT if enabled -> see main() setup 
+	rtc_wdt_feed();
+
     if(BeeIotRXFlag >= MAXRXPKG){ // Check RX Semaphor: RX-Queue full ?
     // same situation as: RXPkgIsrIdx+1 == RXPkgSrvIdx (but hard to check with ring buffer)
     	  BHLOG(LOGLORAW) Serial.printf("onReceive: InQueue full (%i items)-> ignore new IRQ with Len 0x%x\n", (byte) BeeIotRXFlag, (byte) packetSize);
@@ -1219,7 +1223,7 @@ byte * ptr;
     ptr[count] = (byte)LoRa.read();     // read bytes one by one for REG_RX_NB_BYTES Bytes
   }
   msg = & MyRXData[RXPkgIsrIdx];  // Assume: BeeIoT-WAN Message received
-  BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN);
+//  BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN);
 
 // now check real data:
 // start the gate keeper of valid BeeIoT Package data:  ( check for known GW or JOIN GW ID)

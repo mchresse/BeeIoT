@@ -23,6 +23,7 @@
 //*******************************************************************
 // For ESP32-DevKitC PIN Configuration look at BeeIoT.h
 
+#include <driver/gpio.h>
 #include <string.h>
 #include <time.h>
 

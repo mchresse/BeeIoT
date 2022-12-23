@@ -101,7 +101,7 @@ int setup_rtc (int reentry) {
         BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
 		return(0);
 	}
-
+	
 	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
 	BHLOG(LOGADS)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
@@ -121,39 +121,6 @@ int setup_rtc (int reentry) {
 	return(1);
 
 } // end of rtc_setup()
-
-//*******************************************************************
-// NTP2RTC(): Update RTC by NTP time
-//*******************************************************************
-int ntp2rtc() {
-struct tm tinfo;      // new time source: from NTP
-
-  // if no RTC nor NTP Time at all, we give up.
-  if(!isntp)   {
-    BHLOG(LOGLAN) Serial.println("  NTP2RTC(-1): No NTP Server detected ");
-    return(-1);       // is NTP server via Wifi active ?
-  }
-  if(!isrtc) {
-    BHLOG(LOGLAN) Serial.println("  NTP2RTC(-2): No RTC Module detected ");
-    return(-2);       // Need a valid RTC Module (even with powerloss status)
-  }
-  if(!getLocalTime(&tinfo)){ // get NTP server time
-    Serial.print("  NTP2RTC(-3): Failed to obtain NTP time -> ");
-    Serial.println("set time to build of sketch");
-
-    // if we want to set it manually:
-    // This line sets the RTC with an explicit date &amp; time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-    return(-3);       // no RTC nor NTP Time at all, we give up.
-  }
-
-    BHLOG(LOGLAN) Serial.println(&tinfo, "  NTP2RTC: by NTP-Time: %A, %B  %Y-%m-%dT%H:%M:%S");
-	ds3231_set_time(&i2crtc, &tinfo);
-
-
-  return(isrtc);
-} // end of ntp2rtc()
 
 
 //*******************************************************************

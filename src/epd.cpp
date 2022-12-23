@@ -28,7 +28,7 @@
 #include "SD.h"
 #include "SPI.h"
 #include "sdcard.h"
-#include "wificfg.h"
+
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
@@ -56,7 +56,6 @@
 #include <version.h>
 #include <beeiot.h>
 #include <BeeIoTWan.h>
-#include <beelora.h>
 #include <beelora.h>
 
 //************************************
@@ -109,25 +108,25 @@ if(!reentry){
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
     display.update();    //refresh display by buffer content
 
-    BHLOG(LOGEPD) mydelay2(3000,0);
-    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
-    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
-    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
-    BHLOG(LOGEPD) display.update();
+//    BHLOG(LOGEPD) mydelay2(3000,0);
+//    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
+//    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
+//    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
+//    BHLOG(LOGEPD) display.update();
   }
 }
 
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
-  // EPD_KEY1 => n.a.
-  // EPD_KEY2 => n.a.
-  // EPD_KEY3 => ?
-  // EPD_KEY4 => (Deep-) Sleep Wakeup trigger
+  // EPD_KEY1 => (Deep-) Sleep Wakeup trigger
+  // EPD_KEY2 => MCU_Reset (on EN)
+  // EPD_KEY3 => n.a.
+  // EPD_KEY4 => n.a.
 
 // Assign Key-IRQ to callback function
-//	SetonKey(1, onKey1);
+	SetonKey(1, onKey1);
 //	SetonKey(2, onKey2);
 //	SetonKey(3, onKey3);
-	SetonKey(4, onKey4);
+//	SetonKey(4, onKey4);
 #endif
 
   return isepd;
@@ -155,11 +154,11 @@ int SetonKey(int key, void(*callback)(void)){
 	switch (key){
 	case 1: 			// EPD_KEY 1
 		if(callback){
-//			pinMode(EPD_KEY1, INPUT);
-//  	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 undefined for V3.0 board");
+			pinMode(EPD_KEY1, INPUT);
+    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 ISR assigned");
 		}else{
-//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
+	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
 		}
 		return(-2);
 		break;
@@ -177,7 +176,7 @@ int SetonKey(int key, void(*callback)(void)){
 		if(callback){
 //			pinMode(EPD_KEY3, INPUT);
 //	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 with undefined usage");
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V3.0 board");
 		}else{
 //	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY3));
 		}
@@ -185,11 +184,11 @@ int SetonKey(int key, void(*callback)(void)){
 		break;
 	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
 		if(callback){
-			pinMode(EPD_KEY4, INPUT);
-    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 ISR assigned");
+//			pinMode(EPD_KEY4, INPUT);
+//    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 undefined for V3.0 board");
 		}else{
-	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
 		}
 		break;
 	default:
@@ -204,6 +203,7 @@ int SetonKey(int key, void(*callback)(void)){
 // onKeyx() ISR of EPD-Keyx	-> Yellow Button
 void onKey1(void){
 	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;	// EPD update requested
 }
 //*************************************************************************
@@ -222,7 +222,6 @@ void onKey3(void){
 // onKeyx() ISR of EPD-Keyx	-> Blue button
 void onKey4(void){
 	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
- 	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;	// EPD update requested
 }
 
@@ -294,12 +293,6 @@ void showdata(int sampleID){
   		display.print(beeiot_StatusString[BeeIoTStatus]);
 	}
 
-//  display.setTextColor(GxEPD_RED);
-//  display.print(HOSTNAME);
-//  display.print("  (");
-//  display.print(bhdb.ipaddr);
-//  display.print(")");
-
 //  display.setTextColor(GxEPD_BLACK);
 //  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
 
@@ -313,9 +306,12 @@ void showdata(int sampleID){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
 void showbeacon(int sampleID){
-	if(isepd==0){
-		return;	// no EPD port no action
+
+	// No EPD panel connected or no Update request pending
+	if(isepd==0 || 	EPDupdate==false){
+		return;	// no EPD port -> no action
 	}
+
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
@@ -363,6 +359,8 @@ void showbeacon(int sampleID){
 
   display.update();				// WakeUp -> update display -> BusyWait -> Sleep
   display.setRotation(rotation); // restore
+  
+  EPDupdate=true;				// EPD update request completed -> reset flag
 } // end of ShowBeacon()
 
 
