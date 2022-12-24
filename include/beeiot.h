@@ -130,8 +130,8 @@
 
 // Used I2C Port: 0
 #define I2C_PORT	I2C_NUM_0	    // Default I2C port for all i2c Devices
-#define I2C_SDA		GPIO_NUM_9      // def: SDA=08	common for all I2C dev.
-#define I2C_SCL		GPIO_NUM_8      // def. SCL=09	common for all I2C dev.
+#define I2C_SDA		GPIO_NUM_8      // def: SDA=08	common for all I2C dev.
+#define I2C_SCL		GPIO_NUM_9      // def. SCL=09	common for all I2C dev.
 
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_7		// with 10k Pullup external
@@ -170,7 +170,7 @@
 //*******************************************************************
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-#define BATTERY_MAX_LEVEL       4200.0 // mV = 100%
+#define BATTERY_MAX_LEVEL       4100.0 // mV = 100%
 #define BATTERY_NORM_LEVEL		3700.0 // mV = 50% => nominal LiPo Volt.Level
 #define BATTERY_MIN_LEVEL       3200.0 // mV = 33%
 #define BATTERY_SHUTDOWN_LEVEL  3000.0 // mV = 0% -> Limit from ESP32 Min Power level.

@@ -199,8 +199,8 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-// RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD;
-RTC_DATA_ATTR uint32_t lflags = 65535;
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGHX+LOGADS+LOGSPI+LOGOW+LOGLORAW;
+//RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
 
@@ -410,6 +410,7 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // Setup ESP32 WatchDog Timer
+/*
 if(rtc_wdt_is_on){
 	unsigned int timeout;
   	BHLOG(LOGBH)Serial.println("   WDT: Enabled");
@@ -422,6 +423,7 @@ if(rtc_wdt_is_on){
 	rtc_wdt_protect_off();
 	rtc_wdt_disable();	// Finally Disable RTC WDT itself
 }
+*/
 // rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
 
 //***************************************************************
@@ -494,21 +496,18 @@ int cnum;
 #ifdef HX711_CONFIG
 float weight =0;
 
-	if(isscale==1){
-		scale.power_up();  // HX711 WakeUp Device
+  if(isscale==1){
+	scale.power_up();  // HX711 WakeUp Device
 
-  // Acquire unit reading
-  weight = HX711_read(1);	// get it in 10 Gr. steps
-  BHLOG(LOGHX) Serial.printf("  HX711: Weight(unit): %.3f kg\n", weight);
-  bhdb.dlog[bhdb.loopid].HiveWeight = weight;
-
-		// Acquire unit reading
-		weight = HX711_read(1);	// get it in 10 Gr. steps
-		BHLOG(LOGHX) Serial.printf(" - Weight(unit): %.3f kg\n", weight);
-
-		scale.power_down();
-	}
+	// Acquire unit reading
+	weight = HX711_read(1);	// get it in 10 Gr. steps
+	BHLOG(LOGHX) Serial.printf("  HX711: Weight(unit): %.3f kg\n", weight);
 	bhdb.dlog[bhdb.loopid].HiveWeight = weight;
+
+	scale.power_down();
+  }
+
+  bhdb.dlog[bhdb.loopid].HiveWeight = weight;
 #endif // HX711_CONFIG
   BHLOG(LOGBH) LEDpulse(1);
 
@@ -549,7 +548,7 @@ float weight =0;
 
   // Read Analog Ports via internal ESP32-ADC
   // read out all Aanalog channels:
-	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: Charge=");
+	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: V-Charge=");
 	uint32_t addata = 0;   		// raw ADS Data buffer
 
 	// Read Charging Power in Volt
@@ -557,7 +556,7 @@ float weight =0;
 	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 310 / 100;			// get ADC Vin corrected by ext. Resistance devider
   	bhdb.dlog[bhdb.loopid].BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  	BHLOG(LOGADS) Serial.print("V - Battery=");
+  	BHLOG(LOGADS) Serial.print("V-Battery=");
 
   	// Get battery Powerlevel & calculate % Level
 	#define VBAT_LEVEL	-134
@@ -725,7 +724,7 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 #ifdef DMSG
     LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
 #else
- //   LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
+    LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
 #endif // DMSG
 
 #endif // BEACON
@@ -1250,17 +1249,17 @@ int cnum=0;
 		if( batlevel <= BATTERY_MIN_LEVEL ){	// Emergency case: No Load Power of batter damaged ?!
 			bat_status = BAT_DAMAGED;
 			Enable_bat_charge();		// but lets hope power comes back
-			BHLOG(LOGBH) Serial.println("  BAT-DAMAGED State entered");
+			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
 			rc=1;
 		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ? 
 			bat_status = BAT_CHARGING;
 			Enable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State entered");
+			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State entered");
 			rc=0;
 		}else{
 		// else: simply remain in Un charging phase
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-UNCHARGING State");
+			BHLOG(LOGBH) Serial.println("    BAT-UNCHARGING State");
 		}
 		break;
 
@@ -1268,10 +1267,10 @@ int cnum=0;
 		if( batlevel >= BATTERY_MAX_LEVEL ){	// battery full level reached ?
 			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT Full -> UNCHARGING State entered");
+			BHLOG(LOGBH) Serial.println("    BAT Full -> UNCHARGING State entered");
 		}else{
 			// else: remain in charging phase
-			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State");
+			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State");
 			Enable_bat_charge();
 			rc=0;
 		}
@@ -1281,11 +1280,11 @@ int cnum=0;
 		if( batlevel > BATTERY_NORM_LEVEL ){
 			bat_status = BAT_CHARGING;
 			Enable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-CHARGE State entered");
+			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State entered");
 		}else{
 			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("  BAT-UNCHARGING State entered");
+			BHLOG(LOGBH) Serial.println("    BAT-UNCHARGING State entered");
 		}
 		rc=0;
 		break;
@@ -1294,7 +1293,7 @@ int cnum=0;
 		// do nothing: but wait till power comes back...
 
 		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
-			BHLOG(LOGBH) Serial.println("  BAT-DAMAGED State");
+			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State");
 			Enable_bat_charge();		// but lets hope power comes back
 			report_interval = 6*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery 
 			rc=1;
@@ -1303,7 +1302,7 @@ int cnum=0;
 			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 
 		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
-			BHLOG(LOGBH) Serial.println("  Battery recovered -> Enter CHARGING State");
+			BHLOG(LOGBH) Serial.println("    Battery recovered -> Enter CHARGING State");
 			bat_status = BAT_CHARGING;	// bring battery back to normal mode
 			Enable_bat_charge();		// but lets hope power comes back
 			report_interval = 10*60;	// set Report. Interval to default [sec.]-> update at next JOIN
@@ -1313,7 +1312,7 @@ int cnum=0;
 			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
 
 		}else{ 							// we are in <= BATTERY_MIN_LEVEL
-			BHLOG(LOGBH) Serial.println("  BAT-LOW State entered");
+			BHLOG(LOGBH) Serial.println("    BAT-LOW State entered");
 			Enable_bat_charge();		// but lets hope power comes back
 			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			rc=1;

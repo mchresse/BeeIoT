@@ -507,12 +507,11 @@ uint32_t* pduid;
   }else{
     // For Upload Pkg:
 	  pduid = (uint32_t*) &DEVEUI;
-	  BHLOG(LOGLORAW) printf("  JS_ValidateMic: duid[%i] = 0x%X\n", pkg->hd.pkgid, *pduid);
+	  BHLOG(LOGLORAR) printf("  JS_ValidateMic: duid[%i] = 0x%X\n", pkg->hd.pkgid, *pduid);
     LoRaMacComputeMic( (const uint8_t*)pkg, (uint16_t) pkg->hd.frmlen+BIoT_HDRLEN, (const uint8_t*) &NwSKey,
              (const uint32_t) *pduid, dir, (uint32_t) pkg->hd.pkgid, (uint32_t*) &bufmic );
   }
 
-//  memcpy(mic, (byte *) &bufmic, 4);   // return first 4 Byte of cmac[0..3]
   mic[0] = (bufmic >>24) & 0xFF;
   mic[1] = (bufmic >>16) & 0xFF;
   mic[2] = (bufmic >> 8) & 0xFF;
@@ -1197,23 +1196,22 @@ byte count;
 byte * ptr;
 
 
-	BHLOG(LOGLORAW) Serial.println();
-    BHLOG(LOGLORAR) Serial.printf("onReceive: got Pkg: len 0x%02X\n", packetSize);
-
-	// Satisfy the ESP IWDT if enabled -> see main() setup 
-	rtc_wdt_feed();
+    BHLOG(LOGLORAW) Serial.println();
+	BHLOG(LOGLORAW) Serial.print("    LoRa-IRQ PkgLen: ");
+	BHLOG(LOGLORAW) Serial.println(packetSize);
 
     if(BeeIotRXFlag >= MAXRXPKG){ // Check RX Semaphor: RX-Queue full ?
     // same situation as: RXPkgIsrIdx+1 == RXPkgSrvIdx (but hard to check with ring buffer)
-    	  BHLOG(LOGLORAW) Serial.printf("onReceive: InQueue full (%i items)-> ignore new IRQ with Len 0x%x\n", (byte) BeeIotRXFlag, (byte) packetSize);
+    	  BHLOG(LOGLORAR) Serial.printf("onReceive: InQueue full (%i items)-> ignore new IRQ with Len 0x%x\n", (byte) BeeIotRXFlag, (byte) packetSize);
         return;     // User service must work harder
     }
 
   // is it a package size conform to BeeIoT WAN definitions ?
   if (packetSize < BIoT_HDRLEN || packetSize > MAX_PAYLOAD_LENGTH) {
-    Serial.printf("onReceive: New RXPkg exceed BeeIoT pkg size: len=0x%x\n", packetSize);
+    BHLOG(LOGLORAR) Serial.printf("onReceive: New RXPkg exceed BeeIoT pkg size: len=0x%x\n", packetSize);
     return;          // no payload of interest for us, ignore it.
   }
+ // return;
 
   // from here on: assumed explicite header mode: -> Size from = REG_RX_NB_BYTES Bytes
   // read expected packet user-header bytes leading BeeIoT-WAN header
@@ -1223,31 +1221,29 @@ byte * ptr;
     ptr[count] = (byte)LoRa.read();     // read bytes one by one for REG_RX_NB_BYTES Bytes
   }
   msg = & MyRXData[RXPkgIsrIdx];  // Assume: BeeIoT-WAN Message received
-//  BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN);
+  BHLOG(LOGLORAR) hexdump((unsigned char*) msg, BIoT_HDRLEN);
 
 // now check real data:
 // start the gate keeper of valid BeeIoT Package data:  ( check for known GW or JOIN GW ID)
 	if((msg->hd.sendID != LoRaCfg.gwid) && (msg->hd.sendID != GWIDx)){
-		Serial.printf("onReceive: Unknown GWID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.sendID);
+		BHLOG(LOGLORAR) Serial.printf("onReceive: Unknown GWID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.sendID);
 		return;
 	}
 	if(msg->hd.destID != LoRaCfg.nodeid){
-		Serial.printf("onReceive: Wrong Target NodeID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.destID);
-		BHLOG(LOGLORAR) Serial.println();
+		BHLOG(LOGLORAR) Serial.printf("onReceive: Wrong Target NodeID detected (0x%02X) -> package rejected\n", (unsigned char)msg->hd.destID);
 		return;
 	}
   // Expected pkg format: Header<NODEID + GWID + index + cmd + frmlen> + AppFrame + MIC
 	if(BIoT_HDRLEN+msg->hd.frmlen+BIoT_MICLEN != packetSize){
-		Serial.printf("onReceive: Wrong payload size detected (%i) -> package rejected\n", packetSize);
-		BHLOG(LOGLORAR) Serial.println();
+		BHLOG(LOGLORAR) Serial.printf("onReceive: Wrong payload size detected (%i) -> package rejected\n", packetSize);
 		return;
 	}
 
   // At this point we have a new header-checked BeeIoT Package
   // some debug output: assumed all is o.k.
-	BHLOG(LOGLORAW) Serial.printf("onReceive: RX(0x%02X>0x%02X)", (unsigned char)msg->hd.sendID, (unsigned char)msg->hd.destID);
-	BHLOG(LOGLORAW) Serial.printf("[%i]:(cmd=%i: %s) ", (unsigned char) msg->hd.pkgid, (unsigned char) msg->hd.cmd, beeiot_ActString[msg->hd.cmd]);
-	BHLOG(LOGLORAW) Serial.printf("DataLen=%i Bytes\n", msg->hd.frmlen);
+	BHLOG(LOGLORAR) Serial.printf("onReceive: RX(0x%02X>0x%02X)", (unsigned char)msg->hd.sendID, (unsigned char)msg->hd.destID);
+	BHLOG(LOGLORAR) Serial.printf("[%i]:(cmd=%i: %s) ", (unsigned char) msg->hd.pkgid, (unsigned char) msg->hd.cmd, beeiot_ActString[msg->hd.cmd]);
+	BHLOG(LOGLORAR) Serial.printf("DataLen=%i Bytes\n", msg->hd.frmlen);
 
   // if it is CMD_ACK pkg -> lets commit to waiting TX-Msg
   if( (msg->hd.cmd == CMD_ACK) || (msg->hd.cmd == CMD_ACKRX1)){
