@@ -208,7 +208,7 @@ int GetOWsensor(int dbidx){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[dbidx].TempIntern = value;		// save result to BHDB
+	bhdb.dlog.TempIntern = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: Int.Temp.Sensor (°C): %.2f\n", value);
 
 	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
@@ -221,7 +221,7 @@ int GetOWsensor(int dbidx){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[dbidx].TempExtern = value;		// save result to BHDB
+	bhdb.dlog.TempExtern = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: Ext.Temp.Sensor (°C): %.2f\n", value);
 
 	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
@@ -234,7 +234,7 @@ int GetOWsensor(int dbidx){
 	}else{
 		value = -99.0;	// device not scanned before
 	}
-	bhdb.dlog[dbidx].TempHive = value;		// save result to BHDB
+	bhdb.dlog.TempHive = value;		// save result to BHDB
 	BHLOG(LOGOW) Serial.printf("  OWBus: HiveTemp.Sensor (°C): %.2f\n", value);
 
 #endif // ONEWIRE_CONFIG

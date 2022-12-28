@@ -85,7 +85,7 @@
 // ESP32-ADC
 #include "espadc.h"
 
-// Libraries for to get time 
+// Libraries for to get time
 #include "RTClib.h"             // from by JeeLabs adafruit /RTClib library @ GitHub
 
 // Library fo HX711 Access
@@ -120,10 +120,10 @@
 // Preset by LOOPTIME as default, but will finally redefined during JOIN Config request
 // IF the requested report time is beyond max. RTC-Sleep time window we need loops of sleep phases:
 // bootcounter = report interval / TIME_TO_SLEEP -> amount of sleep phases to reach tim of next reporting.
-// Without JOIN-CFG we get: 
+// Without JOIN-CFG we get:
 // if report_interval < 78 Minutes (max RTC sleep time at once: 32bit counter in usec.: 2^32/1000000 = 4296 sec. / 60 = 71,58Min. ):
 // 		report_interval = LOOPTME
-// else: 
+// else:
 // We need a counter of multiple of Sleeptime windows
 // 		bootcount = report_interval / TIME_TO_SLEEP	-> amount of sleep loops by SLEEPTIME windows.
 int TIME_TO_SLEEP	= SLEEPTIME;   // [sec.] default RTC sleep time window used in a sleep loop
@@ -135,14 +135,13 @@ RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
 bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
 RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset);   =1 after deep sleep;
 								// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-// RTC timer is set in usec. -> so we need a factor 
+// RTC timer is set in usec. -> so we need a factor
 #define uS_TO_S_FACTOR  1000000LL  // Conversion factor for micro seconds to seconds
 #define uS_TO_mS_FACTOR    1000LL  // Conversion factor for micro seconds to milli seconds
 
 
 // Central Database of all measured values and runtime parameters
 RTC_DATA_ATTR dataset		bhdb;
-Preferences preferences;        // we must generate this object of the preference library
 
 extern int iswifi;              // =1 WIFI flag o.k.
 extern int isi2c;				// =1 I2C Master Port initialized
@@ -154,9 +153,9 @@ extern int issdcard;            // =1 SDCard found flag o.k.
 extern int isepd;               // =1 ePaper found
 extern int islora;              // =1 LoRa client is active
 
-extern SPIClass SPI2;			// Master SPI device
+extern SPIClass 	SPI2;		// Master SPI device
 extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
-extern bool	EPDupdate;			// =true: EPD update requested
+extern bool			EPDupdate;	// =true: EPD update requested
 extern HX711        scale;      // managed in HX711Scale module
 extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 extern int 			adcaddr;	// I2C Dev.address of detected ADC
@@ -209,7 +208,7 @@ void setup() {
 int rc;		// generic return code variable
 
   // put your setup code here, to run once:
-	Serial.begin(115200);   // enable Ser. Monitor Baud rate	
+	Serial.begin(115200);   // enable Ser. Monitor Baud rate
 	Serial.println("Hello ESP32S2");
   // If Ser. Diagnostic Port connected
 
@@ -359,7 +358,7 @@ int rc;		// generic return code variable
 //***************************************************************
 // setup RTC time  service
   BHLOG(LOGLAN) Serial.println("  Setup: Get new Date & Time:");
-  
+
   getTimeStamp();  // get curr. time either by NTP or RTC -> via bhdb
 
   BHLOG(LOGBH) LEDpulse(1);
@@ -472,22 +471,19 @@ int cnum;
 // 1. Get current time to bhdb
 // +4,7ms
   if(getTimeStamp() == -2){   // no valid time source found (RTC or NTP)
-    strncpy(bhdb.dlog[bhdb.loopid].timeStamp, "0000-00-00 00:00:00", LENTMSTAMP);
+    strncpy(bhdb.dlog.timeStamp, "0000-00-00 00:00:00", LENTMSTAMP);
   }else{
     // store curr. timstamp for next data row
-    sprintf(bhdb.dlog[bhdb.loopid].timeStamp, "%s %s", bhdb.date, bhdb.time);
+    sprintf(bhdb.dlog.timeStamp, "%s %s", bhdb.date, bhdb.time);
   }
 
   BHLOG(LOGBH) Serial.println(">************************************************<");
-  BHLOG(LOGBH) Serial.printf ("> Start of BeeIoT Weight Scale loop %i\n",
-  					bhdb.loopid + (bhdb.laps*datasetsize));
-  BHLOG(LOGBH) Serial.printf ("> (Laps: %i, BHDB[%i]) %s\n\n",
-					bhdb.laps, bhdb.loopid, bhdb.dlog[bhdb.loopid].timeStamp);
+  BHLOG(LOGBH) Serial.printf ("> Start of BeeIoT Weight Scale loop %i - %s\n",
+  				bhdb.loopid, bhdb.dlog.timeStamp);
 
-  bhdb.dlog[bhdb.loopid].index = bhdb.loopid + (bhdb.laps*datasetsize);
-  cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "o.k.");
+  cnum=sprintf(bhdb.dlog.comment, "o.k.");
   if(cnum>0)
-	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 
   BHLOG(LOGBH) setRGB(0,0,0);  // show start of new loop() phase: green blink ends
   BHLOG(LOGBH) LEDpulse(1);
@@ -504,12 +500,12 @@ float weight =0;
 	// Acquire unit reading
 	weight = HX711_read(1);	// get it in 10 Gr. steps
 	BHLOG(LOGHX) Serial.printf("  HX711: Weight(unit): %.3f kg\n", weight);
-	bhdb.dlog[bhdb.loopid].HiveWeight = weight;
+	bhdb.dlog.HiveWeight = weight;
 
 	scale.power_down();
   }
 
-  bhdb.dlog[bhdb.loopid].HiveWeight = weight;
+  bhdb.dlog.HiveWeight = weight;
 #endif // HX711_CONFIG
   BHLOG(LOGBH) LEDpulse(1);
 
@@ -524,9 +520,9 @@ float weight =0;
 		owsensors = GetOWsensor(bhdb.loopid);
     	if(owsensors >= OW_MAXDEV){	// min expected # of sensor data found ?
 		    // check if value of last of all 3 sensors is in range
-		    if(	(bhdb.dlog[bhdb.loopid].TempIntern > -98) &
-				(bhdb.dlog[bhdb.loopid].TempExtern > -98) &
-				(bhdb.dlog[bhdb.loopid].TempHive   > -98) )
+		    if(	(bhdb.dlog.TempIntern > -98) &
+				(bhdb.dlog.TempExtern > -98) &
+				(bhdb.dlog.TempHive   > -98) )
         	{
 				BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
 				break; // seems we have all values in place > leave retry loop
@@ -536,9 +532,9 @@ float weight =0;
 		retry++;
 		mydelay2(200,0);			// sleep 200ms for OW bus recovery
 		if(retry > 0)
-			cnum = sprintf(bhdb.dlog[bhdb.loopid].comment, "OW-%ix", retry);
+			cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
 			if(cnum>0)
-				bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+				bhdb.dlog.comment[cnum]=0;	// add ending '0'
 	} while (retry <= ONE_WIRE_RETRY);
 
 #endif // ONEWIRE_CONFIG
@@ -556,7 +552,7 @@ float weight =0;
 	// Read Charging Power in Volt
 	#define VUSB_LEVEL	10
 	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 310 / 100;			// get ADC Vin corrected by ext. Resistance devider
-  	bhdb.dlog[bhdb.loopid].BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+  	bhdb.dlog.BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
   	BHLOG(LOGADS) Serial.print("V-Battery=");
 
@@ -570,9 +566,9 @@ float weight =0;
 	}else{
 		x=0;
 	}
-	bhdb.dlog[bhdb.loopid].BattLevel = (int16_t) x;
-  	bhdb.dlog[bhdb.loopid].BattLoad = (uint16_t) addata;
-  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog[bhdb.loopid].BattLevel);
+	bhdb.dlog.BattLevel = (int16_t) x;
+  	bhdb.dlog.BattLoad = (uint16_t) addata;
+  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
 	bat_control(addata, 1);	// Evaluate BAT Level + Error handling
@@ -592,11 +588,11 @@ float weight =0;
 #ifdef EPD_CONFIG
     BHLOG(LOGEPD) Serial.println("  EPD: Update ePaper - Show Sensor Data");
 #ifdef BEACON
-    showbeacon(bhdb.loopid);
+    showbeacon();
     BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
 #else
 	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
-		showdata(bhdb.loopid);
+		showdata();
 	}
 #endif // Beacon
 #endif // EPD
@@ -608,10 +604,6 @@ float weight =0;
 //***************************************************************
 // 9. Calculate next loop Index
   bhdb.loopid++;     // Increment LoopID for next loop
-  if (bhdb.loopid == datasetsize){  // Max. numbers of datarows filled ?
-    bhdb.loopid = 0;  // reset datarow idx -> round robin buffer for 1 day only
-    bhdb.laps++;      // remember how many times we had a bhdb bufferoverflow.
-  }
   BHLOG(LOGBH) LEDOff();
 
 //***************************************************************
@@ -632,37 +624,33 @@ float weight =0;
 ///@param global bhdb
 //***********************************************************************************
 void Logdata(void) {
-uint16_t sample;
 String  dataMessage; 		// Global data objects
 biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
-
-  	sample = (bhdb.laps*datasetsize) + bhdb.loopid;
-
 #ifdef DSENSOR2		// Create bin data based sensor report stream
-  	dsensor.logid		= sample;
+  	dsensor.logid		= bhdb.loopid;
   	dsensor.year2k		= bhdb.stime.tm_year - 100;	// rebase 1900 -> 2000
 	dsensor.month		= bhdb.stime.tm_mon+1;		// 1-12
 	dsensor.day			= bhdb.stime.tm_mday;		// 1-31
 	dsensor.hh			= bhdb.stime.tm_hour;
 	dsensor.mm			= bhdb.stime.tm_min;
 	dsensor.ss			= bhdb.stime.tm_sec;
-	dsensor.weight		= bhdb.dlog[bhdb.loopid].HiveWeight * 100.0;	// in 10 Gramm steps; save 1 digit
-	dsensor.text		= bhdb.dlog[bhdb.loopid].TempExtern * 100.0;
-	dsensor.tint		= bhdb.dlog[bhdb.loopid].TempIntern * 100.0;
-	dsensor.thive		= bhdb.dlog[bhdb.loopid].TempHive * 100.0;
-	dsensor.trtc		= bhdb.dlog[bhdb.loopid].TempRTC * 100.0;
-	dsensor.board3v		= bhdb.dlog[bhdb.loopid].ESP3V;
-	dsensor.board5v 	= bhdb.dlog[bhdb.loopid].Board5V;
-	dsensor.battcharge	= bhdb.dlog[bhdb.loopid].BattCharge;
-	dsensor.battload	= bhdb.dlog[bhdb.loopid].BattLoad;
-	dsensor.battlevel	= bhdb.dlog[bhdb.loopid].BattLevel;
+	dsensor.weight		= bhdb.dlog.HiveWeight * 100.0;	// in 10 Gramm steps; save 1 digit
+	dsensor.text		= bhdb.dlog.TempExtern * 100.0;
+	dsensor.tint		= bhdb.dlog.TempIntern * 100.0;
+	dsensor.thive		= bhdb.dlog.TempHive * 100.0;
+	dsensor.trtc		= bhdb.dlog.TempRTC * 100.0;
+	dsensor.board3v		= 0;
+	dsensor.board5v 	= 0;
+	dsensor.battcharge	= bhdb.dlog.BattCharge;
+	dsensor.battload	= bhdb.dlog.BattLoad;
+	dsensor.battlevel	= bhdb.dlog.BattLevel;
 
-	dsensor.tlen = strlen(bhdb.dlog[bhdb.loopid].comment);
+	dsensor.tlen 		= strlen(bhdb.dlog.comment);
 	if(dsensor.tlen > BIoT_NOTICELEN){
 		dsensor.tlen = BIoT_NOTICELEN;	// assure max. text length value (normally already done by snprintf)
 	}
-	dsensor.tlen = snprintf((char*) dsensor.notice, dsensor.tlen , "%s", (char*) bhdb.dlog[bhdb.loopid].comment);
+	dsensor.tlen = snprintf((char*) dsensor.notice, dsensor.tlen , "%s", (char*) bhdb.dlog.comment);
 	if(dsensor.tlen < 0){
 		dsensor.tlen = 0;	// if snprintf failed -> define no text field
 	}
@@ -687,21 +675,19 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
   dataMessage =
               String(bhdb.date) + " " +
               String(bhdb.time) + "," +
-              String(bhdb.dlog[bhdb.loopid].HiveWeight) + "," +
-              String(bhdb.dlog[bhdb.loopid].TempExtern) + "," +
-              String(bhdb.dlog[bhdb.loopid].TempIntern) + "," +
-              String(bhdb.dlog[bhdb.loopid].TempHive)   + "," +
-              String(bhdb.dlog[bhdb.loopid].TempRTC)    + "," +
-              String((float)bhdb.dlog[bhdb.loopid].ESP3V/1000)      + "," +
-              String((float)bhdb.dlog[bhdb.loopid].Board5V/1000)    + "," +
-              String((float)bhdb.dlog[bhdb.loopid].BattCharge/1000) + "," +
-              String((float)bhdb.dlog[bhdb.loopid].BattLoad/1000)   + "," +
-              String(bhdb.dlog[bhdb.loopid].BattLevel)  + "#" +
-              String(sample) + " " +
-              String(bhdb.dlog[bhdb.loopid].comment) +
+              String(bhdb.dlog.HiveWeight) + "," +
+              String(bhdb.dlog.TempExtern) + "," +
+              String(bhdb.dlog.TempIntern) + "," +
+              String(bhdb.dlog.TempHive)   + "," +
+              String(bhdb.dlog.TempRTC)    + "," +
+              String((float)bhdb.dlog.BattCharge/1000) + "," +
+              String((float)bhdb.dlog.BattLoad/1000)   + "," +
+              String(bhdb.dlog.BattLevel)  + "#" +
+              String(bhdb.loopid) + " " +
+              String(bhdb.dlog.comment) +
               "\r\n";       // OS common EOL: 0D0A
 #ifndef BEACON
-  Serial.printf("  Loop[%i]: ", sample);
+  Serial.printf("  Loop[%i]: ", bhdb.loopid);
   Serial.print(dataMessage);
 
   // Write the sensor readings onto the SD card
@@ -794,7 +780,7 @@ esp_err_t rc;
 	rc = esp_light_sleep_start();	// start in light sleep now; keep Mem powered -> no data loss
 
 	// Runtime workflow after Light sleep continues here...
-	if(rc != ESP_OK){ 
+	if(rc != ESP_OK){
 		BHLOG(LOGBH) Serial.printf("  Main-Delay2: LightSleep failed: 0x%X\n", rc);
 		BHLOG(LOGBH) delay(5000);	// wait some time to show the message
 		mydelay(waitms);			// use classic wait loop instead -> but no Low power mode !!!
@@ -817,59 +803,55 @@ esp_err_t rc;
 /// @return void
 //*******************************************************************
 void InitConfig(int reentry){
-  	int i;
-	int cnum;
-	if(!reentry){ // do init only once after Power-On
-		bhdb.loopid       = 0;
-		bhdb.laps         = 0;
-		bhdb.formattedDate[0] = 0;
-		bhdb.date[0]      = 0;
-		bhdb.time[0]      = 0;
-		bhdb.ipaddr[0]    = 0;
-		bhdb.chcfgid	  = 0;
-		bhdb.woffset	  = (int) scale_OFFSET;
+int i;
+int cnum;
+
+  if(!reentry){ // do init only once after Power-On
+	bhdb.loopid       = 0;
+	bhdb.formattedDate[0] = 0;
+	bhdb.date[0]      = 0;
+	bhdb.time[0]      = 0;
+	bhdb.chcfgid	  = 0;
+	bhdb.woffset	  = (int) scale_OFFSET;
 
 	// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
-		bhdb.hwconfig	  = 0;
+	bhdb.hwconfig	  = 0;
 #ifdef LORA_CONFIG
-		bhdb.hwconfig	  += HC_LORA; 	// LoRa is minimum unless pcfg is needed for remote control
+	bhdb.hwconfig	  += HC_LORA; 	// LoRa is minimum unless pcfg is needed for remote control
 #endif
 #ifdef EPD_CONFIG
-		bhdb.hwconfig	  += HC_EPD;
+	bhdb.hwconfig	  += HC_EPD;
 #endif
 #ifdef SD_CONFIG
-// can be actively switched on/off by HWconfig RX1 command later; default=on
-		bhdb.hwconfig	  += HC_SDCARD;
+	// can be actively switched on/off by HWconfig RX1 command later; default=on
+	bhdb.hwconfig	  += HC_SDCARD;
 #endif
 #ifdef WIFI_CONFIG
-		bhdb.hwconfig	  += HC_WIFI;
+	bhdb.hwconfig	  += HC_WIFI;
 #endif
 #ifdef NTP_CONFIG
-		bhdb.hwconfig	  += HC_NTP;
+	bhdb.hwconfig	  += HC_NTP;
 #endif
 #ifdef BEACON
-		bhdb.hwconfig	  += HC_BEACON;
+	bhdb.hwconfig	  += HC_BEACON;
 #endif
 
-		// bhdb.BoardID      = 0;  already defined
-		for(i=0; i<datasetsize;i++){
-			bhdb.dlog[i].index       =0;
-			bhdb.dlog[i].timeStamp[0]=0;
-			bhdb.dlog[i].HiveWeight  =0;
-			bhdb.dlog[i].TempExtern  =0;
-			bhdb.dlog[i].TempIntern  =0;
-			bhdb.dlog[i].TempHive    =0;
-			bhdb.dlog[i].TempRTC     =0;
-			bhdb.dlog[i].ESP3V       =0;
-			bhdb.dlog[i].Board5V     =0;
-			bhdb.dlog[i].BattCharge  =0;
-			bhdb.dlog[i].BattLoad    =0;
-			bhdb.dlog[i].BattLevel   =0;
-			cnum=sprintf(bhdb.dlog[i].comment, "OK");
-			if(cnum>0)
-				bhdb.dlog[i].comment[cnum]=0;
-		}
-	} // end of !reentry
+	// bhdb.BoardID      = 0;  already defined
+	bhdb.dlog.index       =0;
+	bhdb.dlog.timeStamp[0]=0;
+	bhdb.dlog.HiveWeight  =0;
+	bhdb.dlog.TempExtern  =0;
+	bhdb.dlog.TempIntern  =0;
+	bhdb.dlog.TempHive    =0;
+	bhdb.dlog.TempRTC     =0;
+	bhdb.dlog.BattCharge  =0;
+	bhdb.dlog.BattLoad    =0;
+	bhdb.dlog.BattLevel   =0;
+	cnum=sprintf(bhdb.dlog.comment, "OK");
+	if(cnum>0){
+		bhdb.dlog.comment[cnum]=0;
+	}
+  } // end of !reentry
 } // end of InitConfig()
 
 
@@ -917,8 +899,8 @@ void biot_ioshutdown(int sleepmode){
 	SPI2.end();		// Detach all SPI Bus pins
 
 // keep stable state in Deep sleep for all SPI-CS lines
-//    gpio_hold_en(SD_CS);      	
-//    gpio_hold_en(LoRa_CS);     	
+//    gpio_hold_en(SD_CS);
+//    gpio_hold_en(LoRa_CS);
 //	gpio_hold_en(EPD_CS);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
@@ -943,14 +925,14 @@ void biot_ioshutdown(int sleepmode){
 //	gpio_hold_en(EPD_DC);
 	rtc_gpio_isolate(EPD_BUSY);
 	rtc_gpio_isolate(EPD_RST);
-	rtc_gpio_isolate(EPD_DC);
+	gpio_hold_en(EPD_DC);	// no RTC pin
 
 
 // HX requires OUTPUT here to define data/clock line during sleep
     pinMode(HX711_SCK, INPUT_PULLUP);
     pinMode(HX711_DT, INPUT_PULLUP);
-    gpio_hold_en(HX711_SCK);  		// HX711 SCK
-    gpio_hold_en(HX711_DT);   		// HX711 Data
+    gpio_hold_en(HX711_SCK);  		// HX711 SCK		// no RTC pin
+    gpio_hold_en(HX711_DT);   		// HX711 Data		// no RTC pin
 
 
 //	i2c_driver_delete(i2c_master_port);
@@ -968,14 +950,11 @@ void biot_ioshutdown(int sleepmode){
     rtc_gpio_isolate(ONE_WIRE_BUS); 	// OneWire Bus line
 
   	BHLOG(LOGBH) setRGB(0,0,0);		// Stop blink of SHutdown phase by Blue LED
-//	digitalWrite(LEDRGB,LOW);
-    pinMode(LEDRGB, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
-	gpio_hold_en(LEDRGB);
+    pinMode(LEDRGB, INPUT);
+	rtc_gpio_isolate(LEDRGB);		// RTC GPIO
 
 	LEDOff();
-    pinMode(LEDRED, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
-//	gpio_hold_en(LEDRED);
-	rtc_gpio_isolate(LEDRED);
+    pinMode(LEDRED, INPUT); 		// finally pulled up by LED, No RTC GPIO
 
 // Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
@@ -1263,7 +1242,7 @@ int cnum=0;
 			Enable_bat_charge();		// but lets hope power comes back
 			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
 			rc=1;
-		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ? 
+		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ?
 			bat_status = BAT_CHARGING;
 			Enable_bat_charge();
 			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State entered");
@@ -1307,11 +1286,11 @@ int cnum=0;
 		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
 			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State");
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 6*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery 
+			report_interval = 6*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery
 			rc=1;
 			// Send a BAT Damage note via LoRa message for service
-   			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattBAD!");
-			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+   			cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 
 		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
 			BHLOG(LOGBH) Serial.println("    Battery recovered -> Enter CHARGING State");
@@ -1320,8 +1299,8 @@ int cnum=0;
 			report_interval = 10*60;	// set Report. Interval to default [sec.]-> update at next JOIN
 			rc=0;
 			// Send a BAT Ok again  note via LoRa message for service
-   			cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattOk");
-			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+   			cnum=sprintf(bhdb.dlog.comment, "BattOk");
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 
 		}else{ 							// we are in <= BATTERY_MIN_LEVEL
 			BHLOG(LOGBH) Serial.println("    BAT-LOW State entered");
@@ -1329,8 +1308,8 @@ int cnum=0;
 			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			rc=1;
 			// Send a BAT Low warning note via LoRa message for service
-	    	cnum=sprintf(bhdb.dlog[bhdb.loopid].comment, "BattLow!");
-			if(cnum>0)	bhdb.dlog[bhdb.loopid].comment[cnum]=0;	// add ending '0'
+	    	cnum=sprintf(bhdb.dlog.comment, "BattLow!");
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 		}
 		break;
 
@@ -1339,7 +1318,7 @@ int cnum=0;
 		BHLOG(LOGBH) Serial.println("BAT-DEFAULT -> should never happen!");
 		break;
 	} // end of Switch
-	
+
 	gpio_hold_dis(BATCHARGEPIN);
 	return(rc);	// return battery state
 }

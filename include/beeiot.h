@@ -142,7 +142,7 @@
 #define EPD_MOSI  SPI_MOSI 	        // SPI MOSI
 #define EPD_SCK	  SPI_SCK       	// SPI SCLK
 #define EPD_CS	  GPIO_NUM_14       // EPD-CS
-#define EPD_DC    GPIO_NUM_36		// arbitrary selection of DC 
+#define EPD_DC    GPIO_NUM_36		// arbitrary selection of DC
 #define EPD_RST   GPIO_NUM_15		// arbitrary selection of RST
 #define EPD_BUSY  GPIO_NUM_21     	// arbitrary selection of BUSY
 #define EPD_KEY1  GPIO_NUM_4     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
@@ -235,37 +235,32 @@ typedef struct {				// data elements of one log line entry
 	float	TempIntern;			// internal temp. of weight cell (for compensation)
 	float	TempHive;			// internal temp. of bee hive
 	float	TempRTC;			// internal temp. of RTC module
-	int16_t ESP3V;				// ESP32 DevKit 3300 mV voltage level
-	int16_t Board5V;			// Board 5000 mV Power line voltage level
-	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5000mV
+	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5200mV
 	int16_t BattLoad;			// Battery voltage level (typ. 3700 mV)
-	int16_t BattLevel;			// Battery Level in % (3200mV (0%) - 4150mV (100%))
-	char	 comment[DROWNOTELEN]; // free notice text string to GW
+	int16_t BattLevel;			// Battery Level in 0-100%
+	char	 comment[DROWNOTELEN]; // free notice text string to GW + EOL sign
 } datrow;
 
-#define datasetsize	4			// max. # of dynamic dataset buffer: each for "looptime" seconds
 #define LENFDATE 	21			// length of ISO8601 TimeSTamp (BIoTWan.h)
 #define LENDATE		11			// YYYY\MM\DD + \0
 #define LENTIME		9			// HH:MM:SS + \0
 #define LENIPADDR	16			// xxx:yyy:zzz:aaa + \0
 typedef struct {
+	unsigned int	loopid;		// sensor loop counter 0..65535
 	// save timestamp of last datarow entry:
 	struct tm	stime;			// structure time supp. by time.h
 	time_t		rtime;			// raw time
     char	formattedDate[LENFDATE]; // Variable to save date and time; 2019-10-28T08:09:47Z
     char	date[LENDATE];  	// stamp of the day: 2019\10\28
     char	time[LENTIME]; 		// Timestamp: 08:10:15
-    char	ipaddr[LENIPADDR];	// IPv4 Address xxx:xxx:xxx:xxx
 	char	chcfgid;			// channel cfg ID of initialzed ChannelTab[]-config set -> struct LoRaCfg
-    int     loopid;             // sensor data read sample ID
-	int		laps;				// # of hangovers till datasetsize reached by loopid++
 	int		woffset;			// offset for real weight adjustment
 	uint8_t	hwconfig;			// HW component enable flag field <- from pcfg
 	// Board Identification data
 	uint64_t  BoardID;  		// unique Identifier (=MAC) of MCU board (use only lower 6By. (of8)
 	int		  chipID;			// get chiptype: 0=WROOM32, 1=WROVER-B, ...
 	esp_chip_info_t chipTYPE;	// get chip board type and revision -> relevant for sytem API vaildation
-	datrow	dlog[datasetsize];	// all sensor logs till upload to server
+	datrow	dlog;				// last sensor log for upload to server
 	// for beacon mode
 	int		rssi;				// LoRa Quality metrics of current transfer
 	int		snr;
@@ -303,18 +298,18 @@ int 	GetOWsensor	(int sample);
 // in main.cpp
 void	Logdata     (void);
 void	mydelay		(int32_t tval);		// Busy loop delay method (tval in ms)
-esp_err_t mydelay2(int32_t waitms, int32_t initdelay);	// light sleep delay method (initdelay default=10)
+esp_err_t mydelay2	(int32_t waitms, int32_t initdelay);	// light sleep delay method (initdelay default=10)
 
 // in max123x.cpp
-uint16_t adc_read(int channel);
-int  max_multiread(uint8_t channelend, uint16_t* adcdat);
-void max_reset(void);	// set MAX123x to default reset
+uint16_t adc_read	(int channel);
+int  max_multiread	(uint8_t channelend, uint16_t* adcdat);
+void max_reset		(void);	// set MAX123x to default reset
 
 // epd.cpp functions
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);
-void drawBitmaps_200x200();
+void drawBitmaps_200x200(void);
 void drawBitmaps_other(void);
-void showdata		(int sampleID);
-void showbeacon 	(int sampleID);
+void showdata		(void);
+void showbeacon 	(void);
 
 #endif // end of BeeIoT.h

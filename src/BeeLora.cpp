@@ -777,7 +777,7 @@ int ackloop;  // ACK wait loop counter
       LoRaCfg.nodeid = NODEIDBASE;    // -> CONFIG response from GW will provide a new MsgID (roaming ?!) later
       LoRa.sleep();                   // stop modem and clear FIFO, but keep JOIN mode
       BHLOG(LOGLORAW) Serial.printf("\n  LoraLog: Enter JOIN-Request Mode\n");
-	  sprintf(bhdb.dlog[bhdb.loopid].comment, "ReJoin");
+	  sprintf(bhdb.dlog.comment, "ReJoin");
       return(-96);
   }
 
@@ -861,7 +861,7 @@ int WaitForAck(byte *BIOTStatus, beeiotmsg_t *Msg, beeiotpkg_t * Pkg, LoRaClass 
           LoRaCfg.msgCount++;                // increment global sequ. TX package/message ID for next TX pkg
           BHLOG(LOGLORAR) Serial.printf("\n  LoraLog: Sleep Mode\n");
           Modem->sleep();                    // Sleep Mode: Stop modem, clear FIFO -> save power
-		  sprintf(bhdb.dlog[bhdb.loopid].comment, "AckTO");
+		  sprintf(bhdb.dlog.comment, "AckTO");
 
           return(-99);                       // give up and no RX Queue check needed neither -> GW dead ?
         } // if(ACK-TO & Max-Retry)

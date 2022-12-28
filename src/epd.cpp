@@ -229,7 +229,7 @@ void onKey4(void){
 
 // show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset of BHDB
-void showdata(int sampleID){
+void showdata(void){
 
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){
@@ -247,7 +247,7 @@ void showdata(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
+  display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -263,25 +263,25 @@ void showdata(int sampleID){
   display.drawRect(5, 9+12+9+12, GxEPD_HEIGHT-(2*5), GxEPD_WIDTH - (9+12+9+12 + 9+9+9+9), GxEPD_BLACK);
 
   display.print(" Gewicht:  ");
-  display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
+  display.println(String(bhdb.dlog.HiveWeight,3));
 
   display.print(" Temp.Beute: ");
-  display.println(String(bhdb.dlog[sampleID].TempHive,2));
+  display.println(String(bhdb.dlog.TempHive,2));
 
   display.print(" TempExtern: ");
-  display.println(String(bhdb.dlog[sampleID].TempExtern,2));
+  display.println(String(bhdb.dlog.TempExtern,2));
 
   display.print(" TempIntern: ");
-  display.println(String(bhdb.dlog[sampleID].TempIntern,2));
+  display.println(String(bhdb.dlog.TempIntern,2));
 
 // display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Batt[V]: ");
-  display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
+  display.print(String((float)bhdb.dlog.BattLoad/1000,2));
   display.print("(");
-  display.print(String(bhdb.dlog[sampleID].BattLevel));
+  display.print(String(bhdb.dlog.BattLevel));
   display.print("%)<");
-  display.print(String((float)bhdb.dlog[sampleID].BattCharge/1000,2));
+  display.print(String((float)bhdb.dlog.BattCharge/1000,2));
   display.println();
 
 //  display.setTextColor(GxEPD_BLACK);
@@ -305,7 +305,7 @@ void showdata(int sampleID){
 
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
-void showbeacon(int sampleID){
+void showbeacon(void){
 
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){
@@ -323,7 +323,7 @@ void showbeacon(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
+  display.printf("BeeIoT.v2   #%i", bhdb.loopid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -359,7 +359,7 @@ void showbeacon(int sampleID){
 
   display.update();				// WakeUp -> update display -> BusyWait -> Sleep
   display.setRotation(rotation); // restore
-  
+
   EPDupdate=true;				// EPD update request completed -> reset flag
 } // end of ShowBeacon()
 

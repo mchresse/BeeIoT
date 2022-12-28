@@ -101,8 +101,8 @@ int setup_rtc (int reentry) {
         BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
 		return(0);
 	}
-	
-	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+
+	bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree
 	BHLOG(LOGADS)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
   // if NTC based adjustment is needed use:  static void adjust(const DateTime& dt);
@@ -203,9 +203,9 @@ int getRTCtime(void){
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
         BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
-		bhdb.dlog[bhdb.loopid].TempRTC = -99;  // reset RTC module temperature fault
+		bhdb.dlog.TempRTC = -99;  // reset RTC module temperature fault
 	}else{
-		bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+		bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree
 		BHLOG(LOGLAN)  Serial.printf(" RTC-Temp.: %.2f °C\n", rtctemp);
 	}
   return 0;
