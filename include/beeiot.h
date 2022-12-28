@@ -302,7 +302,7 @@ int 	GetOWsensor	(int sample);
 
 // in main.cpp
 void	Logdata     (void);
-void	mydelay		(int32_t tval);	// Busy loop delay method (tval in ms)
+void	mydelay		(int32_t tval);		// Busy loop delay method (tval in ms)
 esp_err_t mydelay2(int32_t waitms, int32_t initdelay);	// light sleep delay method (initdelay default=10)
 
 // in max123x.cpp

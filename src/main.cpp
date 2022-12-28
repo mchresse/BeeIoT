@@ -182,6 +182,7 @@ esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
+void biot_iowakeup(int sleepmode);
 void get_efuse_ident(void);
 void wiretest();
 void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
@@ -213,9 +214,8 @@ int rc;		// generic return code variable
   // If Ser. Diagnostic Port connected
 
 
-// #ifdef CONFIG_IDF_TARGET_ESP32
-    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
-// #endif
+//    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
+// may its too early at this point before all GPIO states are preset
 	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
     pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
     pinMode(LoRa_CS, OUTPUT);
@@ -242,6 +242,8 @@ int rc;		// generic return code variable
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
       //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
+		biot_iowakeup(rc);	// enable all GPIOs from sleep mode
+
   		if(rc == ESP_SLEEP_WAKEUP_TIMER){
 			// increment WakeUp boot counter and check if loop wait time reached -> if not: sleep again
 			if(++bootCount < (report_interval/TIME_TO_SLEEP)){  // needed in case looptime exceed std. sleep time
@@ -786,14 +788,14 @@ esp_err_t rc;
 	// Configure the wake up timer source
 	rc = esp_sleep_enable_timer_wakeup(uint64_t (waitms) * uS_TO_mS_FACTOR);	// time in us
 	if(rc != ESP_OK){
-		BHLOG(LOGBH) Serial.printf("  Main-Delay2: LightSleep timer setup failed: %i\n", rc);
+		BHLOG(LOGBH) Serial.printf("  Main-Delay2: LightSleep timer setup failed: 0x%X\n", rc);
 		return(rc);
 	}
 	rc = esp_light_sleep_start();	// start in light sleep now; keep Mem powered -> no data loss
 
 	// Runtime workflow after Light sleep continues here...
-	if(rc != ESP_OK){
-		BHLOG(LOGBH) Serial.printf("  Main-Delay2: LightSleep failed: %i\n", rc);
+	if(rc != ESP_OK){ 
+		BHLOG(LOGBH) Serial.printf("  Main-Delay2: LightSleep failed: 0x%X\n", rc);
 		BHLOG(LOGBH) delay(5000);	// wait some time to show the message
 		mydelay(waitms);			// use classic wait loop instead -> but no Low power mode !!!
 	}
@@ -914,33 +916,34 @@ void biot_ioshutdown(int sleepmode){
 
 	SPI2.end();		// Detach all SPI Bus pins
 
-    gpio_hold_en(SD_CS);      	// stable state in Deep sleep
-    gpio_hold_en(LoRa_CS);     	// BEE_CS
-	gpio_hold_en(EPD_CS);
+// keep stable state in Deep sleep for all SPI-CS lines
+//    gpio_hold_en(SD_CS);      	
+//    gpio_hold_en(LoRa_CS);     	
+//	gpio_hold_en(EPD_CS);
+	rtc_gpio_isolate(SD_CS);
+	rtc_gpio_isolate(LoRa_CS);
+	rtc_gpio_isolate(EPD_CS);
 
 // SPI Bus shutdown: EPD + LORA + SD
-    pinMode(SPI_MISO, INPUT);	// needs ext- Pullup for DeepSleep
-    pinMode(SPI_MOSI, INPUT);	// needs ext- Pullup for DeepSleep
-    pinMode(SPI_SCK,  INPUT);	// needs ext- Pullup for DeepSleep
+    pinMode(SPI_MISO, INPUT);
+    pinMode(SPI_MOSI, INPUT);
+    pinMode(SPI_SCK,  INPUT);
 //	gpio_hold_en(SPI_MISO);
 //	gpio_hold_en(SPI_MOSI);
 //	gpio_hold_en(SPI_SCK);
-	gpio_hold_en(SPI_MISO);
-	gpio_hold_en(SPI_MOSI);
-	gpio_hold_en(SPI_SCK);
+	rtc_gpio_isolate(SPI_MISO);
+	rtc_gpio_isolate(SPI_MOSI);
+	rtc_gpio_isolate(SPI_SCK);
 
-	pinMode(EPD_BUSY, INPUT);		// already output by EPD normally
-	pinMode(EPD_RST, INPUT);		// needs ext- Pullup for DeepSleep
-	pinMode(EPD_DC,  INPUT); 		// needs ext- Pullup for DeepSleep
-//	gpio_hold_en(EPD_BUSY);    			// EPD_BUSY
-//	gpio_hold_en(EPD_CS);    			// EPD_CS
-//  gpio_hold_en(EPD_RST);   			// EPD_RST
-//  gpio_hold_en(EPD_DC);    			// EPD_DC
-	gpio_hold_en(EPD_BUSY);
-
-	gpio_hold_en(EPD_RST);
-	gpio_hold_en(EPD_DC);
-
+	pinMode(EPD_BUSY, INPUT);		// already output by EPD -> so ESP-Input by default
+	pinMode(EPD_RST, INPUT);
+	pinMode(EPD_DC,  INPUT);
+//	gpio_hold_en(EPD_BUSY);
+//	gpio_hold_en(EPD_RST);
+//	gpio_hold_en(EPD_DC);
+	rtc_gpio_isolate(EPD_BUSY);
+	rtc_gpio_isolate(EPD_RST);
+	rtc_gpio_isolate(EPD_DC);
 
 
 // HX requires OUTPUT here to define data/clock line during sleep
@@ -954,19 +957,25 @@ void biot_ioshutdown(int sleepmode){
     // Set all I2C lines to high impedance -> open collector bus
     pinMode(I2C_SCL, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
     pinMode(I2C_SDA, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
-    gpio_hold_en(I2C_SCL);    		// ADS_SCL
-    gpio_hold_en(I2C_SDA);    		// ADS_SDA
+//    gpio_hold_en(I2C_SCL);    		// ADS_SCL
+//    gpio_hold_en(I2C_SDA);    		// ADS_SDA
+    rtc_gpio_isolate(I2C_SCL);    		// ADS_SCL
+    rtc_gpio_isolate(I2C_SDA);    		// ADS_SDA
 
 // Set OW line to high impedance -> open collector bus
     pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
-//    gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
+//  gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
+    rtc_gpio_isolate(ONE_WIRE_BUS); 	// OneWire Bus line
 
   	BHLOG(LOGBH) setRGB(0,0,0);		// Stop blink of SHutdown phase by Blue LED
 //	digitalWrite(LEDRGB,LOW);
     pinMode(LEDRGB, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
+	gpio_hold_en(LEDRGB);
 
 	LEDOff();
     pinMode(LEDRED, INPUT); 		// finally pullued up by LED, RTC GPIO, bootstrap pin
+//	gpio_hold_en(LEDRED);
+	rtc_gpio_isolate(LEDRED);
 
 // Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
@@ -979,6 +988,9 @@ void biot_ioshutdown(int sleepmode){
   } // end of sleepmode
 } // biot_ioshutdown()
 
+void biot_iowakeup(int sleepmode){
+
+}
 
 //***********************************************************************
 /// @brief Method to print the reason by which ESP32
