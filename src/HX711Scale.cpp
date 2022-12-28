@@ -55,7 +55,7 @@ float	scale_offs;
 	BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
 
 	// Activate Scale ADC IO Port
-	scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
+	scale.begin(HX711_DT, HX711_SCK, 128);// declare GPIO pin connection + gain factor: A128
 
 	if(scale.wait_ready_timeout() == false){
 		isscale=0;
