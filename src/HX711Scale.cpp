@@ -77,6 +77,7 @@ float	scale_offs;
 	BHLOG(LOGHX) Serial.println(" per kg");
 
 	scale.power_down();
+
 	isscale=1;
 	#endif // HX711_CONFIG
 

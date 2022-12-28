@@ -181,7 +181,6 @@ esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
-void biot_iowakeup(int sleepmode);
 void gpio_init(void);
 void get_efuse_ident(void);
 void wiretest();
@@ -209,7 +208,7 @@ void setup() {
 int rc;		// generic return code variable
 
   // put your setup code here, to run once:
-	Serial.begin(115200);   // enable Ser. Monitor Baud rate
+  	BHLOG(LOGBH) Serial.begin(115200);   // enable Ser. Monitor Baud rate
 
   // init pinmode and level of all used GPIO lines
 	gpio_init();
@@ -227,15 +226,14 @@ int rc;		// generic return code variable
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
       //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
-		biot_iowakeup(rc);	// enable all GPIOs from sleep mode
 
   		if(rc == ESP_SLEEP_WAKEUP_TIMER){
-			// increment WakeUp boot counter and check if loop wait time reached -> if not: sleep again
-			if(++bootCount < (report_interval/TIME_TO_SLEEP)){  // needed in case looptime exceed std. sleep time
-				// Start deep sleep again -> split in chunks of sleep windows
-				// if deep sleep time == report_interval no boot counter needed:
-				//				prepare_sleep_mode(ReEntry, report_interval);
-			}
+			// wakeup after predefined sleep time
+			// Reentry remains unchanged
+		}
+  		if(rc == ESP_SLEEP_WAKEUP_EXT0){
+			// wakeup after GPIO wakeup by Key 1
+			// Reentry remains unchanged
 		}
 		// ReEntry > 1 <predefined startup/sleep mode set at end of Loop()>
 		// 		=1 after deep sleep:  Reset MM -> wakeup with setup()
@@ -243,13 +241,12 @@ int rc;		// generic return code variable
 		// 		=3 after ModemSleep Mode; ( not used here)
 		// 		=4 Active Wait Loop (just a busy loop with delay())
 	} else {
-	  ReEntry = 0;	// reset was pressed or PwrCycle -> set initial StartupState for setup action
+		ReEntry = 0;	// reset was pressed or PwrCycle -> set initial StartupState for setup action
 		// Nexus of StartupMode set at end of a each loop()
 	}
 
-	// ReEntry mode was defined at start of sleep mode (end of loop) already
-	// wakeup by Reset -> start initial setup code and reset counter anyway
-	bootCount = 0;
+	// ReEntry mode is defined at end of setup phase for next sleep phase
+
   	BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
@@ -257,18 +254,19 @@ int rc;		// generic return code variable
 // +2ms
 	if(!ReEntry) { // only at new POn cycle once
 		if(lflags > 0){
-			Serial.println();
-			Serial.println(">***********************************<");
-			Serial.printf ("> BeeIoT - BeeHive Weight Scale %s\n", VERSION_SHORT);
-			Serial.println("> by R.Esser (c) 2020-2022");
-			Serial.println(">***********************************<");
+			BHLOG(LOGBH) Serial.println();
+			BHLOG(LOGBH) Serial.println(">***********************************<");
+			BHLOG(LOGBH) Serial.printf ("> BeeIoT - BeeHive Weight Scale %s\n", VERSION_SHORT);
+			BHLOG(LOGBH) Serial.println("> by R.Esser (c) 2020-2022");
+			BHLOG(LOGBH) Serial.println(">***********************************<");
+			BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 		}
-	BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 
 		//***************************************************************
 		// get bhdb.BoardID (=WiFI MAC), .ChipID and .ChipREV from eFuse area
 		get_efuse_ident();
 	}
+
   BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
   BHLOG(LOGBH) setRGB(0,0,0); // end blinking of Red LED -> Start Setup Phase
 
@@ -283,10 +281,10 @@ int rc;		// generic return code variable
 // I2C_master() has to be started always before setup_rtc() and setup_i2c_ADC/MAX()
 // +2.8ms
   BHLOG(LOGBH) Serial.println("  Setup: I2C Master Device Port Init & Scan");
-  isi2c = setup_i2c_master(ReEntry);
+  setup_i2c_master(ReEntry);	// isi2c, isrtc, isads are set implictely
   if (!isi2c){
     BHLOG(LOGBH) Serial.println("         I2c Master port failed ");
-    // enter here exit code, if needed
+    // enter exit code here, if needed
   }
   BHLOG(LOGBH) LEDpulse(1);
 
@@ -299,17 +297,18 @@ int rc;		// generic return code variable
 	// isrtc should be 0 here; hopefully NTP can help out later on
   }else{
 	BHLOG(LOGLAN) rtc_test();
-	getRTCtime();
+	// Time stamp of each loop loaded at begin of loop()
   }
   BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +3ms
-  BHLOG(LOGBH) Serial.println("  Setup: SPI Devices");
+  BHLOG(LOGBH) Serial.println("  Setup: SPI Device Ports: SD/LoRa/EPD");
   issdcard = setup_spi(ReEntry);
-  if (!issdcard){
-    BHLOG(LOGBH) Serial.println("         SPI SD setup: SD not detected");
+  if (!issdcard){ // check LoRa port as reference
+    BHLOG(LOGBH) Serial.println("         SPI setup: SD not detected");
     // enter here exit code, if needed
+	// but LoRa and EPD are porbed later, and SD is not sytsem critical
   }
   BHLOG(LOGBH) LEDpulse(1);
 
@@ -320,33 +319,6 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("         HX711 setup failed");
     // enter here exit code, if needed
   }
-  BHLOG(LOGBH) LEDpulse(1);
-
-//***************************************************************
-// +400 ms.
-  if(isadc){	// I2C Master Port active + ADC detected ?
-  // only one ADC dev. type accepted -> as set by adcaddr in i2c_scan()
-  	BHLOG(LOGBH) Serial.println("  Setup: ADC ADS11x5");
-	if (!setup_i2c_ADS(ReEntry)){
-    	BHLOG(LOGBH) Serial.println("         ADS11x5 setup failed");
-    	// enter here exit code, if needed
-	}
-	//***************************************************************
-	BHLOG(LOGBH) Serial.println("  Setup: ADC MAX123x");
-	if (!setup_i2c_MAX(ReEntry)){  // MAX123x constructor
-  		BHLOG(LOGBH) Serial.println("         MAX123x setup failed");
-   		// enter here exit code, if needed
-	}
-  }
-  BHLOG(LOGBH) LEDpulse(1);
-
-
-//***************************************************************
-// setup RTC time  service
-  BHLOG(LOGLAN) Serial.println("  Setup: Get new Date & Time:");
-
-  getTimeStamp();  // get curr. time either by NTP or RTC -> via bhdb
-
   BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
@@ -388,6 +360,8 @@ int rc;		// generic return code variable
     // enter exit code here, if needed
   }
 
+  BHLOG(LOGBH) LEDpulse(1);
+
 //***************************************************************
 // Init battery State machine
   if (ReEntry==0){
@@ -395,7 +369,9 @@ int rc;		// generic return code variable
   	bat_control(0.0, 0);	// (re-)initialize Battery state machine
   }
 
-//***************************************************************
+  BHLOG(LOGBH) LEDpulse(1);
+
+  //***************************************************************
 // Setup ESP32 WatchDog Timer
 /*
 if(rtc_wdt_is_on){
@@ -414,10 +390,15 @@ if(rtc_wdt_is_on){
 // rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
 
 //***************************************************************
+// initial sleep mode for next loop:
+//   =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+	ReEntry = SLEEPMODE;
+
+
   BHLOG(LOGBH) LEDOn();
-	delay(50);
+  BHLOG(LOGBH) delay(50);
   BHLOG(LOGBH) LEDOff();
-  Serial.println("");
+  BHLOG(LOGBH) Serial.println("");
 
 } // end of BeeIoT setup()
 
@@ -594,8 +575,6 @@ float weight =0;
 
 //***************************************************************
 // 10. End of Main Loop ->  Save data and enter Sleep/Delay Mode
-	ReEntry = SLEEPMODE;	// initial startup sleep mode;
-					// =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
   // Start sleep/wait loop
 	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
 
@@ -792,52 +771,53 @@ void InitConfig(int reentry){
 int i;
 int cnum;
 
-  if(!reentry){ // do init only once after Power-On
-	bhdb.loopid       = 0;
-	bhdb.formattedDate[0] = 0;
-	bhdb.date[0]      = 0;
-	bhdb.time[0]      = 0;
-	bhdb.chcfgid	  = 0;
-	bhdb.woffset	  = (int) scale_OFFSET;
+  	if(!reentry){ // do init only once after Power-On
+		bhdb.loopid       = 0;
+		bhdb.formattedDate[0] = 0;
+		bhdb.date[0]      = 0;
+		bhdb.time[0]      = 0;
+		bhdb.chcfgid	  = 0;
+		bhdb.woffset	  = (int) scale_OFFSET;
 
-	// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
-	bhdb.hwconfig	  = 0;
+		// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
+		bhdb.hwconfig	  = 0;
 #ifdef LORA_CONFIG
-	bhdb.hwconfig	  += HC_LORA; 	// LoRa is minimum unless pcfg is needed for remote control
+		bhdb.hwconfig	  += HC_LORA; 	// LoRa is minimum unless pcfg is needed for remote control
 #endif
 #ifdef EPD_CONFIG
-	bhdb.hwconfig	  += HC_EPD;
+		bhdb.hwconfig	  += HC_EPD;
 #endif
 #ifdef SD_CONFIG
-	// can be actively switched on/off by HWconfig RX1 command later; default=on
-	bhdb.hwconfig	  += HC_SDCARD;
+		// can be actively switched on/off by HWconfig RX1 command later; default=on
+		bhdb.hwconfig	  += HC_SDCARD;
 #endif
 #ifdef WIFI_CONFIG
-	bhdb.hwconfig	  += HC_WIFI;
+		bhdb.hwconfig	  += HC_WIFI;
 #endif
 #ifdef NTP_CONFIG
-	bhdb.hwconfig	  += HC_NTP;
+		bhdb.hwconfig	  += HC_NTP;
 #endif
 #ifdef BEACON
-	bhdb.hwconfig	  += HC_BEACON;
+		bhdb.hwconfig	  += HC_BEACON;
 #endif
 
-	// bhdb.BoardID      = 0;  already defined
-	bhdb.dlog.index       =0;
-	bhdb.dlog.timeStamp[0]=0;
-	bhdb.dlog.HiveWeight  =0;
-	bhdb.dlog.TempExtern  =0;
-	bhdb.dlog.TempIntern  =0;
-	bhdb.dlog.TempHive    =0;
-	bhdb.dlog.TempRTC     =0;
-	bhdb.dlog.BattCharge  =0;
-	bhdb.dlog.BattLoad    =0;
-	bhdb.dlog.BattLevel   =0;
+		// bhdb.BoardID      = 0;  already defined
+		bhdb.dlog.index       =0;
+		bhdb.dlog.timeStamp[0]=0;
+		bhdb.dlog.HiveWeight  =0;
+		bhdb.dlog.TempExtern  =0;
+		bhdb.dlog.TempIntern  =0;
+		bhdb.dlog.TempHive    =0;
+		bhdb.dlog.TempRTC     =0;
+		bhdb.dlog.BattCharge  =0;
+		bhdb.dlog.BattLoad    =0;
+		bhdb.dlog.BattLevel   =0;
+  	}	 // end of !reentry
+
 	cnum=sprintf(bhdb.dlog.comment, "OK");
 	if(cnum>0){
 		bhdb.dlog.comment[cnum]=0;
 	}
-  } // end of !reentry
 } // end of InitConfig()
 
 
@@ -1047,9 +1027,6 @@ void biot_ioshutdown(int sleepmode){
   } // end of sleepmode
 } // biot_ioshutdown()
 
-void biot_iowakeup(int sleepmode){
-
-}
 
 //***********************************************************************
 /// @brief Method to print the reason by which ESP32

@@ -44,7 +44,7 @@ extern uint16_t	lflags;      // BeeIoT log flag field
 //*******************************************************************
 int setup_sd(int reentry) {  // My SDCard Constructor
 #ifdef SD_CONFIG
-	if(reentry >1)	// No reset nor Deep Sleep Mode
+	if(reentry >1)			// No reset nor Deep Sleep Mode
 		return(issdcard);	// nothing to do here
 
 	issdcard = 0;
@@ -67,7 +67,9 @@ int setup_sd(int reentry) {  // My SDCard Constructor
 	} else {
 		BHLOG(LOGSD) Serial.print("UNKNOWN");
 	}
-		uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+
+uint64_t cardSize;
+	BHLOG(LOGSD) cardSize = SD.cardSize() / (1024 * 1024); // get size in MB
 	BHLOG(LOGSD) Serial.printf(" - Size: %lluMB\n", cardSize);
 
 /*
@@ -85,7 +87,7 @@ int setup_sd(int reentry) {  // My SDCard Constructor
     writeFile(SD, SDLOGPATH, "Sample-ID, Date, Time, BeeHiveWeight, TempExtern, TempIntern, TempHive, TempRTC, ESP3V, Board5V, BattCharge, BattLoad, BattLevel\r\n");
   } else {
     BHLOG(LOGSD) Serial.printf("  SD: File %s found\n", SDLOGPATH);
- //   file.close();
+	//   file.close();	// not really needed for SD
   }
 
 #endif // SD_CONFIG
