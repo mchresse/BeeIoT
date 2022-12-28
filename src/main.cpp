@@ -182,6 +182,7 @@ void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
 void biot_iowakeup(int sleepmode);
+void gpio_init(void);
 void get_efuse_ident(void);
 void wiretest();
 void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
@@ -209,26 +210,11 @@ int rc;		// generic return code variable
 
   // put your setup code here, to run once:
 	Serial.begin(115200);   // enable Ser. Monitor Baud rate
-	Serial.println("Hello ESP32S2");
-  // If Ser. Diagnostic Port connected
 
+  // init pinmode and level of all used GPIO lines
+	gpio_init();
 
-//    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
-// may its too early at this point before all GPIO states are preset
-	pinMode(EPD_CS, OUTPUT);    //VSPI SS for ePaper EPD
-    pinMode(SD_CS,  OUTPUT);    //HSPI SS for SDCard Port
-    pinMode(LoRa_CS, OUTPUT);
-    digitalWrite(EPD_CS, HIGH);
-    digitalWrite(SD_CS, HIGH);
-    digitalWrite(LoRa_CS, HIGH);
-    gpio_hold_dis(SD_CS);   	// enable SD_CS
-    gpio_hold_dis(EPD_CS);   	// enable EPD_CS
-    gpio_hold_dis(LoRa_CS);  	// enable BEE_CS
-
-
-	//  wiretest();                 // for HW incompatibility tests og GPIOs
-
-	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED On
+	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
 	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
 
 	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
@@ -855,6 +841,100 @@ int cnum;
 } // end of InitConfig()
 
 
+//*******************************************************************
+/// @brief gpio_init()
+/// Initialize pinmode and level for all used GPIO lines
+///
+/// @param sleepmode	wakeup mode
+/// @details 1 DeepSleep Mode; 2 LightSleep Mode; 3 ModemSleep; 4 Active wait loop
+/// @return void
+//*******************************************************************
+void gpio_init(void){
+
+// FOr test purpose: set LED / RGB-LED ports
+	pinMode(LEDRGB, OUTPUT);
+	pinMode(LEDRED, OUTPUT);
+	digitalWrite(LEDRGB, HIGH); // signal Setup Phase
+	digitalWrite(LEDRED, HIGH); // signal Setup Phase
+	gpio_hold_dis(LEDRGB);
+	gpio_hold_dis(LEDRED);
+
+
+// First disabe all SPI devices CS line to avoid collisions
+	pinMode(EPD_CS, OUTPUT);    // SPI-CS for ePaper EPD
+    pinMode(SD_CS,  OUTPUT);    // SPI-CS for SDCard Port
+    pinMode(LoRa_CS, OUTPUT);	// SPI-CS for LoRa Port
+    digitalWrite(EPD_CS, HIGH);
+    digitalWrite(SD_CS, HIGH);
+    digitalWrite(LoRa_CS, HIGH);
+    gpio_hold_dis(SD_CS);   	// enable SD_CS
+    gpio_hold_dis(EPD_CS);   	// enable EPD_CS
+    gpio_hold_dis(LoRa_CS);  	// enable BEE_CS
+
+// Deactivate SPI Power switch -> detach 3.3V from epaper/LoRA/SD
+	pinMode(SPIPWREN, OUTPUT);
+	digitalWrite(SPIPWREN, LOW); // disable SPI Power
+    gpio_hold_dis(SPIPWREN);
+
+// Setup SPI BUS Control lines
+    pinMode(SPI_SCK, OUTPUT);
+    pinMode(SPI_MOSI, OUTPUT);
+    pinMode(SPI_MISO, INPUT);
+    digitalWrite(SPI_SCK, HIGH);
+    digitalWrite(SPI_MOSI, HIGH);
+	gpio_hold_dis(SPI_SCK);
+	gpio_hold_dis(SPI_MOSI);
+	gpio_hold_dis(SPI_MISO);
+
+// Preset LoRa Module Control lines
+    pinMode(LoRa_DIO0, INPUT);
+    pinMode(LoRa_RST, OUTPUT);
+	digitalWrite(LoRa_RST, HIGH);
+    gpio_hold_dis(LoRa_DIO0);
+	gpio_hold_dis(LoRa_RST);
+
+// Preset SPI dev: EPD Display Module
+    pinMode(EPD_BUSY, INPUT);
+    pinMode(EPD_DC, OUTPUT);
+    pinMode(EPD_RST, OUTPUT);
+    digitalWrite(EPD_DC, HIGH);
+    digitalWrite(EPD_RST, HIGH);
+    gpio_hold_dis(EPD_BUSY);
+    gpio_hold_dis(EPD_DC);
+    gpio_hold_dis(EPD_RST);
+
+// Panel Key 1-4
+	pinMode(EPD_KEY1, INPUT);
+	pinMode(EPD_KEY2, INPUT);
+//	pinMode(EPD_KEY3, INPUT);	// NC
+//	pinMode(EPD_KEY4, INPUT);	// NC
+    gpio_hold_dis(EPD_KEY1);
+    gpio_hold_dis(EPD_KEY2);
+//    gpio_hold_dis(EPD_KEY3);
+//    gpio_hold_dis(EPD_KEY4);
+
+// Preset I2C Master Port
+	pinMode(I2C_SCL, OUTPUT);		// I2C Bus Clock line
+	pinMode(I2C_SDA, INPUT);		// I2C Data line start with defensive input
+    digitalWrite(I2C_SCL, HIGH);	// define default level
+	gpio_hold_dis(I2C_SCL);
+	gpio_hold_dis(I2C_SDA);
+
+// HX requires OUTPUT here to define data/clock line during sleep
+    pinMode(HX711_SCK, OUTPUT);
+    pinMode(HX711_DT, INPUT);		// Data port starts with defensive Input state
+	digitalWrite(HX711_SCK, HIGH);
+    gpio_hold_dis(HX711_SCK);  		// HX711 SCK		// no RTC pin
+    gpio_hold_dis(HX711_DT);   		// HX711 Data		// no RTC pin
+
+// Set OneWire line to Master port
+    pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> Start with defensive Input
+	gpio_hold_dis(ONE_WIRE_BUS);
+
+// BATCHARGEPIN fully controlled by bat_control()
+
+    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
+}
 
 
 //*******************************************************************
@@ -1321,42 +1401,6 @@ int cnum=0;
 
 	gpio_hold_dis(BATCHARGEPIN);
 	return(rc);	// return battery state
-}
-
-
-//********************************************************************************
-// wiretest()
-/// @brief For test purpose only in case of HW incompatibility
-/// Check for WROOM <-> Wrover ESP32 pin layout
-/// @return void
-//********************************************************************************
-void wiretest(){
-  int gpio = 36;
-  int twait = 1000;
-
-  Serial.printf(" GPIO OUT: %i: ", gpio);
-  for (int i=0; i<10000; i++){
-    pinMode(gpio,   OUTPUT);
-    digitalWrite(gpio, LOW);
-    mydelay2(twait,20);
-    digitalWrite(gpio, HIGH);
-    mydelay2(twait,20);
-    Serial.printf(".");
-  }
-  Serial.printf("\n");
-
-  Serial.printf(" GPIO IN: %i: ", gpio);
-  pinMode(gpio,  INPUT);
-  for (int i=0; i<20; i++){
-    int dio = digitalRead(gpio);
-    mydelay2(twait/2,20);
-    if(dio)
-      Serial.printf("1");
-    else
-      Serial.printf("0");
-  }
-  Serial.printf("   -> Done! \n");
-  while(1);
 }
 
 

@@ -42,15 +42,6 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(LEDNUM, LEDRGB, NEO_GRB + NEO_KHZ800
 // on a live circuit...if you must, connect GND first.
 
 void setup_RGB(void) {
-  // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
-  #if defined (__AVR_ATtiny85__)
-    if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
-  #endif
-  // End of trinket special code
-	pinMode(LEDRGB, OUTPUT);
-	digitalWrite(LEDRGB, HIGH); // signal Setup Phase
-	gpio_hold_dis(LEDRGB); 
-
   strip.begin();
   strip.setBrightness(50);
   strip.show(); // Initialize all pixels to 'off'
@@ -67,7 +58,6 @@ void setRGB(uint8_t r, uint8_t g, uint8_t b){
 int LEDstate=HIGH;	// LED status =High:Off, =Low:On
 
 void setup_LED(void){
-	pinMode(LEDRED, OUTPUT);
 	LEDOff();
 }
 

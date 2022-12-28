@@ -154,7 +154,6 @@ int SetonKey(int key, void(*callback)(void)){
 	switch (key){
 	case 1: 			// EPD_KEY 1
 		if(callback){
-			pinMode(EPD_KEY1, INPUT);
     	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 ISR assigned");
 		}else{

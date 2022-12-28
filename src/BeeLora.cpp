@@ -51,7 +51,7 @@ int     islora=0;				// =1: we have an active LoRa Node
 
 // GPIO PINS of current connected LoRa Modem chip (SCK, MISO & MOSI are system default)
 const int csPin     = LoRa_CS;	// LoRa radio chip select
-const int resetPin  = 0;	// LoRa radio reset not used
+const int resetPin  = LoRa_RST;	// LoRa radio reset not used
 const int irqPin    = LoRa_DIO0;// change for your board; must be a hardware interrupt pin
 
 // Lora Modem default configuration
