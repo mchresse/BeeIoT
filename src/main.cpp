@@ -214,12 +214,12 @@ int rc;		// generic return code variable
   // init pinmode and level of all used GPIO lines
 	gpio_init(ReEntry);
 
-//	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
-//	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
+	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
+	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
 
-//	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
-//	BHLOG(LOGBH) setRGB(255,0,0); // start with Red LED On -> Setup Phase
-//	BHLOG(LOGRGB) RGBtest();
+	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
+	BHLOG(LOGBH) setRGB(255,0,0); // start with Red LED On -> Setup Phase
+	BHLOG(LOGRGB) RGBtest();
 
 //***************************************************************
   //Print the wakeup reason for ESP32
@@ -262,7 +262,7 @@ int rc;		// generic return code variable
 			BHLOG(LOGBH) Serial.println();
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("> BeeIoT - BeeHive Weight Scale %s\n", VERSION_SHORT);
-			BHLOG(LOGBH) Serial.println("> by R.Esser (c) 2020-2022");
+			BHLOG(LOGBH) Serial.println("> by R.Esser (c) 2020-2023");
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 		}
@@ -842,6 +842,7 @@ void gpio_init(int sleepmode){
 	//	rtc_gpio_deinit(EPD_KEY1);
 
 		gpio_hold_dis(SPIPWREN);
+		gpio_hold_dis(EPDGNDEN);
 		gpio_hold_dis(LEDRGB);
 		gpio_hold_dis(LEDRED);		// No RTC
 
@@ -892,6 +893,8 @@ void gpio_init(int sleepmode){
 	// Deactivate SPI Power switch -> detach 3.3V from epaper/LoRA/SD
 		pinMode(SPIPWREN, OUTPUT);
 		digitalWrite(SPIPWREN, HIGH); // enable SPI Power
+		pinMode(EPDGNDEN, OUTPUT);
+		digitalWrite(EPDGNDEN, LOW);  // enable EPD Ground low side switch
 
 	// Setup SPI BUS Control lines
 		pinMode(SPI_SCK, OUTPUT);
@@ -1013,7 +1016,11 @@ if(sleepmode == 1){
 
 	// Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
+	rtc_gpio_isolate(SPIPWREN);		// isolate internal PUP/PDN
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
+	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
+	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPF GND  // no RTC pin
+
 
 	// HX requires OUTPUT here to define data/clock line during sleep
 	//    pinMode(HX711_SCK, INPUT_PULLUP);
@@ -1043,7 +1050,8 @@ if(sleepmode == 1){
 	rtc_gpio_isolate(LEDRGB);		// + 10k PUP
 	//	gpio_hold_en(LEDRGB);
 
-    pinMode(LEDRED, INPUT); 		// finally pulled up by LED, No RTC GPIO
+    pinMode(LEDRED, OUTPUT); 		// finally pulled up by LED, No RTC GPIO
+	digitalWrite(LEDRED, HIGH);
 	gpio_hold_en(LEDRED);			// no RTC IO
 
 	// Keep BAT Charge control pin as it is

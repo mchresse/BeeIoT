@@ -113,8 +113,12 @@ if(!reentry){
 //    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
 //    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
 //    BHLOG(LOGEPD) display.update();
+
   }
+  // enter low power EPD mode:
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 }
+
 
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
   // EPD_KEY1 => (Deep-) Sleep Wakeup trigger
@@ -235,6 +239,8 @@ void showdata(void){
 		return;	// no EPD port -> no action
 	}
 
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
@@ -299,6 +305,9 @@ void showdata(void){
   display.setRotation(rotation); // restore
 
   EPDupdate=false;				// EPD update request completed -> reset flag
+
+  // enter EPD low power mode
+  digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowData()
 
 
@@ -310,6 +319,8 @@ void showbeacon(void){
 	if(isepd==0 || 	EPDupdate==false){
 		return;	// no EPD port -> no action
 	}
+
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
   uint8_t rotation = display.getRotation();
 
@@ -360,6 +371,9 @@ void showbeacon(void){
   display.setRotation(rotation); // restore
 
   EPDupdate=true;				// EPD update request completed -> reset flag
+
+  // enter EPD low power mode
+  digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowBeacon()
 
 
@@ -405,6 +419,7 @@ void drawBitmapFrom_SD_ToBuffer(const char *filename, int16_t x, int16_t y, bool
     BHLOG(LOGEPD) Serial.printf("  EPD: File <%s> not found\n", filename);
     return;
   }
+
   // Parse BMP header
   if (read16(file) == 0x4D42) // BMP signature
   {
@@ -529,6 +544,7 @@ void drawBitmapFrom_SD_ToBuffer(const char *filename, int16_t x, int16_t y, bool
     }
   }
   file.close();
+
   if (!valid){
       BHLOG(LOGEPD) Serial.println("  EPD: Bitmap format not Supported");
   }
@@ -556,8 +572,10 @@ void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_colo
 #else
 
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color){
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
   drawBitmapFrom_SD_ToBuffer(filename, x, y, with_color);
   display.update();
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 #endif
 
@@ -580,6 +598,8 @@ uint32_t read32(SdFile& f){
 }
 
 void showFont(const char name[], const GFXfont* f){
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
   display.fillScreen(GxEPD_WHITE);
   display.setTextColor(GxEPD_BLACK);
   display.setFont(f);
@@ -596,6 +616,8 @@ void showFont(const char name[], const GFXfont* f){
   display.println("`abcdefghijklmno");
   display.println("pqrstuvwxyz{|}~ ");
   display.update();
+
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 
 void showFontCallback()
@@ -630,6 +652,8 @@ void showPartialUpdate(float data){
   uint16_t box_h = 100;
   uint16_t cursor_y = box_y + 16;
 
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
 //  display.setRotation(45);
   display.setFont(f);
   display.setTextColor(GxEPD_BLACK);
@@ -639,6 +663,7 @@ void showPartialUpdate(float data){
   display.setCursor(box_x, cursor_y+38);
   display.print(dataString);
   display.updateWindow(box_x, box_y, box_w, box_h, true);
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 
 

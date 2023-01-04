@@ -150,6 +150,7 @@
 #define EPD_KEY3  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin33 (P13)
 #define EPD_KEY4  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin35 (P19)
 #define SPIPWREN  GPIO_NUM_5		// Enable EPD/LoRa/SD Power (=0 in Deep Sleep)
+#define EPDGNDEN  GPIO_NUM_37		// EPD ground low side switch -> Off=0
 
 // LoRa-Bee Board
 #define LoRa_MISO SPI_MISO	        // SPI MISO

@@ -112,6 +112,8 @@ int setup_spi(int reentry) {    // My SPI Constructor
 
     #ifdef EPD_CONFIG
 		BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");
+		digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
 		display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
 		// display class does not provide any feedback if device is available
 		// so we have to assume its there...
