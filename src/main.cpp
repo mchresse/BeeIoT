@@ -181,11 +181,12 @@ esp_sleep_wakeup_cause_t print_wakeup_reason();
 void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
-void gpio_init(void);
+void gpio_init(int sleepmode);
 void get_efuse_ident(void);
 void wiretest();
 void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
 void reset_RTCIO(void);
+void sleeplong(int timetosleep);
 
 extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
@@ -199,7 +200,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGHX;
+RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGHX+LOGLORAW;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -211,18 +212,18 @@ int rc;		// generic return code variable
   	BHLOG(LOGBH) Serial.begin(115200);   // enable Ser. Monitor Baud rate
 
   // init pinmode and level of all used GPIO lines
-	gpio_init();
+	gpio_init(ReEntry);
 
-	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
-	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
+//	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
+//	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
 
-	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
-	BHLOG(LOGBH) setRGB(255,0,0); // start with Red LED On -> Setup Phase
+//	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
+//	BHLOG(LOGBH) setRGB(255,0,0); // start with Red LED On -> Setup Phase
 //	BHLOG(LOGRGB) RGBtest();
 
 //***************************************************************
   //Print the wakeup reason for ESP32
-  	BHLOG(LOGBH) Serial.printf("Main: BootCnt: %i - ReportInterval %i\n", bootCount, report_interval);
+  	BHLOG(LOGBH) Serial.printf("Main: BootCnt: %i - ReportInterval %i\n", bhdb.loopid, report_interval);
 	rc = print_wakeup_reason();
 	if(rc != ESP_SLEEP_WAKEUP_UNDEFINED){ // DeepSleep WakeUp Reason
       //  		BHLOG(LOGBH)Serial.printf("Main: DeepSleep Wakup (%i)\n", rc);
@@ -249,6 +250,10 @@ int rc;		// generic return code variable
 
   	BHLOG(LOGBH) LEDpulse(1);
 
+//	prepare_sleep_mode(1, (uint32_t) 10); // intervall in seconds
+
+//	sleeplong(10);
+
 //***************************************************************
 // Print welcome text
 // +2ms
@@ -261,6 +266,7 @@ int rc;		// generic return code variable
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 		}
+
 
 		//***************************************************************
 		// get bhdb.BoardID (=WiFI MAC), .ChipID and .ChipREV from eFuse area
@@ -732,8 +738,8 @@ esp_err_t rc;
 
   	BHLOG(LOGRGB) setRGB(0,0,255);  // show start of delay loop
 
-	// BHLOG(LOGBH) Serial.printf("  Main-Dly2: Light Sleep - Trigger: Timer(%i ms) + GPIO%d(blue Key4)\n", waittime, EPD_KEY4);
-	gpio_wakeup_enable(EPD_KEY4, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
+	// BHLOG(LOGBH) Serial.printf("  Main-Dly2: Light Sleep - Trigger: Timer(%i ms) + GPIO%d(blue Key4)\n", waittime, EPD_KEY1);
+	gpio_wakeup_enable(EPD_KEY1, GPIO_INTR_LOW_LEVEL);	// set GPIO35 (blue key4 button) as trigger in low level
 	esp_sleep_enable_gpio_wakeup();
 
 	// Configure the wake up timer source
@@ -825,95 +831,108 @@ int cnum;
 /// @brief gpio_init()
 /// Initialize pinmode and level for all used GPIO lines
 ///
-/// @param sleepmode	wakeup mode
+/// @param sleepmode	wakeup mode: 1= deep sleep, 2=light sleep
 /// @details 1 DeepSleep Mode; 2 LightSleep Mode; 3 ModemSleep; 4 Active wait loop
 /// @return void
 //*******************************************************************
-void gpio_init(void){
+void gpio_init(int sleepmode){
 
-// FOr test purpose: set LED / RGB-LED ports
-	pinMode(LEDRGB, OUTPUT);
-	pinMode(LEDRED, OUTPUT);
-	digitalWrite(LEDRGB, HIGH); // signal Setup Phase
-	digitalWrite(LEDRED, HIGH); // signal Setup Phase
-	gpio_hold_dis(LEDRGB);
-	gpio_hold_dis(LEDRED);
+//	if(sleepmode==1)
+	{		// Deep sleep
+	//	rtc_gpio_deinit(EPD_KEY1);
+
+		gpio_hold_dis(SPIPWREN);
+		gpio_hold_dis(LEDRGB);
+		gpio_hold_dis(LEDRED);		// No RTC
+
+		gpio_hold_dis(SD_CS);   	// enable SD_CS
+		gpio_hold_dis(EPD_CS);   	// enable EPD_CS
+		gpio_hold_dis(LoRa_CS);  	// enable LoRa_CS
+		gpio_hold_dis(SPI_SCK);
+		gpio_hold_dis(SPI_MOSI);
+		gpio_hold_dis(SPI_MISO);
+
+		gpio_hold_dis(LoRa_DIO0);	// no RTC
+		//	gpio_hold_dis(LoRa_RST);	// NC
+
+		gpio_hold_dis(EPD_BUSY);	// no RTC
+		gpio_hold_dis(EPD_DC);		// no RTC
+		gpio_hold_dis(EPD_RST);
+
+		gpio_hold_dis(I2C_SCL);
+		gpio_hold_dis(I2C_SDA);
+
+		gpio_hold_dis(HX711_SCK);  		// HX711 SCK		// no RTC pin
+		gpio_hold_dis(HX711_DT);   		// HX711 Data		// no RTC pin
+
+		gpio_hold_dis(ONE_WIRE_BUS);
+
+		gpio_hold_dis(EPD_KEY1);
+		gpio_hold_dis(EPD_KEY2);
+		//    gpio_hold_dis(EPD_KEY3);
+		//    gpio_hold_dis(EPD_KEY4);
+
+	    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
+
+	// For test purpose: set LED / RGB-LED ports
+		pinMode(LEDRGB, OUTPUT);
+		pinMode(LEDRED, OUTPUT);
+		digitalWrite(LEDRGB, HIGH); // signal Setup Phase
+		digitalWrite(LEDRED, HIGH); // signal Setup Phase
 
 
-// First disabe all SPI devices CS line to avoid collisions
-	pinMode(EPD_CS, OUTPUT);    // SPI-CS for ePaper EPD
-    pinMode(SD_CS,  OUTPUT);    // SPI-CS for SDCard Port
-    pinMode(LoRa_CS, OUTPUT);	// SPI-CS for LoRa Port
-    digitalWrite(EPD_CS, HIGH);
-    digitalWrite(SD_CS, HIGH);
-    digitalWrite(LoRa_CS, HIGH);
-    gpio_hold_dis(SD_CS);   	// enable SD_CS
-    gpio_hold_dis(EPD_CS);   	// enable EPD_CS
-    gpio_hold_dis(LoRa_CS);  	// enable BEE_CS
+	// First disabe all SPI devices CS line to avoid collisions
+		pinMode(EPD_CS, OUTPUT);    // SPI-CS for ePaper EPD
+		pinMode(SD_CS,  OUTPUT);    // SPI-CS for SDCard Port
+		pinMode(LoRa_CS, OUTPUT);	// SPI-CS for LoRa Port
+		digitalWrite(EPD_CS, HIGH);
+		digitalWrite(SD_CS, HIGH);
+		digitalWrite(LoRa_CS, HIGH);
 
-// Deactivate SPI Power switch -> detach 3.3V from epaper/LoRA/SD
-	pinMode(SPIPWREN, OUTPUT);
-	digitalWrite(SPIPWREN, LOW); // disable SPI Power
-    gpio_hold_dis(SPIPWREN);
+	// Deactivate SPI Power switch -> detach 3.3V from epaper/LoRA/SD
+		pinMode(SPIPWREN, OUTPUT);
+		digitalWrite(SPIPWREN, HIGH); // enable SPI Power
 
-// Setup SPI BUS Control lines
-    pinMode(SPI_SCK, OUTPUT);
-    pinMode(SPI_MOSI, OUTPUT);
-    pinMode(SPI_MISO, INPUT);
-    digitalWrite(SPI_SCK, HIGH);
-    digitalWrite(SPI_MOSI, HIGH);
-	gpio_hold_dis(SPI_SCK);
-	gpio_hold_dis(SPI_MOSI);
-	gpio_hold_dis(SPI_MISO);
+	// Setup SPI BUS Control lines
+		pinMode(SPI_SCK, OUTPUT);
+		pinMode(SPI_MOSI, OUTPUT);
+		pinMode(SPI_MISO, INPUT);
+		digitalWrite(SPI_SCK, HIGH);
+		digitalWrite(SPI_MOSI, HIGH);
 
-// Preset LoRa Module Control lines
-    pinMode(LoRa_DIO0, INPUT);
-    pinMode(LoRa_RST, OUTPUT);
-	digitalWrite(LoRa_RST, HIGH);
-    gpio_hold_dis(LoRa_DIO0);
-	gpio_hold_dis(LoRa_RST);
+	// Preset LoRa Module Control lines
+		pinMode(LoRa_DIO0, INPUT);
+		//    pinMode(LoRa_RST, OUTPUT);	// NC
+		//	  digitalWrite(LoRa_RST, HIGH);	// NC
 
-// Preset SPI dev: EPD Display Module
-    pinMode(EPD_BUSY, INPUT);
-    pinMode(EPD_DC, OUTPUT);
-    pinMode(EPD_RST, OUTPUT);
-    digitalWrite(EPD_DC, HIGH);
-    digitalWrite(EPD_RST, HIGH);
-    gpio_hold_dis(EPD_BUSY);
-    gpio_hold_dis(EPD_DC);
-    gpio_hold_dis(EPD_RST);
+	// Preset SPI dev: EPD Display Module
+		pinMode(EPD_BUSY, INPUT);
+		pinMode(EPD_DC, OUTPUT);
+		pinMode(EPD_RST, OUTPUT);
+		digitalWrite(EPD_DC, HIGH);
+		digitalWrite(EPD_RST, HIGH);
 
-// Panel Key 1-4
-	pinMode(EPD_KEY1, INPUT);
-	pinMode(EPD_KEY2, INPUT);
-//	pinMode(EPD_KEY3, INPUT);	// NC
-//	pinMode(EPD_KEY4, INPUT);	// NC
-    gpio_hold_dis(EPD_KEY1);
-    gpio_hold_dis(EPD_KEY2);
-//    gpio_hold_dis(EPD_KEY3);
-//    gpio_hold_dis(EPD_KEY4);
+	// Panel Key 1-4
+		pinMode(EPD_KEY1, INPUT);	// +ext. Pullup
+		pinMode(EPD_KEY2, INPUT);
+	//	pinMode(EPD_KEY3, INPUT);	// NC
+	//	pinMode(EPD_KEY4, INPUT);	// NC
 
-// Preset I2C Master Port
-	pinMode(I2C_SCL, OUTPUT);		// I2C Bus Clock line
-	pinMode(I2C_SDA, INPUT);		// I2C Data line start with defensive input
-    digitalWrite(I2C_SCL, HIGH);	// define default level
-	gpio_hold_dis(I2C_SCL);
-	gpio_hold_dis(I2C_SDA);
+	// Preset I2C Master Port
+		pinMode(I2C_SCL, OUTPUT);		// I2C Bus Clock line
+		pinMode(I2C_SDA, INPUT);		// I2C Data line start with defensive input
+		digitalWrite(I2C_SCL, HIGH);	// define default level
 
-// HX requires OUTPUT here to define data/clock line during sleep
-//    pinMode(HX711_SCK, OUTPUT);
-//    pinMode(HX711_DT, INPUT);		// Data port starts with defensive Input state
-//	digitalWrite(HX711_SCK, HIGH);
-    gpio_hold_dis(HX711_SCK);  		// HX711 SCK		// no RTC pin
-    gpio_hold_dis(HX711_DT);   		// HX711 Data		// no RTC pin
+	// HX requires OUTPUT here to define data/clock line during sleep
+	//    pinMode(HX711_SCK, OUTPUT);
+	//    pinMode(HX711_DT, INPUT);		// Data port starts with defensive Input state
+	//	digitalWrite(HX711_SCK, HIGH);
 
-// Set OneWire line to Master port
-    pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> Start with defensive Input
-	gpio_hold_dis(ONE_WIRE_BUS);
+	// Set OneWire line to Master port
+		pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> Start with defensive Input
 
-// BATCHARGEPIN fully controlled by bat_control()
-
-    gpio_deep_sleep_hold_dis();	// Disables all DeepSleep Hold function
+	// BATCHARGEPIN fully controlled by bat_control()
+	}
 }
 
 
@@ -928,12 +947,13 @@ void gpio_init(void){
 /// @return void
 //*******************************************************************
 void biot_ioshutdown(int sleepmode){
- if(sleepmode == 1){    // in deep sleep we have to stabilize CS+RST lines of SPI devices
+
     BHLOG(LOGSPI) Serial.println("  MAIN: shutdown sensor devices");
 
   	BHLOG(LOGBH) setRGB(0,0,0);	// SHow blink of SHutdown start by Blue LED
 
-// Shutdown all SPI devices
+if(sleepmode == 1){
+	// Shutdown all SPI devices
 
 #ifdef SD_CONFIG
     if(issdcard){
@@ -958,74 +978,83 @@ void biot_ioshutdown(int sleepmode){
 
 	SPI2.end();		// Detach all SPI Bus pins
 
-// keep stable state in Deep sleep for all SPI-CS lines
-//    gpio_hold_en(SD_CS);
-//    gpio_hold_en(LoRa_CS);
-//	gpio_hold_en(EPD_CS);
+	// in deep sleep we have to stabilize CS+RST lines of SPI devices
+	// keep stable state in Deep sleep for all SPI-CS lines
+	digitalWrite(SD_CS, HIGH);
+	digitalWrite(LoRa_CS, HIGH);
+	digitalWrite(EPD_CS, HIGH);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
 	rtc_gpio_isolate(EPD_CS);
+	gpio_hold_en(SD_CS);
+	gpio_hold_en(LoRa_CS);
+	gpio_hold_en(EPD_CS);
 
-// SPI Bus shutdown: EPD + LORA + SD
+	// SPI Bus shutdown: EPD + LORA + SD
     pinMode(SPI_MISO, INPUT);
     pinMode(SPI_MOSI, INPUT);
     pinMode(SPI_SCK,  INPUT);
-//	gpio_hold_en(SPI_MISO);
-//	gpio_hold_en(SPI_MOSI);
-//	gpio_hold_en(SPI_SCK);
 	rtc_gpio_isolate(SPI_MISO);
 	rtc_gpio_isolate(SPI_MOSI);
 	rtc_gpio_isolate(SPI_SCK);
+	gpio_hold_en(SPI_MISO);
+	gpio_hold_en(SPI_MOSI);
+	gpio_hold_en(SPI_SCK);
+
 
 	pinMode(EPD_BUSY, INPUT);		// already output by EPD -> so ESP-Input by default
 	pinMode(EPD_RST, INPUT);
 	pinMode(EPD_DC,  INPUT);
-//	gpio_hold_en(EPD_BUSY);
-//	gpio_hold_en(EPD_RST);
-//	gpio_hold_en(EPD_DC);
 	rtc_gpio_isolate(EPD_BUSY);
 	rtc_gpio_isolate(EPD_RST);
-	gpio_hold_en(EPD_DC);	// no RTC pin
+	gpio_hold_en(EPD_BUSY);
+	gpio_hold_en(EPD_RST);
+	gpio_hold_en(EPD_DC);			// no RTC pin
 
+	// Switch off SPI power switch of SPI device back to LOW
+    digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
+	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
 
-// HX requires OUTPUT here to define data/clock line during sleep
-    pinMode(HX711_SCK, INPUT_PULLUP);
-    pinMode(HX711_DT, INPUT_PULLUP);
-    gpio_hold_en(HX711_SCK);  		// HX711 SCK		// no RTC pin
-    gpio_hold_en(HX711_DT);   		// HX711 Data		// no RTC pin
+	// HX requires OUTPUT here to define data/clock line during sleep
+	//    pinMode(HX711_SCK, INPUT_PULLUP);
+	//    pinMode(HX711_DT, INPUT_PULLUP);
+	digitalWrite(HX711_SCK,HIGH);
+	digitalWrite(HX711_DT,HIGH);
+	gpio_hold_en(HX711_SCK);  		// HX711 SCK		// no RTC pin
+	gpio_hold_en(HX711_DT);   		// HX711 Data		// no RTC pin
 
-
-//	i2c_driver_delete(i2c_master_port);
+	//	i2c_driver_delete(i2c_master_port);
     // Set all I2C lines to high impedance -> open collector bus
     pinMode(I2C_SCL, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
     pinMode(I2C_SDA, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
-//    gpio_hold_en(I2C_SCL);    		// ADS_SCL
-//    gpio_hold_en(I2C_SDA);    		// ADS_SDA
-    rtc_gpio_isolate(I2C_SCL);    		// ADS_SCL
-    rtc_gpio_isolate(I2C_SDA);    		// ADS_SDA
+	rtc_gpio_isolate(I2C_SCL);    	// ADS_SCL
+	rtc_gpio_isolate(I2C_SDA);    	// ADS_SDA
+	gpio_hold_en(I2C_SCL);    		// ADS_SCL
+	gpio_hold_en(I2C_SDA);    		// ADS_SDA
 
-// Set OW line to high impedance -> open collector bus
+	// Set OW line to high impedance -> open collector bus
     pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
-//  gpio_hold_en(ONE_WIRE_BUS); 	// OneWire Bus line
-    rtc_gpio_isolate(ONE_WIRE_BUS); 	// OneWire Bus line
+	//  gpio_hold_en(ONE_WIRE_BUS); // OneWire Bus line
+	rtc_gpio_isolate(ONE_WIRE_BUS); // OneWire Bus line
+	gpio_hold_en(ONE_WIRE_BUS);
 
-  	BHLOG(LOGBH) setRGB(0,0,0);		// Stop blink of SHutdown phase by Blue LED
+	// LEDRGB has already internal 10k pullup
     pinMode(LEDRGB, INPUT);
-	rtc_gpio_isolate(LEDRGB);		// RTC GPIO
+	rtc_gpio_isolate(LEDRGB);		// + 10k PUP
+	//	gpio_hold_en(LEDRGB);
 
-	LEDOff();
     pinMode(LEDRED, INPUT); 		// finally pulled up by LED, No RTC GPIO
-
-// Switch off SPI power switch of SPI device back to LOW
-    digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
-    gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
+	gpio_hold_en(LEDRED);			// no RTC IO
 
 	// Keep BAT Charge control pin as it is
-    gpio_hold_en(BATCHARGEPIN);
+	gpio_hold_en(BATCHARGEPIN);
 
+	}else if(sleepmode == 2){
 
-  } // end of sleepmode
+	} // end of sleepmode 2
+
 } // biot_ioshutdown()
+
 
 
 //***********************************************************************
@@ -1040,10 +1069,10 @@ void biot_ioshutdown(int sleepmode){
 void prepare_sleep_mode(int mode, uint64_t waittime){
 esp_err_t  rc;
 
+	biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
 
 	switch(mode){
 		case 1:		// DeepSleepMode
-			biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
 
 			// Next we decide what all peripherals to shut down/keep on.
 			//	By default, ESP32 will automatically power down the peripherals
@@ -1054,24 +1083,24 @@ esp_err_t  rc;
       		//	BHLOG(LOGBH) Serial.println("  Main: Configure all RTC Peripherals to be powered");
     		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
       		// Otherwise power it down.
-    		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-			gpio_pullup_en(EPD_KEY1);                  // use RTC_IO pullup on GPIO-Key1
-    		gpio_pulldown_dis(EPD_KEY1);               // not use pulldown on GPIO-Key1
+	   		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
+
 			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY1, 0);	// select Key1 (blue button) as Wakup Trigger on low level
     		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key1)\n", (uint32_t)waittime, EPD_KEY1);
 			if(rc != ESP_OK){
 				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep wakeup setup failed: %i\n", rc);
-			}else{
-				//	delay(initdelay); 					// set gracetime for timer activation
 			}
 
     		gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
-    		// reactivation after deep sleep in setup_spi_VSPI() -> gpio_hold_dis() needed
+    		// reactivation after deep sleep in setup_multiSPI() -> gpio_hold_dis() needed
 
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but
 			// deep sleep was started, it will sleep forever unless hardware reset occurs.
-			esp_deep_sleep((uint64_t) waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
+
+//			esp_deep_sleep((uint64_t) waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
+			esp_sleep_enable_timer_wakeup((uint64_t) waittime * uS_TO_S_FACTOR);
+			esp_deep_sleep_start();
 
 			BHLOG(LOGBH) Serial.println("  Main: This should never be printed");	// restart with setup() instead
 			break;

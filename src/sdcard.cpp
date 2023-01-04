@@ -106,10 +106,10 @@ int sd_get_dir(uint8_t dlevel, uint8_t p2, uint8_t p3, char * dirline) {
 		// void listDir    (fs::FS &fs, const char * dirname, uint8_t levels);
 		listDir(SD, "/", (uint8_t) dlevel, dirline);
 		return(0);
-	}else{
-		return(-1);
 	}
 #endif //SD_CONFIG
+
+	return(-1);
 }
 
 //*******************************************************************
