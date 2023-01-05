@@ -200,7 +200,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags=LOGBH+LOGSD+LOGHX+LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags=LOGBH + LOGOW + LOGHX + LOGSD;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -354,7 +354,7 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("         No OneWire devices found");
     // enter exit code here, if needed
   }else{
-    // GetOWsensor(0); // read temperature the first time
+     GetOWsensor(); // read temperature the first time
   }
   BHLOG(LOGBH) LEDpulse(1);
 
@@ -490,7 +490,7 @@ float weight =0;
 	int retry=0;
 	// Get all temp values directly into bhdb.dlog[]
 	do{
-		owsensors = GetOWsensor(bhdb.loopid);
+		owsensors = GetOWsensor();
     	if(owsensors >= OW_MAXDEV){	// min expected # of sensor data found ?
 		    // check if value of last of all 3 sensors is in range
 		    if(	(bhdb.dlog.TempIntern > -98) &

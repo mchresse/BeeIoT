@@ -185,9 +185,9 @@ int printAddress(DeviceAddress deviceAddress)
 //										= -99C -> device not scanned
 //										= -98C -> scanned nbut disconnected
 //*******************************************************************
-int GetOWsensor(int dbidx){
-	if(owdata.numdev < OW_MAXDEV)	// no OW devices detected, nothing to do
-		return(0);
+int GetOWsensor(void){
+//	if(owdata.numdev < OW_MAXDEV)	// no sufficient number of OW devices detected
+//		return(0);					// OWBus broken
 
 #ifdef ONEWIRE_CONFIG
 	float value;	// temperature value for evaluation
@@ -209,9 +209,9 @@ int GetOWsensor(int dbidx){
 		value = -99.0;	// device not scanned before
 	}
 	bhdb.dlog.TempIntern = value;		// save result to BHDB
-	BHLOG(LOGOW) Serial.printf("  OWBus: Int.Temp.Sensor (°C): %.2f\n", value);
+	BHLOG(LOGOW) Serial.printf("  OWBus[%d]: Int.Temp.Sensor (°C): %.2f\n", TEMP_Int, value);
 
-	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
+	if((owdata.dev[TEMP_Ext].type >= 0) & (owdata.numdev > TEMP_Ext)){
 	  	value = OWsensors.getTempC(owdata.dev[TEMP_Ext].sid);
 		if((value == 85.0) || (value == DEVICE_DISCONNECTED_C)){	// error occured with reading
 			value = -98.0; // device scanned but disconnected
@@ -222,9 +222,9 @@ int GetOWsensor(int dbidx){
 		value = -99.0;	// device not scanned before
 	}
 	bhdb.dlog.TempExtern = value;		// save result to BHDB
-	BHLOG(LOGOW) Serial.printf("  OWBus: Ext.Temp.Sensor (°C): %.2f\n", value);
+	BHLOG(LOGOW) Serial.printf("  OWBus[%d]: Ext.Temp.Sensor (°C): %.2f\n", TEMP_Ext,value);
 
-	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
+	if((owdata.dev[TEMP_BH].type >= 0) & (owdata.numdev > TEMP_BH)){
 	  	value = OWsensors.getTempC(owdata.dev[TEMP_BH].sid);
 		if((value == 85.0) || (value == DEVICE_DISCONNECTED_C)){	// error occured with reading
 			value = -98.0; // device scanned but disconnected
@@ -235,7 +235,7 @@ int GetOWsensor(int dbidx){
 		value = -99.0;	// device not scanned before
 	}
 	bhdb.dlog.TempHive = value;		// save result to BHDB
-	BHLOG(LOGOW) Serial.printf("  OWBus: HiveTemp.Sensor (°C): %.2f\n", value);
+	BHLOG(LOGOW) Serial.printf("  OWBus[%d]: HiveTemp.Sensor (°C): %.2f\n", TEMP_BH, value);
 
 #endif // ONEWIRE_CONFIG
 

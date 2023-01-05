@@ -69,25 +69,30 @@
 // #include <stdint.h>
 
 //*******************************************************************
-// Device configuration Matrix field (default: all active)
-// 0 = active, uncomment = inactive
+// Device configuration Matrix
 //*******************************************************************
-// Define if ESP32 WROOM32, or WROVER-B is used
-// (Select only one define !)
-#define WROOM			// use of WROOM32 Chip type
-// #define BEACON			// Work in Beacon Mode only -> Send LoRa Beacon only.
+// Select RUnMode: Default: BIoT
+// Beacon Mode -> Send Beacon Message each 10 sec. + Transfer Quality Metric
+// #define BEACON		// Work in Beacon Mode only -> Send LoRa Beacon only.
 
-//#define DMSG		// Use Sensor data Format 1: ASCII stream
-#define DSENSOR2		// Use Sensor data Format 2: binary stream
-
-
-// Same EPD Definition may work for B/W and B/W/R displays if red is not used -> faster
+// EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
 //*******************************************************************
 
 // Specify workOn Modules of setup() and main loop()
-#ifdef BEACON
-// ESP32 WROOM in beacon Mode -> Frequent Lora Connect only
+#ifndef BEACON
+// HW Componnets for BIoT Mode (Default)
+#define HX711_CONFIG		// Weight Cell Bosche HX100
+#define ONEWIRE_CONFIG		// OW Temp. Sensors (3x)
+#define SD_CONFIG			// SD Card Logging
+#define EPD_CONFIG			// Display: ePaper Waveshare 2.7"
+#define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
+
+#define DSENSOR2			// Use Sensor data Format 2: binary stream (shorter)
+// #define DMSG				// Use Sensor data Format 1: ASCII stream (longer)
+
+#else
+// HW Componnets for LoRa in Beacon Mode
 #define EPD_CONFIG
 #define LORA_CONFIG
 #define SD_CONFIG	// for test purpose only (not needed for beacon mode)
@@ -97,15 +102,7 @@
 // SleepModes: =0 initial startup needed(after reset),
 // =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 #define BEACONSLEEP  1		// Beacon Sleep Mode: 1 = DeepSleep, 2= Light SLeep
-
-#else	// ESP32 WROOM BeeHive Mode (Default)
-#define HX711_CONFIG
-// #define ADS_CONFIG		// alternative: internal ESP32-ADC
-#define ONEWIRE_CONFIG
-#define SD_CONFIG
-#define EPD_CONFIG
-#define LORA_CONFIG
-#endif	// Beacon
+#endif	// if Beacon
 
 //*******************************************************************
 // Pin mapping when using SDCARD in SPI mode.
@@ -149,6 +146,7 @@
 #define EPD_KEY2  GPIO_NUM_3		// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin33 (P13)
 #define EPD_KEY4  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin35 (P19)
+
 #define SPIPWREN  GPIO_NUM_5		// Enable EPD/LoRa/SD Power (=0 in Deep Sleep)
 #define EPDGNDEN  GPIO_NUM_37		// EPD ground low side switch -> Off=0
 
@@ -294,7 +292,7 @@ int    	getTimeStamp(void);
 void	printLocalTime(void);
 
 // in owbus.cpp
-int 	GetOWsensor	(int sample);
+int 	GetOWsensor	(void);
 
 // in main.cpp
 void	Logdata     (void);
