@@ -74,7 +74,7 @@ int setup_owbus(int reentry) {
 //  int numberOfDevices = OWsensors.getDeviceCount();
 // 	BHLOG(LOGOW) Serial.printf("  OWBus: Lib Device count: %i\n", numberOfDevices);
 
-	OWsensors.setResolution(10);	// set 10Bit rsolution: +-0,25°C, 186ms conv.time
+	OWsensors.setResolution(TEMPRESOLUTION);		// set Sample Bit resolution
 	owdata.resolution = OWsensors.getResolution();	// save configured resolution
 
     // locate devices on the bus
@@ -137,6 +137,7 @@ int idx;
 int getDSType(byte DSType){
   // the first ROM byte indicates which chip
   int type_s=0;
+
   switch (DSType) { // analyse 1. Byte of devAddr
     case 0x10:
       BHLOG(LOGOW) Serial.print(" DS18S20");  // or old DS1820
@@ -152,7 +153,6 @@ int getDSType(byte DSType){
       break;
     default:
       BHLOG(LOGOW) Serial.print("No DS18x20 family device.");
-      return(type_s);
   }
   return(type_s);
 }
@@ -195,13 +195,15 @@ int GetOWsensor(void){
 
 	BHLOG(LOGOW) Serial.println("  OWBus: Requesting temperatures...");
 
-	OWsensors.requestTemperatures(); // Send the command to prepare temperatures (all at once)
+	// Send the command to prepare temperatures (all at once)
+	// inclusive wait time till conversion has finished: 9= 94ms, 10=188ms, 11=375ms, 12=750ms
+	OWsensors.requestTemperatures();
 
 	// check for a valid scanned device first
 	if((owdata.dev[TEMP_Int].type >= 0) & (owdata.numdev > TEMP_Int)){
   		value = OWsensors.getTempC(owdata.dev[TEMP_Int].sid);
 		if((value == 85.0) || (value == DEVICE_DISCONNECTED_C)){	// error occured with reading
-			value = -98.0; // device scanned but disconnected
+			value = -98.0; // reinterpret: device scanned but disconnected
 		}else{
 			datacount++;
 		}
@@ -214,7 +216,7 @@ int GetOWsensor(void){
 	if((owdata.dev[TEMP_Ext].type >= 0) & (owdata.numdev > TEMP_Ext)){
 	  	value = OWsensors.getTempC(owdata.dev[TEMP_Ext].sid);
 		if((value == 85.0) || (value == DEVICE_DISCONNECTED_C)){	// error occured with reading
-			value = -98.0; // device scanned but disconnected
+			value = -98.0; // reinterpret: device scanned but disconnected
 		}else{
 			datacount++;
 		}
@@ -227,7 +229,7 @@ int GetOWsensor(void){
 	if((owdata.dev[TEMP_BH].type >= 0) & (owdata.numdev > TEMP_BH)){
 	  	value = OWsensors.getTempC(owdata.dev[TEMP_BH].sid);
 		if((value == 85.0) || (value == DEVICE_DISCONNECTED_C)){	// error occured with reading
-			value = -98.0; // device scanned but disconnected
+			value = -98.0; // reinterpret: device scanned but disconnected
 		}else{
 			datacount++;
 		}
