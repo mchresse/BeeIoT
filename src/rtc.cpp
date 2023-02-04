@@ -69,17 +69,18 @@ int setup_rtc (int reentry) {
 	esp_err_t esprc;
 
 	// expect I2C master port was scanned once before -> isrtc set
-	if(!isi2c){	// I2C Master Port active + ADC detected ?
+	if(isi2c == 1){	// I2C Master Port active + ADC detected ?
 		// I2C should have been scanned by I2c_master_init() already
 		// if i2c problems occurs -> should have been reported there
-		if(isrtc!=RTC_ADDR){
+		if(isrtc != RTC_ADDR){
         	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
 			isrtc=0;
 			return(0);
     	}
 	}
-	// isrtc=1 -> RTC can be expected at RTC_ADDR
+	// RTC can be expected at RTC_ADDR
 	BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", isrtc);
+
 	// setup RTC Device config set
     i2crtc.port			= i2c_master_port;
     i2crtc.addr 		= isrtc;
@@ -87,14 +88,7 @@ int setup_rtc (int reentry) {
     i2crtc.scl_io_num	= I2C_SCL;
     i2crtc.clk_speed 	= I2C_FREQ_HZ;
 
-// For Wire-lib usage:
-//  if (! rtc.begin()) {
-//    Serial.println("  RTC: Couldn't find RTC device\n");
-//    return(isrtc);
-//  }
-//  rtc.writeSqwPinMode(DS3231_OFF);  // reset Square Pin Mode to 0Hz
-
-// For I2cdev-lib access test: Read RTC temperatur value
+// For I2cdev-lib access test: Read RTC temperature value
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
 		isrtc =0;		// RTC does not react anyhow
@@ -102,58 +96,13 @@ int setup_rtc (int reentry) {
 		return(0);
 	}
 
-	bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+	bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree
 	BHLOG(LOGADS)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
-  // if NTC based adjustment is needed use:  static void adjust(const DateTime& dt);
-  // or update by NTP: -> main() => ntp2rtc() automatically
-  // or update by JOIN-Cfg data from BIoT-GW time automatically
+  // Time update done always by JOIN-Cfg data from BIoT-GW time automatically
 
-//  if (rtc.lostPower()) {
-//    Serial.println("  RTC: lost power, check battery; lets set the time manually or by NTP !");
-    // following line sets the RTC to the date &amp; time this sketch was compiled
-//    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date &amp; time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-//    isrtc =0;  // power again but no valid time => lets hope for NTP update later on
-//  }
 	return(1);
-
 } // end of rtc_setup()
-
-//*******************************************************************
-// NTP2RTC(): Update RTC by NTP time
-//*******************************************************************
-int ntp2rtc() {
-struct tm tinfo;      // new time source: from NTP
-
-  // if no RTC nor NTP Time at all, we give up.
-  if(!isntp)   {
-    BHLOG(LOGLAN) Serial.println("  NTP2RTC(-1): No NTP Server detected ");
-    return(-1);       // is NTP server via Wifi active ?
-  }
-  if(!isrtc) {
-    BHLOG(LOGLAN) Serial.println("  NTP2RTC(-2): No RTC Module detected ");
-    return(-2);       // Need a valid RTC Module (even with powerloss status)
-  }
-  if(!getLocalTime(&tinfo)){ // get NTP server time
-    Serial.print("  NTP2RTC(-3): Failed to obtain NTP time -> ");
-    Serial.println("set time to build of sketch");
-
-    // if we want to set it manually:
-    // This line sets the RTC with an explicit date &amp; time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-    return(-3);       // no RTC nor NTP Time at all, we give up.
-  }
-
-    BHLOG(LOGLAN) Serial.println(&tinfo, "  NTP2RTC: by NTP-Time: %A, %B  %Y-%m-%dT%H:%M:%S");
-	ds3231_set_time(&i2crtc, &tinfo);
-
-
-  return(isrtc);
-} // end of ntp2rtc()
 
 
 //*******************************************************************
@@ -236,9 +185,9 @@ int getRTCtime(void){
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
         BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
-		bhdb.dlog[bhdb.loopid].TempRTC = -99;  // reset RTC module temperature fault
+		bhdb.dlog.TempRTC = -99;  // reset RTC module temperature fault
 	}else{
-		bhdb.dlog[bhdb.loopid].TempRTC = rtctemp;  // RTC module temperature in celsius degree
+		bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree
 		BHLOG(LOGLAN)  Serial.printf(" RTC-Temp.: %.2f °C\n", rtctemp);
 	}
   return 0;

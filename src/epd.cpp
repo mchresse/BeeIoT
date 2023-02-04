@@ -28,7 +28,7 @@
 #include "SD.h"
 #include "SPI.h"
 #include "sdcard.h"
-#include "wificfg.h"
+
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
@@ -56,7 +56,6 @@
 #include <version.h>
 #include <beeiot.h>
 #include <BeeIoTWan.h>
-#include <beelora.h>
 #include <beelora.h>
 
 //************************************
@@ -109,25 +108,29 @@ if(!reentry){
     display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
     display.update();    //refresh display by buffer content
 
-    BHLOG(LOGEPD) mydelay2(3000,0);
-    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
-    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
-    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
-    BHLOG(LOGEPD) display.update();
+//    BHLOG(LOGEPD) mydelay2(3000,0);
+//    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
+//    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
+//    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
+//    BHLOG(LOGEPD) display.update();
+
   }
+  // enter low power EPD mode:
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 }
 
+
   // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
-  // EPD_KEY1 => n.a.
-  // EPD_KEY2 => n.a.
-  // EPD_KEY3 => ?
-  // EPD_KEY4 => (Deep-) Sleep Wakeup trigger
+  // EPD_KEY1 => (Deep-) Sleep Wakeup trigger
+  // EPD_KEY2 => MCU_Reset (on EN)
+  // EPD_KEY3 => n.a.
+  // EPD_KEY4 => n.a.
 
 // Assign Key-IRQ to callback function
-//	SetonKey(1, onKey1);
+	SetonKey(1, onKey1);
 //	SetonKey(2, onKey2);
 //	SetonKey(3, onKey3);
-	SetonKey(4, onKey4);
+//	SetonKey(4, onKey4);
 #endif
 
   return isepd;
@@ -155,11 +158,10 @@ int SetonKey(int key, void(*callback)(void)){
 	switch (key){
 	case 1: 			// EPD_KEY 1
 		if(callback){
-//			pinMode(EPD_KEY1, INPUT);
-//  	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 undefined for V3.0 board");
+    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 ISR assigned");
 		}else{
-//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
+	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
 		}
 		return(-2);
 		break;
@@ -177,7 +179,7 @@ int SetonKey(int key, void(*callback)(void)){
 		if(callback){
 //			pinMode(EPD_KEY3, INPUT);
 //	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 with undefined usage");
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V3.0 board");
 		}else{
 //	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY3));
 		}
@@ -185,11 +187,11 @@ int SetonKey(int key, void(*callback)(void)){
 		break;
 	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
 		if(callback){
-			pinMode(EPD_KEY4, INPUT);
-    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 ISR assigned");
+//			pinMode(EPD_KEY4, INPUT);
+//    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 undefined for V3.0 board");
 		}else{
-	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
 		}
 		break;
 	default:
@@ -204,6 +206,7 @@ int SetonKey(int key, void(*callback)(void)){
 // onKeyx() ISR of EPD-Keyx	-> Yellow Button
 void onKey1(void){
 	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;	// EPD update requested
 }
 //*************************************************************************
@@ -222,7 +225,6 @@ void onKey3(void){
 // onKeyx() ISR of EPD-Keyx	-> Blue button
 void onKey4(void){
 	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
- 	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;	// EPD update requested
 }
 
@@ -230,12 +232,14 @@ void onKey4(void){
 
 // show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset of BHDB
-void showdata(int sampleID){
+void showdata(void){
 
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){
 		return;	// no EPD port -> no action
 	}
+
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
   uint8_t rotation = display.getRotation();
 
@@ -248,7 +252,7 @@ void showdata(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, (bhdb.laps*datasetsize) + sampleID, bhdb.chcfgid);
+  display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -264,25 +268,25 @@ void showdata(int sampleID){
   display.drawRect(5, 9+12+9+12, GxEPD_HEIGHT-(2*5), GxEPD_WIDTH - (9+12+9+12 + 9+9+9+9), GxEPD_BLACK);
 
   display.print(" Gewicht:  ");
-  display.println(String(bhdb.dlog[sampleID].HiveWeight,3));
+  display.println(String(bhdb.dlog.HiveWeight,3));
 
   display.print(" Temp.Beute: ");
-  display.println(String(bhdb.dlog[sampleID].TempHive,2));
+  display.println(String(bhdb.dlog.TempHive,2));
 
   display.print(" TempExtern: ");
-  display.println(String(bhdb.dlog[sampleID].TempExtern,2));
+  display.println(String(bhdb.dlog.TempExtern,2));
 
   display.print(" TempIntern: ");
-  display.println(String(bhdb.dlog[sampleID].TempIntern,2));
+  display.println(String(bhdb.dlog.TempIntern,2));
 
 // display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
   display.print("Batt[V]: ");
-  display.print(String((float)bhdb.dlog[sampleID].BattLoad/1000,2));
+  display.print(String((float)bhdb.dlog.BattLoad/1000,2));
   display.print("(");
-  display.print(String(bhdb.dlog[sampleID].BattLevel));
+  display.print(String(bhdb.dlog.BattLevel));
   display.print("%)<");
-  display.print(String((float)bhdb.dlog[sampleID].BattCharge/1000,2));
+  display.print(String((float)bhdb.dlog.BattCharge/1000,2));
   display.println();
 
 //  display.setTextColor(GxEPD_BLACK);
@@ -294,12 +298,6 @@ void showdata(int sampleID){
   		display.print(beeiot_StatusString[BeeIoTStatus]);
 	}
 
-//  display.setTextColor(GxEPD_RED);
-//  display.print(HOSTNAME);
-//  display.print("  (");
-//  display.print(bhdb.ipaddr);
-//  display.print(")");
-
 //  display.setTextColor(GxEPD_BLACK);
 //  display.writeFastHLine(0, 16, 2, 0xFF); // does not work
 
@@ -307,15 +305,23 @@ void showdata(int sampleID){
   display.setRotation(rotation); // restore
 
   EPDupdate=false;				// EPD update request completed -> reset flag
+
+  // enter EPD low power mode
+  digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowData()
 
 
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
-void showbeacon(int sampleID){
-	if(isepd==0){
-		return;	// no EPD port no action
+void showbeacon(void){
+
+	// No EPD panel connected or no Update request pending
+	if(isepd==0 || 	EPDupdate==false){
+		return;	// no EPD port -> no action
 	}
+
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
   uint8_t rotation = display.getRotation();
 
   display.fillScreen(GxEPD_WHITE);
@@ -327,7 +333,7 @@ void showbeacon(int sampleID){
   display.println();          // adjust cursor to lower left corner of char row
 
   display.setFont(&FreeMonoBold12pt7b);
-  display.printf("BeeIoT.v2   #%i", (bhdb.laps*datasetsize) + sampleID);
+  display.printf("BeeIoT.v2   #%i", bhdb.loopid);
 
   display.setFont(&FreeMonoBold9pt7b);
   display.println();
@@ -363,6 +369,11 @@ void showbeacon(int sampleID){
 
   display.update();				// WakeUp -> update display -> BusyWait -> Sleep
   display.setRotation(rotation); // restore
+
+  EPDupdate=true;				// EPD update request completed -> reset flag
+
+  // enter EPD low power mode
+  digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowBeacon()
 
 
@@ -408,6 +419,7 @@ void drawBitmapFrom_SD_ToBuffer(const char *filename, int16_t x, int16_t y, bool
     BHLOG(LOGEPD) Serial.printf("  EPD: File <%s> not found\n", filename);
     return;
   }
+
   // Parse BMP header
   if (read16(file) == 0x4D42) // BMP signature
   {
@@ -532,6 +544,7 @@ void drawBitmapFrom_SD_ToBuffer(const char *filename, int16_t x, int16_t y, bool
     }
   }
   file.close();
+
   if (!valid){
       BHLOG(LOGEPD) Serial.println("  EPD: Bitmap format not Supported");
   }
@@ -559,8 +572,10 @@ void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_colo
 #else
 
 void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color){
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
   drawBitmapFrom_SD_ToBuffer(filename, x, y, with_color);
   display.update();
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 #endif
 
@@ -583,6 +598,8 @@ uint32_t read32(SdFile& f){
 }
 
 void showFont(const char name[], const GFXfont* f){
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
   display.fillScreen(GxEPD_WHITE);
   display.setTextColor(GxEPD_BLACK);
   display.setFont(f);
@@ -599,6 +616,8 @@ void showFont(const char name[], const GFXfont* f){
   display.println("`abcdefghijklmno");
   display.println("pqrstuvwxyz{|}~ ");
   display.update();
+
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 
 void showFontCallback()
@@ -633,6 +652,8 @@ void showPartialUpdate(float data){
   uint16_t box_h = 100;
   uint16_t cursor_y = box_y + 16;
 
+  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
 //  display.setRotation(45);
   display.setFont(f);
   display.setTextColor(GxEPD_BLACK);
@@ -642,6 +663,7 @@ void showPartialUpdate(float data){
   display.setCursor(box_x, cursor_y+38);
   display.print(dataString);
   display.updateWindow(box_x, box_y, box_w, box_h, true);
+  digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
 }
 
 

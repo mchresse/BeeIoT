@@ -13,14 +13,6 @@
 // limitations under the License.
 
 
-#define ADC1_IN3  39 // GPIO 39 is Now AN Input 1 ADC1-channel 3
-#define ADC1_IN0  36 // GPIO 36 is Now AN Input 2 ADC1-channel 0
-#define ADC1_IN6  34 // GPIO 34 is Now AN Input 3 ADC1-channel 6
-#define ADC1_IN7  35 // GPIO 35 is Now AN Input 4 ADC1-channel 7
-#define ADC1_IN4  32 // GPIO 32 is Now AN Input 5 ADC1-channel 4
-#define ADC1_IN5  33 // GPIO 33 is Now AN Input 6 ADC1-channel 5
-#define ADC2_IN7  27 // GPIO 27 is Now AN Input 7 ADC2-channel 7
-
 // ESP ADC Level Comepnsation (rewired for  Vin range between 0..2,8V)
 // (by now not used)
 #define ADC_BaseComp  0		// Corr. Start level of samples
@@ -29,7 +21,7 @@
 #define ADC_MaxVal	 3100	// ADC Sample 4096 = 3,100V
 
 // assign analog ADC pin to BeeIot board
-#define	Battery_pin  ADC1_IN3
-#define	Charge_pin   ADC1_IN0
+#define	Battery_pin  ADC_VBATT
+#define	Charge_pin   ADC_VCHARGE
 
 uint32_t getespadc(int pin);

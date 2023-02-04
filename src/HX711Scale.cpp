@@ -53,11 +53,9 @@ float	scale_offs;
 
 // HX711 constructor:
 	BHLOG(LOGHX) Serial.println("  HX711: init Weight cell ADC port");
-	gpio_hold_dis(HX711_SCK);             // enable HX711_SCK for Dig.-IO
-	gpio_hold_dis(HX711_DT);              // enable HX711_DT for Dig.-IO
 
-	// Actiovate Scale ADC IO Port
-	scale.begin(HX711_DT, HX711_SCK,128);// declare GPIO pin connection + gain factor: A128
+	// Activate Scale ADC IO Port
+	scale.begin(HX711_DT, HX711_SCK, 128);// declare GPIO pin connection + gain factor: A128
 
 	if(scale.wait_ready_timeout() == false){
 		isscale=0;
@@ -79,6 +77,7 @@ float	scale_offs;
 	BHLOG(LOGHX) Serial.println(" per kg");
 
 	scale.power_down();
+
 	isscale=1;
 	#endif // HX711_CONFIG
 

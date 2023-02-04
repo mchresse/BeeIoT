@@ -97,10 +97,10 @@ void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size ){
 void LoRaMacComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t address,
                         uint8_t dir, uint32_t sequenceCounter, uint32_t *mic )
 {
-    BHLOG(LOGLORAW) Serial.printf("  LoRaMacComputeMic: buf=0x%02X%02X%02X%02X..., size=%i",
-        buffer[0], buffer[1], buffer[2], buffer[3], size);
-    BHLOG(LOGLORAW) Serial.printf(", key=0x%02X%02X%02X%02X..., address=0x%X\n", key[0],key[1],key[2],key[3], address);
-    BHLOG(LOGLORAW) Serial.printf("  LoRaMacComputeMic: dir=%i, SCnt=0x%02X\n", dir, sequenceCounter);
+//    Serial.printf("  LoRaMacComputeMic: buf=0x%02X%02X%02X%02X..., size=%i",
+//        buffer[0], buffer[1], buffer[2], buffer[3], size);
+//    Serial.printf(", key=0x%02X%02X%02X%02X..., address=0x%X\n", key[0],key[1],key[2],key[3], address);
+//     Serial.printf("  LoRaMacComputeMic: dir=%i, SCnt=0x%02X\n", dir, sequenceCounter);
 
 
     MicBlockB0[5] = dir;
@@ -128,8 +128,7 @@ void LoRaMacComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key
     AES_CMAC_Final( Mic, AesCmacCtx );
 
     *mic = ( uint32_t )( ( uint32_t )Mic[3] << 24 | ( uint32_t )Mic[2] << 16 | ( uint32_t )Mic[1] << 8 | ( uint32_t )Mic[0] );
-    BHLOG(LOGLORAW) Serial.printf("  LoRaMacComputeMic: (0x%x%x%x%x) -> MIC=0x%X\n",
-        Mic[0], Mic[1], Mic[2], Mic[3], *mic);
+//    Serial.printf("  LoRaMacComputeMic: (0x%x%x%x%x) -> MIC=0x%X\n", Mic[0], Mic[1], Mic[2], Mic[3], *mic);
 }
 
 void LoRaMacPayloadEncrypt( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t address, uint8_t dir,

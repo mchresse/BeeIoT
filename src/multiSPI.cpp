@@ -82,60 +82,20 @@ int issdcard =0;       // =1 SDCard found
 // SPI Port Setup Routine for 2 SPI ports: SDCard + ePaper  + LoRa Module at VSPI
 //*******************************************************************
 int setup_spi(int reentry) {    // My SPI Constructor
-    BHLOG(LOGSPI) Serial.println("  MSPI: VSPI port for 3 devices");
+    BHLOG(LOGSPI) Serial.println("  MultiSPI: Setup HSPI port for 3 devices");
     isepd = 0;
     issdcard = 0;
 
-// First disabe all SPI devices CS line to avoid collisions
-    pinMode(EPD_CS, OUTPUT);    	//VSPI SS for ePaper EPD
-    pinMode(SD_CS,  OUTPUT);    	//HSPI SS for SDCard Port
-    pinMode(LoRa_CS, OUTPUT);
-    digitalWrite(EPD_CS, HIGH);
-    digitalWrite(SD_CS, HIGH);
-    digitalWrite(LoRa_CS, HIGH);
-    gpio_hold_dis(SD_CS);   		// enable SD_CS
-    gpio_hold_dis(EPD_CS);   		// enable EPD_CS
-    gpio_hold_dis(LoRa_CS);  		// enable BEE_CS
+// all related GPIO pins have been initialized by gpio_init() already
 
-// Activate EPD low side switch -> connect ground to epaper
-	pinMode(EPD_LOWSW, OUTPUT);
-	digitalWrite(EPD_LOWSW, LOW);	// enable EPD-Ground
-    gpio_hold_dis(EPD_LOWSW);
-
-// Setup SPI BUS
-    pinMode(SPI_MISO, INPUT);
-    pinMode(SPI_MOSI, OUTPUT);
-    pinMode(SPI_SCK, OUTPUT);
-    digitalWrite(SPI_SCK, HIGH);
-    digitalWrite(SPI_MOSI, HIGH);
-	gpio_hold_dis(SPI_MISO);
-	gpio_hold_dis(SPI_MOSI);
-	gpio_hold_dis(SPI_SCK);
-
+// Configure Master SPI Port
+	digitalWrite(SPIPWREN, HIGH);	// enable SPI Power
+	delay(10);						// give PwrUp some time
 	SPI2.begin(SPI_SCK, SPI_MISO, SPI_MOSI, LoRa_CS);
 
-// Preset SPI dev: LoRa Module
-    pinMode(LoRa_RST, OUTPUT);
-    digitalWrite(LoRa_RST, HIGH);
-    gpio_hold_dis(LoRa_RST);
-    pinMode(LoRa_DIO0, INPUT);
-    gpio_hold_dis(LoRa_DIO0);
-//    pinMode(LoRa_DIO1, INPUT);		// n.a.
-//    pinMode(LoRa_DIO2, INPUT);		// n.a.
-
-// Configure LoRa Port
+// Configure attached LoRa Port
 	LoRa.setSPI(SPI2);
-    LoRa.setPins(LoRa_CS, LoRa_RST, LoRa_DIO0); // set CS, reset, IRQ pin
-
-// Preset SPI dev: EPD Display Module
-    pinMode(EPD_BUSY, INPUT);
-    pinMode(EPD_DC, OUTPUT);
-    pinMode(EPD_RST, OUTPUT);
-    digitalWrite(EPD_DC, HIGH);
-    digitalWrite(EPD_RST, HIGH);
-    gpio_hold_dis(EPD_DC);
-    gpio_hold_dis(EPD_RST);
-    gpio_hold_dis(EPD_BUSY);
+    LoRa.setPins(LoRa_CS, LoRa_RST, LoRa_DIO0); // set CS, Reset, IRQ pin
 
     #ifdef SD_CONFIG
 		if(bhdb.hwconfig & HC_SDCARD){
@@ -152,6 +112,8 @@ int setup_spi(int reentry) {    // My SPI Constructor
 
     #ifdef EPD_CONFIG
 		BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD part1 ...");
+		digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
 		display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
 		// display class does not provide any feedback if device is available
 		// so we have to assume its there...
