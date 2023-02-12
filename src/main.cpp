@@ -200,7 +200,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD + LOGADS;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -519,18 +519,17 @@ float weight =0;
 
   // Read Analog Ports via internal ESP32-ADC
   // read out all Aanalog channels:
-	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: V-Charge=");
 	uint32_t addata = 0;   		// raw ADS Data buffer
 
 	// Read Charging Power in Volt
 	#define VUSB_LEVEL	10
 	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 310 / 100;			// get ADC Vin corrected by ext. Resistance devider
   	bhdb.dlog.BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: V-Charge=");
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
-  	BHLOG(LOGADS) Serial.print("V-Battery=");
 
   	// Get battery Powerlevel & calculate % Level
-	#define VBAT_LEVEL	-134
+	#define VBAT_LEVEL	-124 //-134
 	float x;              		// Volt calculation buffer
 	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 360 / 100;			// get ADC Vin corrected by ext. Resistance devider
 	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
@@ -541,6 +540,7 @@ float weight =0;
 	}
 	bhdb.dlog.BattLevel = (int16_t) x;
   	bhdb.dlog.BattLoad = (uint16_t) addata;
+  	BHLOG(LOGADS) Serial.print("V-Battery=");
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
@@ -674,18 +674,21 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
 
   // Send Sensor report via BeeIoT-LoRa ...
-  if(islora){  // do we have an active connection (joined ?)
+  if(islora){  // do we have an active connection (joined ?) and enough power
 #ifdef BEACON
     // For Test purpose of transmission quality: send a beacon to the current GW
     BeeIoTBeacon(0);  // in Non-Joined Mode != BIOT_JOIN (assumed LoRa Log was successfull)
 #else
 
+//	if(bhdb.dlog.BattLevel > 0){
 #ifdef DMSG
     LoRaLog((const byte *) dataMessage.c_str(), (byte)dataMessage.length(), 0); // in sync mode
 #else
     LoRaLog((const byte *) &dsensor, dslen, 0); // in sync mode
 #endif // DMSG
-
+//	}else{
+//    	BHLOG(LOGLORAW) Serial.println("  Log: No power left for LoRa -> Skipped.");
+//	}
 #endif // BEACON
 
   }else{
@@ -1349,12 +1352,19 @@ int cnum=0;
 		break;
 
 	case(BAT_CHARGING):
-		if( batlevel >= BATTERY_MAX_LEVEL ){	// battery full level reached ?
+		if( batlevel >= BATTERY_MAX_LEVEL ){
+			// battery full level reached -> we can stop charging
 			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
 			BHLOG(LOGBH) Serial.println("    BAT Full -> UNCHARGING State entered");
+		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
+			// Emergency case: No Load Power or batter damaged ?!
+			bat_status = BAT_DAMAGED;
+			Enable_bat_charge();			// but lets hope power comes back once
+			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
+			rc=1;
 		}else{
-			// else: remain in charging phase
+			// else: All o.k., lets remain in charging phase
 			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State");
 			Enable_bat_charge();
 			rc=0;
@@ -1363,13 +1373,19 @@ int cnum=0;
 
 	case(BAT_UNKNOWN):
 		if( batlevel > BATTERY_NORM_LEVEL ){
-			bat_status = BAT_CHARGING;
-			Enable_bat_charge();
-			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State entered");
-		}else{
 			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
-			BHLOG(LOGBH) Serial.println("    BAT-UNCHARGING State entered");
+			BHLOG(LOGBH) Serial.printf("    BAT-UNCHARGING State entered (%.2fV)\n", batlevel/1000);
+		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
+			// Emergency case: No Load Power or batter damaged ?!
+			bat_status = BAT_DAMAGED;
+			Enable_bat_charge();			// but lets hope power comes back once
+			BHLOG(LOGBH) Serial.printf("    BAT-DAMAGED State entered (%.2fV)\n", batlevel/1000);
+			rc=1;
+		}else{
+			bat_status = BAT_CHARGING;
+			Enable_bat_charge();
+			BHLOG(LOGBH) Serial.printf("    BAT-CHARGE State entered (%.2fV)\n", batlevel/1000);
 		}
 		rc=0;
 		break;
@@ -1378,26 +1394,26 @@ int cnum=0;
 		// do nothing: but wait till power comes back...
 
 		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
-			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State");
+			report_interval = 3*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery
+			BHLOG(LOGBH) Serial.printf("    BAT-DAMAGED State; throttled reporting (%i Min)/n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 6*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery
-			rc=1;
 			// Send a BAT Damage note via LoRa message for service
    			cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
 			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
+			rc=1;
 
 		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
-			BHLOG(LOGBH) Serial.println("    Battery recovered -> Enter CHARGING State");
+			report_interval = 10*60;	// set Report. Interval to default [sec.]-> update at next JOIN
+			BHLOG(LOGBH) Serial.printf("    Battery recovered -> Continue with CHARGING State (reporting %i Min.)\n", report_interval/60);
 			bat_status = BAT_CHARGING;	// bring battery back to normal mode
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 10*60;	// set Report. Interval to default [sec.]-> update at next JOIN
-			rc=0;
 			// Send a BAT Ok again  note via LoRa message for service
    			cnum=sprintf(bhdb.dlog.comment, "BattOk");
 			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
+			rc=0;
 
 		}else{ 							// we are in <= BATTERY_MIN_LEVEL
-			BHLOG(LOGBH) Serial.println("    BAT-LOW State entered");
+			BHLOG(LOGBH) Serial.printf("    BAT-LOW State entered; throttled reporting (%i Min)\n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
 			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			rc=1;
