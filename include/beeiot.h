@@ -130,6 +130,9 @@
 #define I2C_SDA		GPIO_NUM_8      // def: SDA=08	common for all I2C dev.
 #define I2C_SCL		GPIO_NUM_9      // def. SCL=09	common for all I2C dev.
 
+// RTC DS3231
+#define RTC_INT		GPIO_NUM_16		// RTC INT\ Pin
+
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_7		// with 10k Pullup external
 

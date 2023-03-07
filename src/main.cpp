@@ -200,7 +200,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD + LOGADS;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -866,6 +866,8 @@ void gpio_init(int sleepmode){
 		gpio_hold_dis(I2C_SCL);
 		gpio_hold_dis(I2C_SDA);
 
+		gpio_hold_dis(RTC_INT);		// RTC-INT\ pin
+
 		gpio_hold_dis(HX711_SCK);  		// HX711 SCK		// no RTC pin
 		gpio_hold_dis(HX711_DT);   		// HX711 Data		// no RTC pin
 
@@ -928,6 +930,9 @@ void gpio_init(int sleepmode){
 		pinMode(I2C_SCL, OUTPUT);		// I2C Bus Clock line
 		pinMode(I2C_SDA, INPUT);		// I2C Data line start with defensive input
 		digitalWrite(I2C_SCL, HIGH);	// define default level
+
+	// RTC INT\ line
+		pinMode(RTC_INT, INPUT_PULLUP);	// I2C Data line start with defensive input
 
 	// HX requires OUTPUT here to define data/clock line during sleep
 	//    pinMode(HX711_SCK, OUTPUT);

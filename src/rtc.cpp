@@ -73,13 +73,13 @@ int setup_rtc (int reentry) {
 		// I2C should have been scanned by I2c_master_init() already
 		// if i2c problems occurs -> should have been reported there
 		if(isrtc != RTC_ADDR){
-        	BHLOG(LOGADS) Serial.println("  RTC: No RTC DS3231 port detected");
+        	BHLOG(LOGLAN) Serial.println("  RTC: No RTC DS3231 port detected");
 			isrtc=0;
 			return(0);
     	}
 	}
 	// RTC can be expected at RTC_ADDR
-	BHLOG(LOGADS) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", isrtc);
+	BHLOG(LOGLAN) Serial.printf("  RTC: RTC DS3231 detected at port: 0x%02X\n", isrtc);
 
 	// setup RTC Device config set
     i2crtc.port			= i2c_master_port;
@@ -92,12 +92,12 @@ int setup_rtc (int reentry) {
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
 		isrtc =0;		// RTC does not react anyhow
-        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
+        BHLOG(LOGLAN) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
 		return(0);
 	}
 
 	bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree
-	BHLOG(LOGADS)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
+	BHLOG(LOGLAN)  Serial.printf("  RTC: Temperature: %.2f °C\n", rtctemp);
 
   // Time update done always by JOIN-Cfg data from BIoT-GW time automatically
 
@@ -147,7 +147,7 @@ int getRTCtime(void){
 	esprc = ds3231_get_time(&i2crtc, & bhdb.stime);
 	if(esprc !=ESP_OK){
 		isrtc =0;		// RTC does not react anyhow
-        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Time failed (%i)\n", esprc);
+        BHLOG(LOGLAN) Serial.printf("  RTC: RD RTC DS3231 Time failed (%i)\n", esprc);
 		return(esprc);
 	}
 
@@ -184,7 +184,7 @@ int getRTCtime(void){
 	// last but not least: get optional current RTC temperature
 	esprc = ds3231_get_temp_float(&i2crtc, &rtctemp);
 	if(esprc !=ESP_OK){
-        BHLOG(LOGADS) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
+        BHLOG(LOGLAN) Serial.printf("  RTC: RD RTC DS3231 Temp. failed (%i)\n", esprc);
 		bhdb.dlog.TempRTC = -99;  // reset RTC module temperature fault
 	}else{
 		bhdb.dlog.TempRTC = rtctemp;  // RTC module temperature in celsius degree

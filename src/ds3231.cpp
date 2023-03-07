@@ -65,7 +65,7 @@ uint8_t dec2bcd(uint8_t val)
 byte calcDayOfWeek(int jahr, byte monat, byte tag) {
     static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
     jahr -= monat < 3;
-    return ((jahr + jahr/4 - jahr/100 + jahr/400 + t[monat-1] + tag) % 7); 
+    return ((jahr + jahr/4 - jahr/100 + jahr/400 + t[monat-1] + tag) % 7);
 }
 
 esp_err_t ds3231_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio)
@@ -76,8 +76,8 @@ esp_err_t ds3231_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio,
     dev->addr = RTC_ADDR;
     dev->sda_io_num = sda_gpio;
     dev->scl_io_num = scl_gpio;
-    dev->clk_speed = 400000; 	// I2C_FREQ_HZ;
- 
+    dev->clk_speed = I2C_FREQ_HZ; 		// was 400000; 	// I2C_FREQ_HZ;
+
 //    i2c_master_init(port, sda_gpio, scl_gpio);	// already done before
 	return(ESP_OK);
 }
@@ -154,11 +154,12 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time)
 
     /* read time */
     esp_err_t res = i2c_dev_read_reg(dev, DS3231_ADDR_TIME, data, 7);
-	if (res != ESP_OK) return res;
+	if (res != ESP_OK)
+		return res;
 
     /* convert to unix time structure */
     time->tm_sec = bcd2dec(data[0]);
-    time->tm_min = bcd2dec(data[1]);					
+    time->tm_min = bcd2dec(data[1]);
     if (data[2] & DS3231_12HOUR_FLAG)
     {
         /* 12H */
@@ -167,7 +168,7 @@ esp_err_t ds3231_get_time(i2c_dev_t *dev, struct tm *time)
         if (data[2] & DS3231_PM_FLAG) time->tm_hour += 12;
     }
     else time->tm_hour = bcd2dec(data[2]); 			// 24H
-    time->tm_wday = bcd2dec(data[3]) - 1;			// 1-7 -> 0-6
+    time->tm_wday = bcd2dec(data[3]) + 1;			// 0-6 -> 1-7 (start with Sunday =1)
     time->tm_mday = bcd2dec(data[4]);				// 1-31
     time->tm_mon  = bcd2dec(data[5] & DS3231_MONTH_MASK) - 1;	// 1-12 -> 0-11
     time->tm_year = bcd2dec(data[6]) + 100;			// base2000 -> base1900

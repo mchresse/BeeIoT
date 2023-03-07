@@ -166,5 +166,7 @@ int i2c_scan(void) {
 
 	BHLOG(LOGADS) Serial.printf("\n");
 
+// for test purpose only: simulate DS3231 always there
+//	isrtc = RTC_ADDR;
 	return(1);
 }
