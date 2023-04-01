@@ -62,8 +62,9 @@
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
-// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
-#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
+// #include <GxGDEW027C44/GxGDEW027C44.h> 	// 2.7" b/w/r
+#include <GxGDEW027W3/GxGDEW027W3.h>     	// 2.7" b/w
+//#include <GxGDEM029T94/GxGDEM029T94.h>     	// 2.9" b/w
 #include "BitmapWaveShare.h"            // from WaveShare -> FreeWare
 
 // FreeFonts from Adafruit_GFX          // from adafruit / Adafruit-GFX-Library  (BSD license)
@@ -200,7 +201,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD + LOGADS + LOGSPI + LOGEPD;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -522,16 +523,16 @@ float weight =0;
 	uint32_t addata = 0;   		// raw ADS Data buffer
 
 	// Read Charging Power in Volt
-	#define VUSB_LEVEL	10
-	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 310 / 100;			// get ADC Vin corrected by ext. Resistance devider
+	#define VUSB_LEVEL	+7
+	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 306 / 100;			// get ADC Vin corrected by ext. Resistance devider
   	bhdb.dlog.BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
 	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: V-Charge=");
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
 
   	// Get battery Powerlevel & calculate % Level
-	#define VBAT_LEVEL	-124 //-134
+	#define VBAT_LEVEL	-33
 	float x;              		// Volt calculation buffer
-	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 360 / 100;			// get ADC Vin corrected by ext. Resistance devider
+	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 316 / 100;			// get ADC Vin corrected by ext. Resistance devider
 	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
 	if( x > 0.0){
 	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
@@ -582,6 +583,7 @@ float weight =0;
 //***************************************************************
 // 10. End of Main Loop ->  Save data and enter Sleep/Delay Mode
   // Start sleep/wait loop
+  BHLOG(LOGBH) printf(" -> Start preparing Sleep Mode\n");
 	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
 
 } // end of loop()
@@ -841,11 +843,10 @@ int cnum;
 void gpio_init(int sleepmode){
 
 //	if(sleepmode==1)
-	{		// Deep sleep
-	//	rtc_gpio_deinit(EPD_KEY1);
+	{	// coming from Deep sleep
+		gpio_hold_dis(SPIPWREN);	// required for all SPi devices
+		gpio_hold_dis(EPDGNDEN);	// release GND pin of EPD
 
-		gpio_hold_dis(SPIPWREN);
-		gpio_hold_dis(EPDGNDEN);
 		gpio_hold_dis(LEDRGB);
 		gpio_hold_dis(LEDRED);		// No RTC
 
@@ -895,9 +896,9 @@ void gpio_init(int sleepmode){
 		digitalWrite(SD_CS, HIGH);
 		digitalWrite(LoRa_CS, HIGH);
 
-	// Deactivate SPI Power switch -> detach 3.3V from epaper/LoRA/SD
+	// Activate SPI Power switch -> attach 3.3V for epaper/LoRA/SD
 		pinMode(SPIPWREN, OUTPUT);
-		digitalWrite(SPIPWREN, HIGH); // enable SPI Power
+		digitalWrite(SPIPWREN, HIGH); // enable SPI device Power
 		pinMode(EPDGNDEN, OUTPUT);
 		digitalWrite(EPDGNDEN, LOW);  // enable EPD Ground low side switch
 
@@ -922,7 +923,7 @@ void gpio_init(int sleepmode){
 
 	// Panel Key 1-4
 		pinMode(EPD_KEY1, INPUT);	// +ext. Pullup
-		pinMode(EPD_KEY2, INPUT);
+		pinMode(EPD_KEY2, INPUT);	// +ext. Pullup
 	//	pinMode(EPD_KEY3, INPUT);	// NC
 	//	pinMode(EPD_KEY4, INPUT);	// NC
 
@@ -932,7 +933,7 @@ void gpio_init(int sleepmode){
 		digitalWrite(I2C_SCL, HIGH);	// define default level
 
 	// RTC INT\ line
-		pinMode(RTC_INT, INPUT_PULLUP);	// I2C Data line start with defensive input
+		pinMode(RTC_INT, INPUT);		// RTC Data line with no Pullup
 
 	// HX requires OUTPUT here to define data/clock line during sleep
 	//    pinMode(HX711_SCK, OUTPUT);
@@ -993,13 +994,14 @@ if(sleepmode == 1){
 	// keep stable state in Deep sleep for all SPI-CS lines
 	digitalWrite(SD_CS, HIGH);
 	digitalWrite(LoRa_CS, HIGH);
-	digitalWrite(EPD_CS, HIGH);
+//	digitalWrite(EPD_CS, HIGH);
+	pinMode(EPD_CS, INPUT);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
-	rtc_gpio_isolate(EPD_CS);
+//	rtc_gpio_isolate(EPD_CS);
 	gpio_hold_en(SD_CS);
 	gpio_hold_en(LoRa_CS);
-	gpio_hold_en(EPD_CS);
+//	gpio_hold_en(EPD_CS);
 
 	// SPI Bus shutdown: EPD + LORA + SD
     pinMode(SPI_MISO, INPUT);
@@ -1014,20 +1016,22 @@ if(sleepmode == 1){
 
 
 	pinMode(EPD_BUSY, INPUT);		// already output by EPD -> so ESP-Input by default
-	pinMode(EPD_RST, INPUT);
-	pinMode(EPD_DC,  INPUT);
+	pinMode(EPD_RST, INPUT);		// EPD: RST = Output
+	pinMode(EPD_DC,  INPUT);		// no RTC pin
 	rtc_gpio_isolate(EPD_BUSY);
 	rtc_gpio_isolate(EPD_RST);
 	gpio_hold_en(EPD_BUSY);
 	gpio_hold_en(EPD_RST);
-	gpio_hold_en(EPD_DC);			// no RTC pin
 
 	// Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
 	rtc_gpio_isolate(SPIPWREN);		// isolate internal PUP/PDN
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
-	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
-	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPF GND  // no RTC pin
+
+//	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
+//	digitalWrite(EPDGNDEN, LOW);    // Test: enable EPD Ground low side switch
+    pinMode(EPDGNDEN, INPUT);		// no RTC pin
+//	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep
@@ -1044,19 +1048,22 @@ if(sleepmode == 1){
     pinMode(I2C_SDA, INPUT);		// /w ext- pullup 4k7, no RTC GPIO
 	rtc_gpio_isolate(I2C_SCL);    	// ADS_SCL
 	rtc_gpio_isolate(I2C_SDA);    	// ADS_SDA
-	gpio_hold_en(I2C_SCL);    		// ADS_SCL
-	gpio_hold_en(I2C_SDA);    		// ADS_SDA
+//	gpio_hold_en(I2C_SCL);    		// ADS_SCL
+//	gpio_hold_en(I2C_SDA);    		// ADS_SDA
+
+	// RTC Chip DS3231
+	pinMode(RTC_INT, INPUT);
+	rtc_gpio_isolate(RTC_INT);
 
 	// Set OW line to high impedance -> open collector bus
     pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> set only to RTC INPUT
 	//  gpio_hold_en(ONE_WIRE_BUS); // OneWire Bus line
 	rtc_gpio_isolate(ONE_WIRE_BUS); // OneWire Bus line
-	gpio_hold_en(ONE_WIRE_BUS);
+//	gpio_hold_en(ONE_WIRE_BUS);
 
 	// LEDRGB has already internal 10k pullup
     pinMode(LEDRGB, INPUT);
-	rtc_gpio_isolate(LEDRGB);		// + 10k PUP
-	//	gpio_hold_en(LEDRGB);
+//	gpio_hold_en(LEDRGB);
 
     pinMode(LEDRED, OUTPUT); 		// finally pulled up by LED, No RTC GPIO
 	digitalWrite(LEDRED, HIGH);
@@ -1064,6 +1071,8 @@ if(sleepmode == 1){
 
 	// Keep BAT Charge control pin as it is
 	gpio_hold_en(BATCHARGEPIN);
+
+    BHLOG(LOGSPI) Serial.println("  MAIN: shutdown to sleep mode 2 done !");
 
 	}else if(sleepmode == 2){
 

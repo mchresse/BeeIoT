@@ -33,10 +33,10 @@
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
 
-// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
-// #define HAS_RED_COLOR     // as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
+// #include <GxGDEW027C44/GxGDEW027C44.h> 	// 2.7" b/w/r
+// #define HAS_RED_COLOR     				// as defined in GxGDEW027C44.h: GxEPD_WIDTH, GxEPD_HEIGHT
 #include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
-// #include <GxGDEW029T5/GxGDEW029T5.h>     // 2.9" b/w
+// #include <GxGDEM029T94/GxGDEM029T94.h>     // 2.9" b/w
 
 #include <GxIO/GxIO_SPI/GxIO_SPI.cpp>
 #include <GxIO/GxIO.cpp>
@@ -88,43 +88,44 @@ int setup_epd(int reentry) {   // My EPD Constructor
 // isepd is defined at multi SPI setup;
 
 #ifdef EPD_CONFIG
-if(!reentry){
-  BHLOG(LOGEPD) Serial.println("  EPD: Start ePaper Display");
+// enter EPD active mode:
+digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
-  if(isepd){ // set some presets for a std. text field
-    BHLOG(LOGEPD) Serial.println("  EPD: print Welcome Display");
-    display.fillScreen(GxEPD_WHITE);
-    display.setTextColor(GxEPD_BLACK);
-    display.setCursor(0, 0);
-    display.setRotation(1);    // 1 + 3: print in horizontal format
+	if(!reentry){
+	BHLOG(LOGEPD) Serial.println("  EPD: Start ePaper Display");
 
-    display.setFont(&FreeMonoBold24pt7b);
-    display.setCursor(0, 2*24);
-    display.println("  BeeIoT");
-    display.setFont(&FreeMonoBold12pt7b);
-    display.printf ("       v%s.%s\n\n", VMAJOR, VMINOR);
-    display.println("     by R.Esser");
-    display.setFont(&FreeMonoBold9pt7b);
-    display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
-    display.update();    //refresh display by buffer content
+		if(isepd){ // set some presets for a std. text field
+			BHLOG(LOGEPD) Serial.println("  EPD: print Welcome Display");
+			display.fillScreen(GxEPD_WHITE);
+			display.setTextColor(GxEPD_BLACK);
+			display.setCursor(0, 0);
+			display.setRotation(1);    // 1 + 3: print in horizontal format
 
-//    BHLOG(LOGEPD) mydelay2(3000,0);
-//    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
-//    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
-//    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
-//    BHLOG(LOGEPD) display.update();
+			display.setFont(&FreeMonoBold24pt7b);
+			display.setCursor(0, 2*24);
+			display.println("  BeeIoT");
+			display.setFont(&FreeMonoBold12pt7b);
+			display.printf ("       v%s.%s\n\n", VMAJOR, VMINOR);
+			display.println("     by R.Esser");
+			display.setFont(&FreeMonoBold9pt7b);
+			display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
+			display.update();    //refresh display by buffer content
 
-  }
-  // enter low power EPD mode:
-  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
-}
+		//    BHLOG(LOGEPD) mydelay2(3000,0);
+		//    BHLOG(LOGEPD) Serial.println("  EPD: Draw BitmapWaveshare");
+		//    BHLOG(LOGEPD) display.setRotation(2); // 0 + 2: Portrait Mode
+		//    BHLOG(LOGEPD) display.drawExampleBitmap(BitmapWaveshare, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
+		//    BHLOG(LOGEPD) display.update();
+
+		}
+	}
 
 
-  // Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
-  // EPD_KEY1 => (Deep-) Sleep Wakeup trigger
-  // EPD_KEY2 => MCU_Reset (on EN)
-  // EPD_KEY3 => n.a.
-  // EPD_KEY4 => n.a.
+// Preset EPD-Keys 1-4: active 0 => connects to GND (needs a pullup)
+// EPD_KEY1 => (Deep-) Sleep Wakeup trigger
+// EPD_KEY2 => MCU_Reset (on EN)
+// EPD_KEY3 => n.a.
+// EPD_KEY4 => n.a.
 
 // Assign Key-IRQ to callback function
 	SetonKey(1, onKey1);

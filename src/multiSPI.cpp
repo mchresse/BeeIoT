@@ -46,8 +46,10 @@
 
 // Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
 #include <GxEPD.h>
-// #include <GxGDEW027C44/GxGDEW027C44.h> // 2.7" b/w/r
+// #include <GxGDEW027C44/GxGDEW027C44.h>	// 2.7" b/w/r
 #include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
+//#include <GxGDEM029T94/GxGDEM029T94.h>		// 2.9" b/w
+
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
 
