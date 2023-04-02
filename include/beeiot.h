@@ -85,7 +85,8 @@
 #define HX711_CONFIG		// Weight Cell Bosche HX100
 #define ONEWIRE_CONFIG		// OW Temp. Sensors (3x)
 #define SD_CONFIG			// SD Card Logging
-#define EPD_CONFIG			// Display: ePaper Waveshare 2.7"
+// #define EPD_CONFIG			// Display: EPD_Class based ePaper Waveshare v1.x
+#define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
 #define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
 
 #define DSENSOR2			// Use Sensor data Format 2: binary stream (shorter)
@@ -93,7 +94,8 @@
 
 #else
 // HW Componnets for LoRa in Beacon Mode
-#define EPD_CONFIG
+// #define EPD_CONFIG
+#define EPD2_CONFIG
 #define LORA_CONFIG
 #define SD_CONFIG	// for test purpose only (not needed for beacon mode)
 
@@ -136,7 +138,7 @@
 // OneWire Data Port:
 #define ONE_WIRE_BUS GPIO_NUM_7		// with 10k Pullup external
 
-// WavePaper ePaper port
+// WavePaper ePaper SPI port
 // mapping suggestion for ESP32 DevKit or LOLIN32, see .../variants/.../pins_arduino.h for your board
 #define EPD_MISO  SPI_MISO 	        // SPI MISO
 #define EPD_MOSI  SPI_MOSI 	        // SPI MOSI
@@ -145,6 +147,7 @@
 #define EPD_DC    GPIO_NUM_36		// arbitrary selection of DC
 #define EPD_RST   GPIO_NUM_15		// arbitrary selection of RST
 #define EPD_BUSY  GPIO_NUM_21     	// arbitrary selection of BUSY
+
 #define EPD_KEY1  GPIO_NUM_4     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
 #define EPD_KEY2  GPIO_NUM_3		// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin33 (P13)
@@ -240,7 +243,7 @@ typedef struct {				// data elements of one log line entry
 	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5200mV
 	int16_t BattLoad;			// Battery voltage level (typ. 3700 mV)
 	int16_t BattLevel;			// Battery Level in 0-100%
-	char	 comment[DROWNOTELEN]; // free notice text string to GW + EOL sign
+	char	comment[DROWNOTELEN]; // free notice text string to GW + EOL sign
 } datrow;
 
 #define LENFDATE 	21			// length of ISO8601 TimeSTamp (BIoTWan.h)
@@ -278,9 +281,20 @@ int setup_i2c_ADS	(int mode);
 int setup_i2c_MAX	(int mode);
 int setup_rtc		(int mode);		// in rtc.cpp
 int setup_spi    	(int mode);		// in multiSPI.cpp
-int setup_sd		(int mode);		// in sdcard.cp
-int setup_epd		(int mode);		// in epd.cpp
 int bat_control		(float batlevel, int reentry);  // in main
+int setup_sd		(int mode);		// in sdcard.cp
+
+#ifdef EPD_CONFIG
+int setup_epd		(int mode);		// in epd.cpp
+void showdata		(void);
+// epd.cpp functions
+void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);
+void drawBitmaps_200x200(void);
+void drawBitmaps_other(void);
+#else
+int setup_epd2		(int mode);		// in epd2.cpp
+void showdata2		(void);
+#endif
 
 // in hx711Scale.cpp
 float   HX711_read  (int mode);
@@ -307,11 +321,6 @@ uint16_t adc_read	(int channel);
 int  max_multiread	(uint8_t channelend, uint16_t* adcdat);
 void max_reset		(void);	// set MAX123x to default reset
 
-// epd.cpp functions
-void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);
-void drawBitmaps_200x200(void);
-void drawBitmaps_other(void);
-void showdata		(void);
 void showbeacon 	(void);
 
 #endif // end of BeeIoT.h

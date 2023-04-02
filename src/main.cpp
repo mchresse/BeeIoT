@@ -60,20 +60,6 @@
 #include <SD.h>         // from Arduino IDE
 #include "sdcard.h"
 
-// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-#include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
-// #include <GxGDEW027C44/GxGDEW027C44.h> 	// 2.7" b/w/r
-#include <GxGDEW027W3/GxGDEW027W3.h>     	// 2.7" b/w
-//#include <GxGDEM029T94/GxGDEM029T94.h>     	// 2.9" b/w
-#include "BitmapWaveShare.h"            // from WaveShare -> FreeWare
-
-// FreeFonts from Adafruit_GFX          // from adafruit / Adafruit-GFX-Library  (BSD license)
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include <Fonts/FreeMonoBold12pt7b.h>
-//#include <Fonts/FreeMonoBold18pt7b.h>
-//#include <Fonts/FreeMonoBold24pt7b.h>
-//#include <Fonts/FreeSansBold24pt7b.h>
-
 // DS18B20 libraries
 #include <OneWire.h>            // from PaulStoffregen/OneWire library @ GitHub
 #include <DallasTemperature.h>  // LGPL v2.1
@@ -99,6 +85,17 @@
 #include "beeiot.h"             // local: provides all GPIO PIN configurations of all sensor Ports !
 
 #include "DLED.h"				// local: Interface to RGB LED lib
+
+#ifdef EPD_CONFIG
+// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
+#include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
+// #include <GxGDEW027C44/GxGDEW027C44.h> 	// 2.7" b/w/r
+#include <GxGDEW027W3/GxGDEW027W3.h>     	// 2.7" b/w
+//#include <GxGDEM029T94/GxGDEM029T94.h>     	// 2.9" b/w
+#else // EPD2_CONFIG
+// Libs for WaveShare ePaper
+#include "epaper.h"
+#endif
 
 // #include <esp_task_wdt.h>
 
@@ -155,12 +152,17 @@ extern int isepd;               // =1 ePaper found
 extern int islora;              // =1 LoRa client is active
 
 extern SPIClass 	SPI2;		// Master SPI device
-extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
 extern bool			EPDupdate;	// =true: EPD update requested
 extern HX711        scale;      // managed in HX711Scale module
 extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 extern int 			adcaddr;	// I2C Dev.address of detected ADC
 extern OneWire 		ds;			// OneWire Bus object
+
+#ifdef EPD_CONFIG
+extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
+#else
+extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
+#endif
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -362,11 +364,15 @@ int rc;		// generic return code variable
 //***************************************************************
 // +1,2ms
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
+#ifdef EPD_CONFIG
   if (setup_epd(ReEntry) == 0){
-    BHLOG(LOGBH)Serial.println("         ePaper Test failed");
-    // enter exit code here, if needed
+    BHLOG(LOGBH)Serial.println("         EPD ePaper Test failed");
   }
-
+#else
+  if (setup_epd2(ReEntry) == 0){
+    BHLOG(LOGBH)Serial.println("         No EPD2 ePaper detected");
+  }
+#endif
   BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
@@ -399,7 +405,7 @@ if(rtc_wdt_is_on){
 //***************************************************************
 // initial sleep mode for next loop:
 //   =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-	ReEntry = SLEEPMODE;
+  ReEntry = SLEEPMODE;
 
 
   BHLOG(LOGBH) LEDOn();
@@ -570,6 +576,11 @@ float weight =0;
 	}
 #endif // Beacon
 #endif // EPD
+#ifdef EPD2_CONFIG
+	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
+		showdata2();
+	}
+#endif
 
 // end of sensor loop
   BHLOG(LOGRGB) setRGB(0,0,255);  // show end of loop() phase: blue
@@ -798,6 +809,9 @@ int cnum;
 #ifdef EPD_CONFIG
 		bhdb.hwconfig	  += HC_EPD;
 #endif
+#ifdef EPD2_CONFIG
+		bhdb.hwconfig	  += HC_EPD;
+#endif
 #ifdef SD_CONFIG
 		// can be actively switched on/off by HWconfig RX1 command later; default=on
 		bhdb.hwconfig	  += HC_SDCARD;
@@ -977,6 +991,11 @@ if(sleepmode == 1){
 #ifdef EPD_CONFIG
     if(isepd){
       display.powerDown();
+      isepd = 0;
+    }
+#else
+    if(isepd){
+      display.powerOff();
       isepd = 0;
     }
 #endif

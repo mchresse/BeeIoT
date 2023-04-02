@@ -19,11 +19,18 @@
 //*******************************************************************
 
 #include <Arduino.h>
-#include <SPI.h>
 // for defaut ESP32 SPI pin definitions see e.g.:
 // C:\Users\xxx\Documents\Arduino\hardware\espressif\esp32\variants\lolin32\pins_arduino.h
 
+#include <version.h>
+#include <beeiot.h>
+
+#ifdef EPD_CONFIG
+#include <BeeIoTWan.h>
+#include <beelora.h>
+
 // Libraries for SD card
+#include <SPI.h>
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
@@ -53,10 +60,7 @@
 #include <Fonts/FreeMonoBold24pt7b.h>
 #include <Fonts/FreeSansBold24pt7b.h>
 
-#include <version.h>
-#include <beeiot.h>
-#include <BeeIoTWan.h>
-#include <beelora.h>
+
 
 //************************************
 // Global data object declarations
@@ -668,3 +672,4 @@ void showPartialUpdate(float data){
 }
 
 
+#endif // EPD_CONFIG
