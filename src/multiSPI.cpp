@@ -143,7 +143,7 @@ int setup_spi(int reentry) {    // My SPI Constructor
     #else
 		BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
 		display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
-		display.init(115200);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
+		display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
 
 		// display class does not provide any feedback if device is available
 		// so we have to assume its there...

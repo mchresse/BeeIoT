@@ -203,7 +203,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGSD + LOGADS + LOGSPI + LOGEPD;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGADS ;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -265,7 +265,7 @@ int rc;		// generic return code variable
 			BHLOG(LOGBH) Serial.println();
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("> BeeIoT - BeeHive Weight Scale %s\n", VERSION_SHORT);
-			BHLOG(LOGBH) Serial.println("> by R.Esser (c) 2020-2023");
+			BHLOG(LOGBH) Serial.println(">   by R.Esser (c) 2020-2023");
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 		}
@@ -995,8 +995,9 @@ if(sleepmode == 1){
     }
 #else
     if(isepd){
-      display.powerOff();
-      isepd = 0;
+    	display.powerOff();
+//    	display.hibernate();
+    	isepd = 0;
     }
 #endif
 
@@ -1216,7 +1217,8 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 				break;
 		case ESP_SLEEP_WAKEUP_TIMER:
 		      	BHLOG(LOGBH)Serial.println("Wakeup caused by timer");
-				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+				EPDupdate=true;		// Update EPD by Key reboot request
+//				EPDupdate=false;	// No Update of EPD requeste after timer reboot
 				break;
 		case ESP_SLEEP_WAKEUP_TOUCHPAD:
 		   		BHLOG(LOGBH)Serial.println("Wakeup caused by touchpad");
