@@ -63,27 +63,19 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 // isepd is defined at multi SPI setup;
 
 #ifdef EPD2_CONFIG
-// enter EPD active mode:
-digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+	// enter EPD active mode:
+	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
 	if(!reentry){
 	BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Display");
 
 		if(isepd){ // set some presets for a std. text field
 //			epd2_test();
-//			helloFullScreenPartialMode();
-//			delay(5000);
-//			isepd=0;
-// 			display.powerOff();
-//			return(isepd);	// shortcut for testing
-
-//			BHLOG(LOGEPD) Serial.println("    EPD2: Print Welcome Display");
 			biot_welcome_full();
-//  		BHLOG(LOGEPD) Serial.println("    EPD2: setup done");
 		}
 	}
 #endif
-  return isepd;
+	return isepd;
 }
 
 //*********************************************************
@@ -168,7 +160,70 @@ const char tauthor[] ="        by R.Esser";
 // Show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset from BHDB
 //*********************************************************
-void showdata2(void){
+void showdata27(void){
+
+	// No EPD panel connected or no Update request pending
+	if(isepd==0 || 	EPDupdate==false){
+		return;	// no EPD port -> no action
+	}
+
+	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
+  	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.fillScreen(GxEPD_WHITE);
+
+  	display.setTextColor(GxEPD_BLACK);
+  	display.setFont(&FreeMonoBold9pt7b);
+  	display.setCursor(0, 0);
+  	display.println();          // adjust cursor to lower left corner of char row
+
+	display.setFont(&FreeMonoBold12pt7b);
+  	display.printf("BeeIoTv%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
+  	display.setFont(&FreeMonoBold9pt7b);
+  	display.println();
+  	display.printf("  %s %s", bhdb.date, bhdb.time);
+
+  	display.setFont(&FreeMonoBold12pt7b);
+  	display.println();
+
+	display.drawRect(4, 12+9+9+12, display.width()-(4+4), 94, GxEPD_BLACK);
+
+	display.printf(" Gewicht: %skg\n", 	String(bhdb.dlog.HiveWeight,3));
+	display.printf(" Temp.Beute: %s\n", String(bhdb.dlog.TempHive,1));
+	display.printf(" TempExtern: %s\n", String(bhdb.dlog.TempExtern,1));
+	display.printf(" TempIntern: %s", 	String(bhdb.dlog.TempIntern,1));
+
+	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+  	display.println();
+
+	display.printf(" Batt[V]:%s(%s%%)<%s\n",
+			String((float)bhdb.dlog.BattLoad/1000,2),
+			String((uint16_t)bhdb.dlog.BattLevel),
+			String((float)bhdb.dlog.BattCharge/1000,2));
+
+	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+    display.print(" Status: ");
+	if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
+  		display.print(beeiot_StatusString[BIOT_DEEPSLEEP]);
+	}else{
+  		display.print(beeiot_StatusString[BeeIoTStatus]);
+	}
+
+	display.display();				// WakeUp -> update Display
+
+	EPDupdate=false;				// EPD update request completed -> reset flag
+
+	// enter EPD low power mode
+	digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
+} // end of ShowData()
+
+
+//*********************************************************
+// showdata2()
+// Show Sensor log data on epaper Display
+// Input: sampleID= Index ond Sensor dataset from BHDB
+//*********************************************************
+void showdata29(void){
 
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){

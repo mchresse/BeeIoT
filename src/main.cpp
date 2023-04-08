@@ -86,16 +86,8 @@
 
 #include "DLED.h"				// local: Interface to RGB LED lib
 
-#ifdef EPD_CONFIG
-// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-#include <GxEPD.h>                      // from ZinggJM/GxEPD (https://github.com/ZinggJM/GxEPD)
-// #include <GxGDEW027C44/GxGDEW027C44.h> 	// 2.7" b/w/r
-#include <GxGDEW027W3/GxGDEW027W3.h>     	// 2.7" b/w
-//#include <GxGDEM029T94/GxGDEM029T94.h>     	// 2.9" b/w
-#else // EPD2_CONFIG
-// Libs for WaveShare ePaper
+// Libs for ePaper like WaveShare 2.7" or 2.9"
 #include "epaper.h"
-#endif
 
 // #include <esp_task_wdt.h>
 
@@ -157,15 +149,11 @@ extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 extern int 			adcaddr;	// I2C Dev.address of detected ADC
 extern OneWire 		ds;			// OneWire Bus object
 
-
-#ifdef EPD_CONFIG
-	extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
-#else
 #ifdef EPD2_CONFIG
+	// reference on a ePaper Display object created in epd2.cpp
 	extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
 #endif
-#endif
-bool				EPDupdate=true;	// =true: EPD update requested
+bool EPDupdate=true;			// =true: EPD update requested
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -199,7 +187,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGADS + LOGEPD + LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags = LOGBH;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -308,7 +296,7 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // +3ms
-  BHLOG(LOGBH) Serial.println("  Setup: SPI Device Ports: SD/LoRa/EPD");
+  BHLOG(LOGBH) Serial.println("  Setup: SPI Device Ports: SD/LoRa/EPD2");
   issdcard = setup_spi(ReEntry);
   if (!issdcard){ // check LoRa port as reference
     BHLOG(LOGBH) Serial.println("         SPI setup: SD not detected");
@@ -359,19 +347,12 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // +1,2ms
-#ifdef EPD_CONFIG
+#ifdef EPD2_CONFIG
   BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
-  if (setup_epd(ReEntry) == 0){
-    BHLOG(LOGBH)Serial.println("         EPD ePaper Test failed");
+  if (setup_epd2(ReEntry) == 0){
+    BHLOG(LOGBH)Serial.println("         EPD2 ePaper Test failed");
   }
-#else
-	#ifdef EPD2_CONFIG
-  	BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
-	if (setup_epd2(ReEntry) == 0){
-		BHLOG(LOGBH)Serial.println("         No EPD2 ePaper detected");
-	}
-	#endif // EPD2
-#endif // EPD
+#endif // EPD2
   BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
@@ -566,24 +547,18 @@ float weight =0;
 //***************************************************************
 // 8. Update ePaper
 // 2440ms
-#ifdef EPD_CONFIG
-    BHLOG(LOGEPD) Serial.println("  EPD: Update ePaper - Show Sensor Data");
-#ifdef BEACON
-    showbeacon();
-    BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
-#else
-	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
-		showdata();
-	}
-#endif // Beacon
-#endif // EPD
 #ifdef EPD2_CONFIG
 	#ifdef BEACON
 		showbeacon2();
 		BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
 	#else
 	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
-		showdata2();
+		#ifdef EPD27_CONFIG
+				showdata27();
+		#endif
+		#ifdef EDP29_CONFIG
+				showdata29();
+		#endif
 	}
 	#endif
 #endif
@@ -978,13 +953,11 @@ void gpio_init(int sleepmode){
 void biot_ioshutdown(int sleepmode){
 
     BHLOG(LOGSPI) Serial.println("  MAIN: shutdown sensor devices");
-
   	BHLOG(LOGBH) setRGB(0,0,0);	// SHow blink of SHutdown start by Blue LED
 
 if(sleepmode == 1)
 {
 	// Shutdown all SPI devices
-
 #ifdef SD_CONFIG
     if(issdcard){
       SD.end();   // unmount SD card
@@ -992,19 +965,12 @@ if(sleepmode == 1)
     }
 #endif
 
-#ifdef EPD_CONFIG
-    if(isepd){
-      display.powerDown();
-      isepd = 0;
-    }
-#else
-	#ifdef EPD2_CONFIG
-		if(isepd){
-			display.powerOff();
-	//    	display.hibernate();
-			isepd = 0;
-		}
-	#endif
+#ifdef EPD2_CONFIG
+	if(isepd){
+		display.powerOff();
+//    	display.hibernate();
+		isepd = 0;
+	}
 #endif
 
 #ifdef LORA_CONFIG
@@ -1021,7 +987,7 @@ if(sleepmode == 1)
 	digitalWrite(SD_CS, HIGH);
 	digitalWrite(LoRa_CS, HIGH);
 //	digitalWrite(EPD_CS, HIGH);
-	pinMode(EPD_CS, INPUT);
+	  pinMode(EPD_CS, INPUT);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
 //	rtc_gpio_isolate(EPD_CS);
@@ -1046,10 +1012,8 @@ if(sleepmode == 1)
 	pinMode(EPD_DC,  INPUT);		// no RTC pin
 	rtc_gpio_isolate(EPD_BUSY);
 	rtc_gpio_isolate(EPD_RST);
-	rtc_gpio_isolate(EPD_DC);
 	gpio_hold_en(EPD_BUSY);
 	gpio_hold_en(EPD_RST);
-	gpio_hold_en(EPD_DC);
 
 	// Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
@@ -1057,9 +1021,8 @@ if(sleepmode == 1)
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
 
 //	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
-	digitalWrite(EPDGNDEN, LOW);    // Test: enable EPD Ground low side switch
-//    pinMode(EPDGNDEN, INPUT);		// no RTC pin
-	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
+    pinMode(EPDGNDEN, INPUT);		// no RTC pin
+//	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep
@@ -1095,7 +1058,7 @@ if(sleepmode == 1)
 
     pinMode(LEDRED, OUTPUT); 		// finally pulled up by LED, No RTC GPIO
 	digitalWrite(LEDRED, HIGH);
-	gpio_hold_en(LEDRED);			// no RTC IO
+//	gpio_hold_en(LEDRED);			// no RTC IO
 
 	// Keep BAT Charge control pin as it is
 	gpio_hold_en(BATCHARGEPIN);

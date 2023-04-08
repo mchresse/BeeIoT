@@ -40,7 +40,7 @@ uint32_t ADC_Result;	// adc sample value
 // 	Serial.printf(" -> %imV  =>", ADC_Result);
 
 	ADC_Result = analogReadMilliVolts(pin); 							// read mV sample value and compensate base level
-  	Serial.printf(" - AD-Sample[%i] = %imV\n", pin, ADC_Result);
+//  	Serial.printf(" - AD-Sample[%i] = %imV\n", pin, ADC_Result);
 
 return ADC_Result;
 }

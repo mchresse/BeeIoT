@@ -1,25 +1,18 @@
 // Copyright 2023 Randolph Esser. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+#ifndef EPAPER_H
+#define EPAPER_H
 
-#ifdef EPD_CONFIG
-// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-#include <GxEPD.h>
-// #include <GxGDEW027C44/GxGDEW027C44.h>	// 2.7" b/w/r
-#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
-//#include <GxGDEM029T94/GxGDEM029T94.h>		// 2.9" b/w
-
-#include <GxIO/GxIO_SPI/GxIO_SPI.h>
-#include <GxIO/GxIO.h>
-
-// #include "BitmapGraphics.h"
-#include "BitmapExamples.h"
-#include "BitmapWaveShare.h"
-void showbeacon 	(void);
-
-#else
 #ifdef EPD2_CONFIG
-// GxEPD2 support only
+// for GxEPD2 library support only
+
+// Define ePaper Size-type
+#define EPD27_CONFIG		// EPD2 ePaper with 2.7"
+//#define EPD29_CONFIG		// EPD2 ePaper with 2.9"
+
+// EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
+#define EPD_BW				// Define EPD Type: Black/White only
 
 #define ENABLE_GxEPD2_GFX 0
 //#include <GFX.h>
@@ -51,6 +44,7 @@ void showbeacon 	(void);
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290c     // GDEW029Z10  128x296, UC8151 (IL0373), (WFT0290CZ10)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_Z13c // GDEH029Z13  128x296, UC8151D, (HINK-E029A10-A3 20160809)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_C90c // GDEM029C90  128x296, SSD1680, (FPC-7519 rev.b)
+
 // somehow there should be an easier way to do this
 #define GxEPD2_BW_IS_GxEPD2_BW true
 #define GxEPD2_3C_IS_GxEPD2_3C true
@@ -88,7 +82,11 @@ void drawBitmaps176x264(void);
 void showPartialUpdate(void);
 void deepSleepTest(void);
 void epd2_test(void);
+
+int  setup_epd2		(int mode);		// in epd2.cpp
+void showdata27		(void);
+void showdata29		(void);
 void showbeacon2 	(void);
 
 #endif // EPD2_CONFIG
-#endif // EPD_CONFIG
+#endif // EPAPER_H

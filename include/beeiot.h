@@ -83,24 +83,15 @@
 #define ONEWIRE_CONFIG		// OW Temp. Sensors (3x)
 #define SD_CONFIG			// SD Card Logging
 #define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
-//#define EPD_CONFIG			// Display: EPD_Class based ePaper Waveshare v1.x
 #define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
-#define EPD27_CONFIG		// EPD3 ePaper with 2.7"
-//#define EPD29_CONFIG		// EPD3 ePaper with 2.9"
-
-
-// EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
-#define EPD_BW				// Define EPD Type: Black/White only
-
 #define DSENSOR2			// Use Sensor data Format 2: binary stream (shorter)
 // #define DMSG				// Use Sensor data Format 1: ASCII stream (longer)
 
 #else
 // HW Componnets for LoRa in Beacon Mode
-// #define EPD_CONFIG
-#define EPD2_CONFIG
-#define LORA_CONFIG
-#define SD_CONFIG	// for test purpose only (not needed for beacon mode)
+#define SD_CONFIG			// SD Card Logging
+#define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
+#define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
 
 #define BEACONFRQ	10		// send beacon each 10 sec.
 #define BEACONCHNCFG 0		// Set beacon channel config table Index
@@ -286,18 +277,6 @@ int setup_rtc		(int mode);		// in rtc.cpp
 int setup_spi    	(int mode);		// in multiSPI.cpp
 int bat_control		(float batlevel, bool bootinit);  // in setup()
 int setup_sd		(int mode);		// in sdcard.cp
-
-#ifdef EPD_CONFIG
-int setup_epd		(int mode);		// in epd.cpp
-void showdata		(void);
-// epd.cpp functions
-void drawBitmapFromSD(const char *filename, int16_t x, int16_t y, bool with_color = true);
-void drawBitmaps_200x200(void);
-void drawBitmaps_other(void);
-#else
-int setup_epd2		(int mode);		// in epd2.cpp
-void showdata2		(void);
-#endif
 
 // in hx711Scale.cpp
 float   HX711_read  (int mode);
