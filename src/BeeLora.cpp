@@ -1199,6 +1199,7 @@ byte * ptr;
     BHLOG(LOGLORAW) Serial.println();
 	BHLOG(LOGLORAW) Serial.print("    LoRa-IRQ PkgLen: ");
 	BHLOG(LOGLORAW) Serial.println(packetSize);
+	rtc_wdt_feed();		// Feed the IRQ WD Timer -> get add. time for ISR here...
 
     if(BeeIotRXFlag >= MAXRXPKG){ // Check RX Semaphor: RX-Queue full ?
     // same situation as: RXPkgIsrIdx+1 == RXPkgSrvIdx (but hard to check with ring buffer)

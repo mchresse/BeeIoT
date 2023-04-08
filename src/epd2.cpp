@@ -19,19 +19,21 @@
 //*******************************************************************
 
 #include <Arduino.h>
-#include <SPI.h>
 #include <version.h>
 #include <beeiot.h>
-#include <BeeIoTWan.h>
-#include <beelora.h>
-#include "epaper.h"
 
 #ifdef EPD2_CONFIG
+
+#include <BeeIoTWan.h>
+#include <beelora.h>
+#include <SPI.h>
+#include "epaper.h"
 
 // FreeFonts from Adafruit_GFX
 #include <Fonts/FreeMonoBold9pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeMonoBold24pt7b.h>
 #include <Fonts/FreeSansBold24pt7b.h>
 
 
@@ -48,7 +50,7 @@ extern const char * beeiot_StatusString[];
 extern byte BeeIoTStatus;
 extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
 							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-bool	EPDupdate=true;		// =true: EPD update requested
+extern bool	EPDupdate;			// =true: EPD update requested
 
 void biot_welcome_page(void);
 void biot_welcome_full(void);
@@ -195,7 +197,7 @@ void showdata2(void){
 //	display.printf(" TempIntern: %s\n", String(bhdb.dlog.TempIntern,2));
 
 	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
-	display.printf(" Batt[V]: %s(%s%%)<%s\n",
+	display.printf(" Batt[V]:%s(%s%%)<%s\n",
 			String((float)bhdb.dlog.BattLoad/1000,2),
 			String((uint16_t)bhdb.dlog.BattLevel),
 			String((float)bhdb.dlog.BattCharge/1000,2));
@@ -221,7 +223,7 @@ void showdata2(void){
 // show Sensor log data on epaper Display
 // Input: sampleID= Index on Sensor dataset of BHDB
 //***********************************************************
-void showbeacon(void){
+void showbeacon2(void){
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){
 		return;	// no EPD port -> no action

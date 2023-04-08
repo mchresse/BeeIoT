@@ -44,23 +44,7 @@
 #include "sdcard.h"
 #include "LoRa.h"
 
-#ifdef EPD_CONFIG
-// Libs for WaveShare ePaper 2.7 inch r/w/b Pinning GxGDEW027C44
-#include <GxEPD.h>
-// #include <GxGDEW027C44/GxGDEW027C44.h>	// 2.7" b/w/r
-#include <GxGDEW027W3/GxGDEW027W3.h>     // 2.7" b/w
-//#include <GxGDEM029T94/GxGDEM029T94.h>		// 2.9" b/w
-
-#include <GxIO/GxIO_SPI/GxIO_SPI.h>
-#include <GxIO/GxIO.h>
-
-// #include "BitmapGraphics.h"
-#include "BitmapExamples.h"
-#include "BitmapWaveShare.h"
-#endif // EPD_CONFIG
-
 #include "epaper.h"
-#include <Fonts/FreeMonoBold9pt7b.h>
 
 
 
@@ -72,30 +56,39 @@ extern uint16_t	lflags;     // BeeIoT log flag field
 
 // instantiate default SPI device: HSPI
 // SPI Pin defintion see beeiot.h
-#define SPISPEED    1000000  	// SPI speed: 1MHz
+#define SPISPEED    4000000  	// SPI speed: 4MHz
 SPIClass SPI2(HSPI); 			// create SPI2 object with default HSPI pinning
 
 #ifdef EPD_CONFIG
-// ePaper IO-SPI Object: arbitrary selection of DC + RST + BUSY
-// for defaults: C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
-// With defined WROVERB switch: EPD_BUSY = 39 !!!
-GxIO_Class io(SPI2, EPD_CS, EPD_DC, EPD_RST, 0); // (SPIclass, EPD_CS, DC, RST, backlight=0)
-GxEPD_Class display(io, EPD_RST, EPD_BUSY);  // (io-class GxGDEW027C44, RST, BUSY)
+	// ePaper IO-SPI Object: arbitrary selection of DC + RST + BUSY
+	// for defaults: C:\Users\MCHRESSE\.platformio\packages\framework-arduinoespressif32\variants\esp32
+	// With defined WROVERB switch: EPD_BUSY = 39 !!!
+	GxIO_Class io(SPI2, EPD_CS, EPD_DC, EPD_RST, 0); // (SPIclass, EPD_CS, DC, RST, backlight=0)
+	GxEPD_Class display(io, EPD_RST, EPD_BUSY);  // (io-class GxGDEW027C44, RST, BUSY)
 #else
-// GxEPD2 support
-#if defined(ESP32)
-// Now define the one and only Display <template> class instance of a EPD2 device
-GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
-	display(GxEPD2_DRIVER_CLASS(/*CS=*/ EPD_CS, /*DC=*/ EPD_DC, /*RST=*/ EPD_RST, /*BUSY=*/ EPD_BUSY));
-#endif // ESP32
+	#ifdef EPD2_CONFIG
+		// GxEPD2 support
+		#if defined(ESP32)
+		// Now define the one and only Display <template> class instance of a EPD2 device
+		GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
+			display(GxEPD2_DRIVER_CLASS(/*CS=*/ EPD_CS, /*DC=*/ EPD_DC, /*RST=*/ EPD_RST, /*BUSY=*/ EPD_BUSY));
+		#endif // ESP32
+	#endif // EPD2_CONFIG
 #endif // EPD_CONFIG
 
-// static const int spiClk = SPISPEED; // 2 MHz
 
 int isepd =0;          // =1 ePaper found
 int issdcard =0;       // =1 SDCard found
+extern bool	EPDupdate; // EPD update control requested
+extern bool GetData;   // =1 -> manual trigger by blue key to do next sensor loop
 
-void helloWorldx(void);
+
+int SetonKey(int key, void(*callback)(void));
+void onKey1(void);		// ISR for EPD_KEY1 -> Yellow Button
+void onKey2(void);		// ISR for EPD_KEY2 -> Red	  Button
+void onKey3(void);		// ISR for EPD_KEY3 -> Green  Button
+void onKey4(void);		// ISR for EPD_KEY4 -> Blue   Button
+
 
 //*******************************************************************
 // SPI Port Setup Routine for 2 SPI ports: SDCard + ePaper  + LoRa Module at VSPI
@@ -141,14 +134,121 @@ int setup_spi(int reentry) {    // My SPI Constructor
 		// so we have to assume its there...
 		isepd = 1; // have to assume epd works now...no check implememnted by driver
     #else
-		BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
-		display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
-		display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
+		#ifdef EPD2_CONFIG
+			BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
+			display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
+			display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
 
-		// display class does not provide any feedback if device is available
-		// so we have to assume its there...
-		isepd = 1; // have to assume epd works now...no check implememnted by driver
+			// display class does not provide any feedback if device is available
+			// so we have to assume its there...
+			isepd = 1; // have to assume epd works now...no check implememnted by driver
+		#else
+			isepd = 0; // have to assume epd not existing
+		#endif
 	#endif
+
+// Preset Keys 1-4: active 0 => connects to GND (needs a pullup)
+// KEY1 => (Deep-) Sleep Wakeup trigger
+// KEY2 => MCU_Reset (on EN)
+// KEY3 => n.a.
+// KEY4 => n.a.
+
+// Assign Key-IRQ to callback function
+	SetonKey(1, onKey1);
+//	SetonKey(2, onKey2);
+//	SetonKey(3, onKey3);
+//	SetonKey(4, onKey4);
 
     return (issdcard);   // SD SPI port is initialized
 } // end of setup_spi_sd_epd()
+
+//*************************************************************************
+// SetonKey()
+// Assign ISR to EPD-Keyx	(1: Yellow, 2: Red, 3: Green, 4: Blue)
+// PIN-Keys already defined in beeiot.h
+// Input:
+//   key		1..4	Key number of EPD board (PIN definition see also beeiot.h)
+//   callback	*ptr	Function ptr to be assigned to IRQ of Key-GPIO
+// Return:
+//	0			Callback assignd to IRQ of KEYx Port
+// -1			Wrong/reserved  key #
+// -2			GPIO is not ready for ISR assignment
+//*************************************************************************
+int SetonKey(int key, void(*callback)(void)){
+#ifdef EPD_CONFIG
+
+	if(!callback)	// NULL ptr. can not be assigned
+ 		return(-1);
+
+	switch (key){
+	case 1: 			// EPD_KEY 1
+		if(callback){
+    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 ISR assigned");
+		}else{
+	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
+		}
+		return(-2);
+		break;
+	case 2: 			// EPD_KEY 2
+		if(callback){
+//			pinMode(EPD_KEY2, INPUT);
+//  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 undefined for V3.0 board");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY2));
+		}
+		return(-2);
+		break;
+	case 3: 			// EPD_KEY 3 /w ext 10k Pullup to 3.3V!
+		if(callback){
+//			pinMode(EPD_KEY3, INPUT);
+//	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V3.0 board");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY3));
+		}
+		return(-2);
+		break;
+	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
+		if(callback){
+//			pinMode(EPD_KEY4, INPUT);
+//    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 undefined for V3.0 board");
+		}else{
+//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
+		}
+		break;
+	default:
+		return(-1);	// unsupported Key number
+		break;
+	}
+#endif
+	return(0);
+}
+
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Yellow Button
+void IRAM_ATTR onKey1(void){
+	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
+	EPDupdate=true;	// EPD update requested
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Red Button
+void IRAM_ATTR onKey2(void){
+	BHLOG(LOGBH) Serial.println("  onKey2: EPD-Key2 IRQ: Red Key");
+	EPDupdate=true;	// EPD update requested
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Green Button
+void IRAM_ATTR onKey3(void){
+	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Green Key");
+	EPDupdate=true;	// EPD update requested
+}
+//*************************************************************************
+// onKeyx() ISR of EPD-Keyx	-> Blue button
+void IRAM_ATTR onKey4(void){
+	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
+	EPDupdate=true;	// EPD update requested
+}

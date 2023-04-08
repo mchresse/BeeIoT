@@ -152,17 +152,20 @@ extern int isepd;               // =1 ePaper found
 extern int islora;              // =1 LoRa client is active
 
 extern SPIClass 	SPI2;		// Master SPI device
-extern bool			EPDupdate;	// =true: EPD update requested
 extern HX711        scale;      // managed in HX711Scale module
 extern i2c_port_t 	i2c_master_port;	// I2C Master Port in i2cdev.cpp
 extern int 			adcaddr;	// I2C Dev.address of detected ADC
 extern OneWire 		ds;			// OneWire Bus object
 
+
 #ifdef EPD_CONFIG
-extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
+	extern GxEPD_Class  display;    // ePaper instance from MultiSPI Module
 #else
-extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
+#ifdef EPD2_CONFIG
+	extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
 #endif
+#endif
+bool				EPDupdate=true;	// =true: EPD update requested
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -174,22 +177,15 @@ RTC_DATA_ATTR uint8_t bat_status = BAT_UNKNOWN;	// Status of battery state machi
 //************************************
 // Global function declarations
 //************************************
-void showFont(const char name[], const GFXfont* f);
-void showFontCallback(void);
-void showPartialUpdate(float data);
-void ProcessAndValidateConfigValues(int countValues);
 void InitConfig(int mode);
 void prepare_sleep_mode(int mode, uint64_t waittime);
 esp_sleep_wakeup_cause_t print_wakeup_reason();
-void CheckWebPage();
 void BeeIoTSleep(void);
 void biot_ioshutdown(int sleepmode);
 void gpio_init(int sleepmode);
 void get_efuse_ident(void);
-void wiretest();
 void ResetNode(uint8_t p1, uint8_t p2, uint8_t p3);
 void reset_RTCIO(void);
-void sleeplong(int timetosleep);
 
 extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
@@ -203,7 +199,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGADS ;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGADS + LOGEPD + LOGLORAW;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -363,44 +359,49 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // +1,2ms
-  BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
 #ifdef EPD_CONFIG
+  BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
   if (setup_epd(ReEntry) == 0){
     BHLOG(LOGBH)Serial.println("         EPD ePaper Test failed");
   }
 #else
-  if (setup_epd2(ReEntry) == 0){
-    BHLOG(LOGBH)Serial.println("         No EPD2 ePaper detected");
-  }
-#endif
+	#ifdef EPD2_CONFIG
+  	BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
+	if (setup_epd2(ReEntry) == 0){
+		BHLOG(LOGBH)Serial.println("         No EPD2 ePaper detected");
+	}
+	#endif // EPD2
+#endif // EPD
   BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // Init battery State machine
   if (ReEntry==0){
   	BHLOG(LOGBH)Serial.println("   Start: Battery State control");
-  	bat_control(0.0, 0);	// (re-)initialize Battery state machine
+  	bat_control(0.0, true);	// (re-)initialize Battery state machine once
   }
 
   BHLOG(LOGBH) LEDpulse(1);
 
   //***************************************************************
 // Setup ESP32 WatchDog Timer
-/*
-if(rtc_wdt_is_on){
+
+if(0) {		// if(rtc_wdt_is_on){
 	unsigned int timeout;
   	BHLOG(LOGBH)Serial.println("   WDT: Enabled");
 	rtc_wdt_get_timeout(RTC_WDT_STAGE0, &timeout);
-  	BHLOG(LOGBH)Serial.printf("RTC Timeout: %i ms on Stage%d\n", timeout, RTC_WDT_STAGE0);
+  	BHLOG(LOGBH)Serial.printf("RTC Timeout: %i ms on Stage%d", timeout, RTC_WDT_STAGE0);
 	rtc_wdt_get_timeout(RTC_WDT_STAGE1, &timeout);
   	BHLOG(LOGBH)Serial.printf(" -- %i ms on Stage%d\n", timeout, RTC_WDT_STAGE1);
+// rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
+//	rtc_wdt_set_stage(RTC_WDT_STAGE0, RTC_WDT_STAGE_ACTION_RESET_SYSTEM);
+//	rtc_wdt_set_stage(RTC_WDT_STAGE1, RTC_WDT_STAGE_ACTION_RESET_SYSTEM);
 	rtc_wdt_set_stage(RTC_WDT_STAGE0, RTC_WDT_STAGE_ACTION_OFF );	// Disable Action of RTC WDT
 	rtc_wdt_set_stage(RTC_WDT_STAGE1, RTC_WDT_STAGE_ACTION_OFF );	// Disable Action of RTC WDT
 	rtc_wdt_protect_off();
 	rtc_wdt_disable();	// Finally Disable RTC WDT itself
 }
-*/
-// rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
+
 
 //***************************************************************
 // initial sleep mode for next loop:
@@ -551,7 +552,7 @@ float weight =0;
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
-	bat_control(addata, 1);	// Evaluate BAT Level + Error handling
+	bat_control(addata, false);	// Evaluate BAT Level + Error handling
 
   BHLOG(LOGBH) LEDpulse(1);	// Batter handling done
 
@@ -577,9 +578,14 @@ float weight =0;
 #endif // Beacon
 #endif // EPD
 #ifdef EPD2_CONFIG
+	#ifdef BEACON
+		showbeacon2();
+		BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
+	#else
 	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
 		showdata2();
 	}
+	#endif
 #endif
 
 // end of sensor loop
@@ -855,9 +861,7 @@ int cnum;
 /// @return void
 //*******************************************************************
 void gpio_init(int sleepmode){
-
-//	if(sleepmode==1)
-	{	// coming from Deep sleep
+		// coming from Deep sleep
 		gpio_hold_dis(SPIPWREN);	// required for all SPi devices
 		gpio_hold_dis(EPDGNDEN);	// release GND pin of EPD
 
@@ -874,14 +878,14 @@ void gpio_init(int sleepmode){
 		gpio_hold_dis(LoRa_DIO0);	// no RTC
 		//	gpio_hold_dis(LoRa_RST);	// NC
 
-		gpio_hold_dis(EPD_BUSY);	// no RTC
+		gpio_hold_dis(EPD_BUSY);	// no RTC -> Input
 		gpio_hold_dis(EPD_DC);		// no RTC
 		gpio_hold_dis(EPD_RST);
 
 		gpio_hold_dis(I2C_SCL);
 		gpio_hold_dis(I2C_SDA);
 
-		gpio_hold_dis(RTC_INT);		// RTC-INT\ pin
+		gpio_hold_dis(RTC_INT);		 // RTC-INT\ pin
 
 		gpio_hold_dis(HX711_SCK);  		// HX711 SCK		// no RTC pin
 		gpio_hold_dis(HX711_DT);   		// HX711 Data		// no RTC pin
@@ -929,11 +933,11 @@ void gpio_init(int sleepmode){
 		//	  digitalWrite(LoRa_RST, HIGH);	// NC
 
 	// Preset SPI dev: EPD Display Module
+		digitalWrite(EPD_DC, HIGH);
+		digitalWrite(EPD_RST, HIGH);
 		pinMode(EPD_BUSY, INPUT);
 		pinMode(EPD_DC, OUTPUT);
 		pinMode(EPD_RST, OUTPUT);
-		digitalWrite(EPD_DC, HIGH);
-		digitalWrite(EPD_RST, HIGH);
 
 	// Panel Key 1-4
 		pinMode(EPD_KEY1, INPUT);	// +ext. Pullup
@@ -958,7 +962,6 @@ void gpio_init(int sleepmode){
 		pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> Start with defensive Input
 
 	// BATCHARGEPIN fully controlled by bat_control()
-	}
 }
 
 
@@ -978,7 +981,8 @@ void biot_ioshutdown(int sleepmode){
 
   	BHLOG(LOGBH) setRGB(0,0,0);	// SHow blink of SHutdown start by Blue LED
 
-if(sleepmode == 1){
+if(sleepmode == 1)
+{
 	// Shutdown all SPI devices
 
 #ifdef SD_CONFIG
@@ -994,11 +998,13 @@ if(sleepmode == 1){
       isepd = 0;
     }
 #else
-    if(isepd){
-    	display.powerOff();
-//    	display.hibernate();
-    	isepd = 0;
-    }
+	#ifdef EPD2_CONFIG
+		if(isepd){
+			display.powerOff();
+	//    	display.hibernate();
+			isepd = 0;
+		}
+	#endif
 #endif
 
 #ifdef LORA_CONFIG
@@ -1036,12 +1042,14 @@ if(sleepmode == 1){
 
 
 	pinMode(EPD_BUSY, INPUT);		// already output by EPD -> so ESP-Input by default
-	pinMode(EPD_RST, INPUT);		// EPD: RST = Output
+	pinMode(EPD_RST, OUTPUT);		// EPD: keep RST = Output
 	pinMode(EPD_DC,  INPUT);		// no RTC pin
 	rtc_gpio_isolate(EPD_BUSY);
 	rtc_gpio_isolate(EPD_RST);
+	rtc_gpio_isolate(EPD_DC);
 	gpio_hold_en(EPD_BUSY);
 	gpio_hold_en(EPD_RST);
+	gpio_hold_en(EPD_DC);
 
 	// Switch off SPI power switch of SPI device back to LOW
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
@@ -1049,9 +1057,9 @@ if(sleepmode == 1){
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
 
 //	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
-//	digitalWrite(EPDGNDEN, LOW);    // Test: enable EPD Ground low side switch
-    pinMode(EPDGNDEN, INPUT);		// no RTC pin
-//	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
+	digitalWrite(EPDGNDEN, LOW);    // Test: enable EPD Ground low side switch
+//    pinMode(EPDGNDEN, INPUT);		// no RTC pin
+	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep
@@ -1094,7 +1102,8 @@ if(sleepmode == 1){
 
     BHLOG(LOGSPI) Serial.println("  MAIN: shutdown to sleep mode 2 done !");
 
-	}else if(sleepmode == 2){
+} else if(sleepmode == 2)
+	{
 
 	} // end of sleepmode 2
 
@@ -1342,9 +1351,9 @@ void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
 //*******************************************************************
 // start battery charging
 void Enable_bat_charge(void){
+//	pinMode(BATCHARGEPIN, INPUT);		// better set it to High Impedance -> good for sleep mode
 	pinMode(BATCHARGEPIN,  OUTPUT);
 	digitalWrite(BATCHARGEPIN, LOW);	// switch Charge control On
-	pinMode(BATCHARGEPIN, INPUT);		// better set it to High Impedance -> good for sleep mode
 	return;
 }
 // stop charging -> battery just serves the load
@@ -1355,15 +1364,16 @@ void Disable_bat_charge (void){
 }
 
 
-int bat_control(float batlevel, int binit){
+int bat_control(float batlevel, bool bootinit){
 int rc=0;
 int cnum=0;
 
-	if(!binit){		// called by setup phase -> ignore batlevel by now
-		bat_status = BAT_UNKNOWN;	// have to wait for first Bat.Level.Value
+	gpio_hold_dis(BATCHARGEPIN);		// Release Pin from RTC control
+
+	if(bootinit){						// called by setup phase -> ignore battlevel by now
+		bat_status = BAT_UNKNOWN;		// have to wait for first Bat.Level.Value
 		// Enter Reset-default mode: Charge Control On	( if not already there)
-		pinMode(BATCHARGEPIN, INPUT);		// to High Impedance
-		gpio_hold_dis(BATCHARGEPIN);		// Release Pin from RTC control
+		pinMode(BATCHARGEPIN, INPUT);	// to High Impedance
 		return(rc);
 	}
 
@@ -1464,7 +1474,6 @@ int cnum=0;
 		break;
 	} // end of Switch
 
-	gpio_hold_dis(BATCHARGEPIN);
 	return(rc);	// return battery state
 }
 

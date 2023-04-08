@@ -74,9 +74,6 @@
 // Select RUnMode: Default: BIoT
 // Beacon Mode -> Send Beacon Message each 10 sec. + Transfer Quality Metric
 // #define BEACON		// Work in Beacon Mode only -> Send LoRa Beacon only.
-
-// EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
-#define EPD_BW				// Define EPD Type: Black/White only
 //*******************************************************************
 
 // Specify workOn Modules of setup() and main loop()
@@ -85,9 +82,15 @@
 #define HX711_CONFIG		// Weight Cell Bosche HX100
 #define ONEWIRE_CONFIG		// OW Temp. Sensors (3x)
 #define SD_CONFIG			// SD Card Logging
-// #define EPD_CONFIG			// Display: EPD_Class based ePaper Waveshare v1.x
-#define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
 #define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
+//#define EPD_CONFIG			// Display: EPD_Class based ePaper Waveshare v1.x
+#define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
+#define EPD27_CONFIG		// EPD3 ePaper with 2.7"
+//#define EPD29_CONFIG		// EPD3 ePaper with 2.9"
+
+
+// EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
+#define EPD_BW				// Define EPD Type: Black/White only
 
 #define DSENSOR2			// Use Sensor data Format 2: binary stream (shorter)
 // #define DMSG				// Use Sensor data Format 1: ASCII stream (longer)
@@ -281,7 +284,7 @@ int setup_i2c_ADS	(int mode);
 int setup_i2c_MAX	(int mode);
 int setup_rtc		(int mode);		// in rtc.cpp
 int setup_spi    	(int mode);		// in multiSPI.cpp
-int bat_control		(float batlevel, int reentry);  // in main
+int bat_control		(float batlevel, bool bootinit);  // in setup()
 int setup_sd		(int mode);		// in sdcard.cp
 
 #ifdef EPD_CONFIG
@@ -320,7 +323,5 @@ esp_err_t mydelay2	(int32_t waitms, int32_t initdelay);	// light sleep delay met
 uint16_t adc_read	(int channel);
 int  max_multiread	(uint8_t channelend, uint16_t* adcdat);
 void max_reset		(void);	// set MAX123x to default reset
-
-void showbeacon 	(void);
 
 #endif // end of BeeIoT.h
