@@ -1,15 +1,17 @@
 // Copyright 2023 Randolph Esser. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-#ifndef EPAPER_H
-#define EPAPER_H
+
+//#ifndef EPAPER_H
+//#define EPAPER_H
 
 #ifdef EPD2_CONFIG
 // for GxEPD2 library support only
 
 // Define ePaper Size-type
-#define EPD27_CONFIG		// EPD2 ePaper with 2.7"
-//#define EPD29_CONFIG		// EPD2 ePaper with 2.9"
+#define EPD27_CONFIG	0	// EPD2 ePaper with 2.7"
+//#define EPD29_CONFIG	0	// EPD2 ePaper with 2.9"
+
 
 // EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
 #define EPD_BW				// Define EPD Type: Black/White only
@@ -84,9 +86,10 @@ void deepSleepTest(void);
 void epd2_test(void);
 
 int  setup_epd2		(int mode);		// in epd2.cpp
+void showdata		(void);
 void showdata27		(void);
 void showdata29		(void);
 void showbeacon2 	(void);
 
 #endif // EPD2_CONFIG
-#endif // EPAPER_H
+//#endif // EPAPER_H

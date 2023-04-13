@@ -518,7 +518,7 @@ float weight =0;
   	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
 
   	// Get battery Powerlevel & calculate % Level
-	#define VBAT_LEVEL	-33
+	#define VBAT_LEVEL	-29
 	float x;              		// Volt calculation buffer
 	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 316 / 100;			// get ADC Vin corrected by ext. Resistance devider
 	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
@@ -548,19 +548,12 @@ float weight =0;
 // 8. Update ePaper
 // 2440ms
 #ifdef EPD2_CONFIG
-	#ifdef BEACON
-		showbeacon2();
-		BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
-	#else
-	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
-		#ifdef EPD27_CONFIG
-				showdata27();
-		#endif
-		#ifdef EDP29_CONFIG
-				showdata29();
-		#endif
-	}
-	#endif
+#ifdef BEACON
+	showbeacon2();
+	BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
+#else
+	showdata();
+#endif
 #endif
 
 // end of sensor loop

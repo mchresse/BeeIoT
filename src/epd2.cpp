@@ -27,7 +27,7 @@
 #include <BeeIoTWan.h>
 #include <beelora.h>
 #include <SPI.h>
-#include "epaper.h"
+#include <epaper.h>
 
 // FreeFonts from Adafruit_GFX
 #include <Fonts/FreeMonoBold9pt7b.h>
@@ -160,8 +160,19 @@ const char tauthor[] ="        by R.Esser";
 // Show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset from BHDB
 //*********************************************************
-void showdata27(void){
+void showdata(void){
+	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
+#ifdef EPD27_CONFIG
+		showdata27();
+#endif
 
+#ifdef EPD29_CONFIG
+		showdata29();
+#endif
+	}
+}
+
+void showdata27(void){
 	// No EPD panel connected or no Update request pending
 	if(isepd==0 || 	EPDupdate==false){
 		return;	// no EPD port -> no action
@@ -252,13 +263,13 @@ void showdata29(void){
 //	display.printf(" TempIntern: %s\n", String(bhdb.dlog.TempIntern,2));
 
 	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
-	display.printf(" Batt[V]:%s(%s%%)<%s\n",
+	display.printf(" VBatt: %sV(%s%%) < %sV\n",
 			String((float)bhdb.dlog.BattLoad/1000,2),
 			String((uint16_t)bhdb.dlog.BattLevel),
 			String((float)bhdb.dlog.BattCharge/1000,2));
 
 	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
-    display.print("    Status: ");
+    display.print("     Status: ");
 	if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
   		display.print(beeiot_StatusString[BIOT_DEEPSLEEP]);
 	}else{
