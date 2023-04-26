@@ -181,6 +181,7 @@
 #define BAT_CHARGING	1			// Battery in charging phase
 #define BAT_UNKNOWN		3			// Battery not initialized
 #define BAT_DAMAGED		4			// Battery value o.o.R
+#define BATTMAXCNT		3			// MAX Bat-Charge repition loop counter
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
 #define LOGNOP		0		//    0: No Log Messages at all.
@@ -237,6 +238,7 @@ typedef struct {				// data elements of one log line entry
 	int16_t BattCharge;			// Battery Charge voltage input >0 ... 5200mV
 	int16_t BattLoad;			// Battery voltage level (typ. 3700 mV)
 	int16_t BattLevel;			// Battery Level in 0-100%
+	int		BattFullCnt;		// BAT Full counter for resilient loading to assure 100% Charge state
 	char	comment[DROWNOTELEN]; // free notice text string to GW + EOL sign
 } datrow;
 
