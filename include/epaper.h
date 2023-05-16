@@ -9,8 +9,8 @@
 // for GxEPD2 library support only
 
 // Define ePaper Size-type
-#define EPD27_CONFIG	0	// EPD2 ePaper with 2.7"
-//#define EPD29_CONFIG	0	// EPD2 ePaper with 2.9"
+//#define EPD27_CONFIG	0	// EPD2 ePaper with 2.7"
+#define EPD29_CONFIG	0	// EPD2 ePaper with 2.9"
 
 
 // EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster

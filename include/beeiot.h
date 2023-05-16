@@ -173,15 +173,15 @@
 #define BATTERY_NORM_LEVEL		3700.0 // mV = 50% => nominal LiPo Volt.Level
 #define BATTERY_MIN_LEVEL       3200.0 // mV = 33%
 #define BATTERY_SHUTDOWN_LEVEL  3000.0 // mV = 0% -> Limit from ESP32 Min Power level.
-#endif
+// Charge till 100% reached -> Unload till 50% reached -> charge again...
+#define BATCHRGSTART    BATTERY_NORM_LEVEL // Start charging again when 50% reached
 
-// Charge till 100% reached -> Unload till 33% reached -> charge again...
-#define BATCHRGSTART    BATTERY_MIN_LEVEL // Start charging again when 33% reached
 #define BAT_UNCHARGE	0			// Battery under Load -> discharging
 #define BAT_CHARGING	1			// Battery in charging phase
 #define BAT_UNKNOWN		3			// Battery not initialized
 #define BAT_DAMAGED		4			// Battery value o.o.R
 #define BATTMAXCNT		3			// MAX Bat-Charge repition loop counter
+#endif
 
 // Definitions of LogLevel masks instead of verbose mode (for uint16_t bitfield)
 #define LOGNOP		0		//    0: No Log Messages at all.

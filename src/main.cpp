@@ -187,7 +187,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGLORAW;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -1442,10 +1442,10 @@ int cnum=0;
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
 			rc=0;
 
-		}else{ 							// we are in <= BATTERY_MIN_LEVEL
+		}else{ 							// we are still in <= BATTERY_MIN_LEVEL
+			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			BHLOG(LOGBH) Serial.printf("    BAT-LOW State entered; throttled reporting (%i Min)\n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
-			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			rc=1;
 			// Send a BAT Low warning note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattLow!");

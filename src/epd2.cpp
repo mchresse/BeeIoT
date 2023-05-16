@@ -263,7 +263,7 @@ void showdata29(void){
 //	display.printf(" TempIntern: %s\n", String(bhdb.dlog.TempIntern,2));
 
 	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
-	display.printf(" VBatt: %sV(%s%%) < %sV\n",
+	display.printf(" VBatt:%sV(%s%%) < %sV\n",
 			String((float)bhdb.dlog.BattLoad/1000,2),
 			String((uint16_t)bhdb.dlog.BattLevel),
 			String((float)bhdb.dlog.BattCharge/1000,2));
