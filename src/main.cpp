@@ -187,7 +187,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGLORAW;
+RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGEPD ;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -202,11 +202,11 @@ int rc;		// generic return code variable
 	gpio_init(ReEntry);
 
 	BHLOG(LOGBH) setup_LED();	// setup LED: Default LED Off
-	BHLOG(LOGBH) LEDOff();		// for tests get high pulses
+	BHLOG(LOGBH) LEDpulse(15);	// for tests get high pulses
 
-	BHLOG(LOGBH) setup_RGB();	// define RGB-LED control pin
-	BHLOG(LOGBH) setRGB(255,0,0); // start with Red LED On -> Setup Phase
-	BHLOG(LOGRGB) RGBtest();
+	BHLOG(LOGBH)  setup_RGB();	// define RGB-LED control pin
+	BHLOG(LOGRGB) setRGB(255,0,0); // start with RGB LED Off
+	// RGBtest();
 
 //***************************************************************
   //Print the wakeup reason for ESP32
@@ -235,7 +235,7 @@ int rc;		// generic return code variable
 
 	// ReEntry mode is defined at end of setup phase for next sleep phase
 
-  	BHLOG(LOGBH) LEDpulse(1);
+//  	BHLOG(LOGBH) LEDpulse(1);
 
 //	prepare_sleep_mode(1, (uint32_t) 10); // intervall in seconds
 
@@ -261,14 +261,14 @@ int rc;		// generic return code variable
 	}
 
   BHLOG(LOGBH) Serial.println("Start Sensor Setup Phase:");
-  BHLOG(LOGBH) setRGB(0,0,0); // end blinking of Red LED -> Start Setup Phase
+  BHLOG(LOGRGB) setRGB(0,0,0); // end blinking of Red LED -> Start Setup Phase
 
 //***************************************************************
 // Preset BeeIoT runtime config values
 // +25ms
   BHLOG(LOGBH) Serial.println("  Setup: Init runtime config settings");
   InitConfig(ReEntry);
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // I2C_master() has to be started always before setup_rtc() and setup_i2c_ADC/MAX()
@@ -279,7 +279,7 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("         I2c Master port failed ");
     // enter exit code here, if needed
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +25 ms
@@ -292,7 +292,7 @@ int rc;		// generic return code variable
 	BHLOG(LOGLAN) rtc_test();
 	// Time stamp of each loop loaded at begin of loop()
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +3ms
@@ -303,7 +303,7 @@ int rc;		// generic return code variable
     // enter here exit code, if needed
 	// but LoRa and EPD are porbed later, and SD is not sytsem critical
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +240 ms
@@ -312,7 +312,7 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("         HX711 setup failed");
     // enter here exit code, if needed
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // + ? (no SD: 10usec.)
@@ -323,7 +323,7 @@ int rc;		// generic return code variable
       // enter exit code here, if needed
     }
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +2ms
@@ -332,7 +332,7 @@ int rc;		// generic return code variable
     BHLOG(LOGBH) Serial.println("         LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +22ms
@@ -343,17 +343,17 @@ int rc;		// generic return code variable
   }else{
     BHLOG(LOGOW) GetOWsensor(); // read temperature once the first time
   }
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // +1,2ms
 #ifdef EPD2_CONFIG
-  BHLOG(LOGBH)Serial.println("  Setup: ePaper + show start frame ");
+  BHLOG(LOGBH)Serial.println("  Setup: ePaper2");
   if (setup_epd2(ReEntry) == 0){
-    BHLOG(LOGBH)Serial.println("         EPD2 ePaper Test failed");
+    BHLOG(LOGBH)Serial.println("         EPD2 ePaper2 Setup failed");
   }
 #endif // EPD2
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // Init battery State machine
@@ -362,7 +362,7 @@ int rc;		// generic return code variable
   	bat_control(0.0, true);	// (re-)initialize Battery state machine once
   }
 
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
   //***************************************************************
 // Setup ESP32 WatchDog Timer
@@ -374,7 +374,7 @@ if(0) {		// if(rtc_wdt_is_on){
   	BHLOG(LOGBH)Serial.printf("RTC Timeout: %i ms on Stage%d", timeout, RTC_WDT_STAGE0);
 	rtc_wdt_get_timeout(RTC_WDT_STAGE1, &timeout);
   	BHLOG(LOGBH)Serial.printf(" -- %i ms on Stage%d\n", timeout, RTC_WDT_STAGE1);
-// rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
+//  rtc_wdt_set_time(RTC_WDT_STAGE0, 10000);	// 10sec. feeding time
 //	rtc_wdt_set_stage(RTC_WDT_STAGE0, RTC_WDT_STAGE_ACTION_RESET_SYSTEM);
 //	rtc_wdt_set_stage(RTC_WDT_STAGE1, RTC_WDT_STAGE_ACTION_RESET_SYSTEM);
 	rtc_wdt_set_stage(RTC_WDT_STAGE0, RTC_WDT_STAGE_ACTION_OFF );	// Disable Action of RTC WDT
@@ -383,16 +383,12 @@ if(0) {		// if(rtc_wdt_is_on){
 	rtc_wdt_disable();	// Finally Disable RTC WDT itself
 }
 
-
 //***************************************************************
 // initial sleep mode for next loop:
 //   =1 after deep sleep; =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
   ReEntry = SLEEPMODE;
 
-
-  BHLOG(LOGBH) LEDOn();
-  BHLOG(LOGBH) delay(50);
-  BHLOG(LOGBH) LEDOff();
+//  BHLOG(LOGBH) LEDPulse(1);
   BHLOG(LOGBH) Serial.println("");
 
 } // end of BeeIoT setup()
@@ -426,8 +422,8 @@ void loop() {
 // return;
 int cnum;
 
-  	BHLOG(LOGBH) setRGB(0,255,0);  // show start of new loop() phase: green
-	BHLOG(LOGBH) LEDpulse(1);
+  	BHLOG(LOGRGB) setRGB(0,255,0);  // show start of new loop() phase: green
+	BHLOG(LOGBH) LEDpulse(15);
 
 //***************************************************************
 // 1. Get current time to bhdb
@@ -447,8 +443,7 @@ int cnum;
   if(cnum>0)
 	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 
-  BHLOG(LOGBH) setRGB(0,0,0);  // show start of new loop() phase: green blink ends
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 2. Get Weight Scale values
@@ -469,7 +464,8 @@ float weight =0;
 
   bhdb.dlog.HiveWeight = weight;
 #endif // HX711_CONFIG
-  BHLOG(LOGBH) LEDpulse(1);
+
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 3. Scan OW Temp. Sensors
@@ -500,7 +496,8 @@ float weight =0;
 	} while (retry <= ONE_WIRE_RETRY);
 
 #endif // ONEWIRE_CONFIG
-  BHLOG(LOGBH) LEDpulse(1);
+
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 4. Monitor Battery Power via ESP32 analog ports
@@ -533,16 +530,16 @@ float weight =0;
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
-	bat_control(addata, false);	// Evaluate BAT Level + Error handling
+	//	bat_control((float) addata, false);	// Evaluate BAT Level + Error handling
 
-  BHLOG(LOGBH) LEDpulse(1);	// Batter handling done
+//  BHLOG(LOGBH) LEDpulse(1);	// Battery handling done
 
 //***************************************************************
 // 5.+ 6.+ 7.  save all collected sensor data to SD and/or report via LoRa/Wifi
 // + 840 ms
 
   Logdata();
-  BHLOG(LOGBH) LEDpulse(1);
+//  BHLOG(LOGBH) LEDpulse(1);
 
 //***************************************************************
 // 8. Update ePaper
@@ -558,7 +555,7 @@ float weight =0;
 
 // end of sensor loop
   BHLOG(LOGRGB) setRGB(0,0,255);  // show end of loop() phase: blue
-  BHLOG(LOGBH) LEDpulse(1);
+  BHLOG(LOGBH) LEDpulse(15);
 
 //***************************************************************
 // 9. Calculate next loop Index
@@ -570,6 +567,8 @@ float weight =0;
   // Start sleep/wait loop
   BHLOG(LOGBH) printf(" -> Start preparing Sleep Mode\n");
 	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
+
+	// In DeepSleep Mode this point is never reached
 
 } // end of loop()
 
@@ -585,7 +584,6 @@ void Logdata(void) {
 String  dataMessage; 		// Global data objects
 biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
-#ifdef DSENSOR2		// Create bin data based sensor report stream
   	dsensor.logid		= bhdb.loopid;
   	dsensor.year2k		= bhdb.stime.tm_year - 100;	// rebase 1900 -> 2000
 	dsensor.month		= bhdb.stime.tm_mon+1;		// 1-12
@@ -615,22 +613,23 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 
 	// CRC calcuation basically not needed: data assurance is already done by LoRa chip by CRC
 	dsensor.crc8	=0x00;	//ToDo -> provide evaluation of DSENSOR Data by CRC8 calculation
-
-#ifndef BEACON
-	// Write the sensor readings onto the SD card
 	size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen; // calc. datamap length
+
+	// Write the sensor readings onto the SD card
+/*
+	// in Binary Format
 	if(issdcard){
-	  if(bhdb.hwconfig & HC_SDCARD) {	// SDCard acces enabled by PCFG
+	  if(bhdb.hwconfig & HC_SDCARD) {	// SDCard access enabled by PCFG
     	appendBinFile(SD, SDLOGPATH, (const uint8_t*) &dsensor, dslen);
 	  }
 	} else {
     	BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
 	}
-#endif	// No BEACON
+*/
 
-#else // DSENSOR2
-// Create ASCII Status Report based on the sensor readings
-  dataMessage =
+	// in DSENSOR2 Mode: (ASCII) data format
+	// Create ASCII Status Report based on the sensor readings
+  	dataMessage =
               String(bhdb.date) + " " +
               String(bhdb.time) + "," +
               String(bhdb.dlog.HiveWeight) + "," +
@@ -657,7 +656,6 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
     BHLOG(LOGSD) Serial.println("  Log: No SDCard, no local Logfile...");
   }
 #endif	// No BEACON
-#endif	// DSENSOR2
 
 
   // Send Sensor report via BeeIoT-LoRa ...
@@ -871,8 +869,8 @@ void gpio_init(int sleepmode){
 	// For test purpose: set LED / RGB-LED ports
 		pinMode(LEDRGB, OUTPUT);
 		pinMode(LEDRED, OUTPUT);
-		digitalWrite(LEDRGB, HIGH); // signal Setup Phase
-		digitalWrite(LEDRED, HIGH); // signal Setup Phase
+		digitalWrite(LEDRGB, LOW); // signal Setup Phase
+		digitalWrite(LEDRED, LOW); // signal Setup Phase
 
 
 	// First disabe all SPI devices CS line to avoid collisions
@@ -1051,7 +1049,7 @@ if(sleepmode == 1)
 //	gpio_hold_en(LEDRGB);
 
     pinMode(LEDRED, OUTPUT); 		// finally pulled up by LED, No RTC GPIO
-	digitalWrite(LEDRED, HIGH);
+	digitalWrite(LEDRED, LOW);
 //	gpio_hold_en(LEDRED);			// no RTC IO
 
 	// Keep BAT Charge control pin as it is
@@ -1097,7 +1095,7 @@ esp_err_t  rc;
 	   		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
 
 			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY1, 0);	// select Key1 (blue button) as Wakup Trigger on low level
-    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(blue Key1)\n", (uint32_t)waittime, EPD_KEY1);
+    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(green Key1)\n", (uint32_t)waittime, EPD_KEY1);
 			if(rc != ESP_OK){
 				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep wakeup setup failed: %i\n", rc);
 			}
@@ -1308,13 +1306,15 @@ void ResetNode(uint8_t level, uint8_t sdlevel, uint8_t p3){
 //*******************************************************************
 // start battery charging
 void Enable_bat_charge(void){
-//	pinMode(BATCHARGEPIN, INPUT);		// better set it to High Impedance -> good for sleep mode
+
 	pinMode(BATCHARGEPIN,  OUTPUT);
 	digitalWrite(BATCHARGEPIN, LOW);	// switch Charge control On
 	return;
 }
 // stop charging -> battery just serves the load
 void Disable_bat_charge (void){
+//	pinMode(BATCHARGEPIN, INPUT);		// better set it to High Impedance -> good for sleep mode
+
 	pinMode(BATCHARGEPIN,  OUTPUT);
 	digitalWrite(BATCHARGEPIN, HIGH);	// need to stay high in sleep mode as well.
 	return;

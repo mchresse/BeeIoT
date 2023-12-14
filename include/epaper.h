@@ -9,8 +9,8 @@
 // for GxEPD2 library support only
 
 // Define ePaper Size-type
-//#define EPD27_CONFIG	0	// EPD2 ePaper with 2.7"
-#define EPD29_CONFIG	0	// EPD2 ePaper with 2.9"
+// #define EPD27_CONFIG	0	// EPD2 ePaper with 2.7"
+ #define EPD29_CONFIG	0	// EPD2 ePaper with 2.9"
 
 
 // EPD Colour Mode may work for B/W and B/W/R displays if red is not used -> faster
@@ -28,24 +28,24 @@
 //#define GxEPD2_DISPLAY_CLASS GxEPD2_7C
 #ifdef EPD27_CONFIG
 #define GxEPD2_DRIVER_CLASS GxEPD2_270     // GDEW027W3   176x264, EK79652 (IL91874), (WFI0190CZ22)
-#endif
 //#define GxEPD2_DRIVER_CLASS GxEPD2_270_GDEY027T91 // GDEY027T91 176x264, SSD1680, (FB)
-#ifdef EPD29_CONFIG
-#define GxEPD2_DRIVER_CLASS GxEPD2_290     // GDEH029A1   128x296, SSD1608 (IL3820), (E029A01-FPC-A1 SYX1553)
 #endif
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5  // GDEW029T5   128x296, UC8151 (IL0373), (WFT0290CZ10)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5D // GDEW029T5D  128x296, UC8151D, (WFT0290CZ10)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_I6FD // GDEW029I6FD  128x296, UC8151D, (WFT0290CZ10)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T94 // GDEM029T94  128x296, SSD1680, (FPC-7519 rev.b)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T94_V2 // GDEM029T94  128x296, SSD1680, (FPC-7519 rev.b), Waveshare 2.9" V2 variant
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_BS // DEPG0290BS  128x296, SSD1680, (FPC-7519 rev.b)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_M06 // GDEW029M06  128x296, UC8151D, (WFT0290CZ10)
+#ifdef EPD29_CONFIG
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290		// GDEH029A1   128x296, SSD1608 (IL3820), (E029A01-FPC-A1 SYX1553)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5		// GDEW029T5   128x296, UC8151 (IL0373), (WFT0290CZ10)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5D	// GDEW029T5D  128x296, UC8151D, (WFT0290CZ10)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_I6FD	// GDEW029I6FD 128x296, UC8151D, (WFT0290CZ10)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_T94	// GDEM029T94  128x296, SSD1680, (FPC-7519 rev.b)
+#define GxEPD2_DRIVER_CLASS GxEPD2_290_T94_V2	// GDEM029T94  128x296, SSD1680, (FPC-7519 rev.b), Waveshare 2.9" V2 variant
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_BS 		// DEPG0290BS  128x296, SSD1680, (FPC-7519 rev.b)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_M06 	// GDEW029M06  128x296, UC8151D, (WFT0290CZ10)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_GDEY029T94 // GDEY029T94 128x296, SSD1680, (FPC-A005 20.06.15)
 // 3-color e-papers
-//#define GxEPD2_DRIVER_CLASS GxEPD2_270c     // GDEW027C44  176x264, IL91874, (WFI0190CZ22)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290c     // GDEW029Z10  128x296, UC8151 (IL0373), (WFT0290CZ10)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_Z13c // GDEH029Z13  128x296, UC8151D, (HINK-E029A10-A3 20160809)
-//#define GxEPD2_DRIVER_CLASS GxEPD2_290_C90c // GDEM029C90  128x296, SSD1680, (FPC-7519 rev.b)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_270c     	// GDEW027C44  176x264, IL91874, (WFI0190CZ22)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290c     	// GDEW029Z10  128x296, UC8151 (IL0373), (WFT0290CZ10)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_Z13c 	// GDEH029Z13  128x296, UC8151D, (HINK-E029A10-A3 20160809)
+//#define GxEPD2_DRIVER_CLASS GxEPD2_290_C90c 	// GDEM029C90  128x296, SSD1680, (FPC-7519 rev.b)
+#endif
 
 // somehow there should be an easier way to do this
 #define GxEPD2_BW_IS_GxEPD2_BW true
@@ -69,6 +69,31 @@
 #endif
 #endif //ESP32
 
+// BIoT Data Frame Format:
+#define newline12	19
+#define newline9	16
+#define shiftx		4
+#define dataupd_x	(12 * 10) + shiftx		// 124
+
+#define theader_x	shiftx
+#define theader_y	newline9
+#define ttime_x		shiftx
+#define ttime_y		theader_y + newline9 	// 32
+#define tbox_x		shiftx
+#define tbox_y		ttime_y + 2 + 2	// 36
+#define tweight_x	tbox_x + shiftx
+#define tweight_y	tbox_y + newline9		// 52
+#define ttemphive_x	tbox_x + shiftx
+#define ttemphive_y	tweight_y + newline9 	// 68
+#define ttempext_x	tbox_x + shiftx
+#define ttempext_y	ttemphive_y + newline9	// 84
+#define tbatt_x		tbox_x + shiftx
+#define tbatt_y		ttempext_y + newline9	// 100
+#define tbox_wx		296 - shiftx
+#define tbox_hy		72 						// tbatt_y - tbox_y + newline9 - 8
+#define tstatus_x	tbox_x + shiftx
+#define tstatus_y	tbox_y + tbox_hy + newline9 //124
+
 // EPD2_GFX Library prototypes
 void helloWorld();
 void helloWorldForDummies();
@@ -89,6 +114,8 @@ int  setup_epd2		(int mode);		// in epd2.cpp
 void showdata		(void);
 void showdata27		(void);
 void showdata29		(void);
+void showdata29_page(void);
+void showdata29update(void);
 void showbeacon2 	(void);
 
 #endif // EPD2_CONFIG

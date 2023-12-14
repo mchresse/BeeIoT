@@ -63,13 +63,13 @@ void setup_LED(void){
 
 // Switch LED pin ON (assumed connected to 3.3V)
 void LEDOn(void){
-	LEDstate =LOW;
+	LEDstate =HIGH;
 	digitalWrite(LEDRED, LEDstate);
 }
 
 // Switch LED pin Off (assumed connected to 3.3V)
 void LEDOff(void){
-	LEDstate =HIGH;
+	LEDstate =LOW;
 	digitalWrite(LEDRED, LEDstate);
 }
 

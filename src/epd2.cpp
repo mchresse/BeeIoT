@@ -51,6 +51,7 @@ extern byte BeeIoTStatus;
 extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
 							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 extern bool	EPDupdate;			// =true: EPD update requested
+RTC_DATA_ATTR int showdatacnt = 0;	// Data update counter; =0 -> full page update; else partial update
 
 void biot_welcome_page(void);
 void biot_welcome_full(void);
@@ -67,11 +68,11 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
 	if(!reentry){
-	BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Display");
+		BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Display");
 
 		if(isepd){ // set some presets for a std. text field
-//			epd2_test();
-			biot_welcome_full();
+			biot_welcome_page();
+			showdatacnt = 0;
 		}
 	}
 #endif
@@ -90,36 +91,36 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 // Global: display object of epaper SPI device
 //*********************************************************
 void biot_welcome_page(){
-			display.setRotation(1);    // 1 + 3: print in horizontal format
-			display.setTextColor(GxEPD_BLACK);
-			display.setFullWindow();
-			const char theader[] ="     BeeIoT";
-			const char tauthor[] ="     by R.Esser";
+const char theader[] ="    BeeIoT";
+const char tauthor[] ="     by R.Esser";
 
-			display.firstPage();
+	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setTextColor(GxEPD_BLACK);
+	display.setFullWindow();
 
-			do
-			{
-				display.setCursor(0, 2*12);
-				display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
-				display.setFont(&FreeMonoBold12pt7b);
-				display.println(theader);
+	display.firstPage();
+	do
+	{
+		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
+		display.setFont(&FreeMonoBold18pt7b);
+		display.setCursor(0, 2*12);
+		display.println(theader);
 
-				display.setFont(&FreeMonoBold12pt7b);
-				display.printf ("       v%s.%s\n\n", VMAJOR, VMINOR);
+		display.setFont(&FreeMonoBold12pt7b);
+		display.printf ("       v%s.%s\n", VMAJOR, VMINOR);
 
-				display.setFont(&FreeMonoBold9pt7b);
-				display.println(tauthor);
-				display.setFont(&FreeMonoBold9pt7b);
-				display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
-			}
-			// tell the graphics class to transfer the buffer content (page) to the controller buffer
-			// the graphics class will command the controller to refresh to the screen when the last page has been transferred
-			// returns true if more pages need be drawn and transferred
-			// returns false if the last page has been transferred and the screen refreshed for panels without fast partial update
-			// returns false for panels with fast partial update when the controller buffer has been written once more, to make the differential buffers equal
-			// (for full buffered with fast partial update the (full) buffer is just transferred again, and false returned)
-			while (display.nextPage());
+		display.setFont(&FreeMonoBold9pt7b);
+		display.println(tauthor);
+		display.setFont(&FreeMonoBold9pt7b);
+		display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
+	}
+	// tell the graphics class to transfer the buffer content (page) to the controller buffer
+	// the graphics class will command the controller to refresh to the screen when the last page has been transferred
+	// returns true if more pages need be drawn and transferred
+	// returns false if the last page has been transferred and the screen refreshed for panels without fast partial update
+	// returns false for panels with fast partial update when the controller buffer has been written once more, to make the differential buffers equal
+	// (for full buffered with fast partial update the (full) buffer is just transferred again, and false returned)
+	while (display.nextPage());
 }
 
 //*********************************************************
@@ -133,12 +134,12 @@ void biot_welcome_full(){
 const char theader[] ="    BeeIoT";
 const char tauthor[] ="        by R.Esser";
 
-  	display.setTextColor(GxEPD_BLACK);
-  	display.fillScreen(GxEPD_WHITE);
 	display.setRotation(1);    // 1 + 3: print in horizontal format
+  	display.fillScreen(GxEPD_WHITE);
+  	display.setTextColor(GxEPD_BLACK);
 
-	display.setCursor(0, 2*12);
 	display.setFont(&FreeMonoBold18pt7b);
+	display.setCursor(0, 2*12);
 	display.print(theader);
 
 	display.setFont(&FreeMonoBold12pt7b);
@@ -160,26 +161,37 @@ const char tauthor[] ="        by R.Esser";
 // Show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset from BHDB
 //*********************************************************
+
 void showdata(void){
 	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
+		// No EPD panel connected or no Update request pending
+		if(isepd==0 || 	EPDupdate==false){
+			return;	// no EPD port -> no action
+		}
+		digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+
 #ifdef EPD27_CONFIG
 		showdata27();
 #endif
-
 #ifdef EPD29_CONFIG
-		showdata29();
+		if(showdatacnt <= 0){
+  			showdata29();
+			showdatacnt = 1;			// Full page data update each 6th run loop
+		}else{
+			showdata29_page();
+//			showdata29update();
+			showdatacnt--;
+		}
 #endif
+		// enter EPD low power mode
+		EPDupdate=false;				// EPD update request completed -> reset flag
 	}
+	digitalWrite(EPDGNDEN, HIGH); 	// disable EPD Ground low side switch
 }
 
+
+
 void showdata27(void){
-	// No EPD panel connected or no Update request pending
-	if(isepd==0 || 	EPDupdate==false){
-		return;	// no EPD port -> no action
-	}
-
-	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
-
   	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.fillScreen(GxEPD_WHITE);
 
@@ -221,33 +233,20 @@ void showdata27(void){
 	}
 
 	display.display();				// WakeUp -> update Display
-
-	EPDupdate=false;				// EPD update request completed -> reset flag
-
-	// enter EPD low power mode
-	digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowData()
 
 
 //*********************************************************
-// showdata2()
+// showdata29()
 // Show Sensor log data on epaper Display
 // Input: sampleID= Index ond Sensor dataset from BHDB
 //*********************************************************
 void showdata29(void){
-
-	// No EPD panel connected or no Update request pending
-	if(isepd==0 || 	EPDupdate==false){
-		return;	// no EPD port -> no action
-	}
-
-	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
-
-	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setRotation(1);					// 1 + 3: print in horizontal format
 	display.fillScreen(GxEPD_WHITE);
 	display.setTextColor(GxEPD_BLACK);
-	display.setFont(&FreeMonoBold12pt7b);
-	display.setCursor(0, 15);	// Start at bottom left corner of first tet line
+	display.setFont(&FreeMonoBold12pt7b);   // -> 22chars/line (13 dots/char)
+	display.setCursor(0, 15);				// Start at bottom left corner of first text line
 
 	display.printf(" BeeIoT v%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
 
@@ -262,13 +261,13 @@ void showdata29(void){
 
 //	display.printf(" TempIntern: %s\n", String(bhdb.dlog.TempIntern,2));
 
-	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+	display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
 	display.printf(" VBatt:%sV(%s%%) < %sV\n",
 			String((float)bhdb.dlog.BattLoad/1000,2),
 			String((uint16_t)bhdb.dlog.BattLevel),
 			String((float)bhdb.dlog.BattCharge/1000,2));
 
-	display.setFont(&FreeMonoBold9pt7b);	// -> 24chars/line
+	display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
     display.print("     Status: ");
 	if(BeeIoTStatus == BIOT_SLEEP && ReEntry == 1){
   		display.print(beeiot_StatusString[BIOT_DEEPSLEEP]);
@@ -278,11 +277,163 @@ void showdata29(void){
 
 	display.display();				// WakeUp -> update Display
 
-	EPDupdate=false;				// EPD update request completed -> reset flag
-
-	// enter EPD low power mode
-	digitalWrite(EPDGNDEN, HIGH); // disble EPD Ground low side switch
 } // end of ShowData()
+
+
+
+//**********************************************************************
+// SHowdata29_page(): Show BIoT-Data pagewise
+//**********************************************************************
+void showdata29_page(void){
+char theader[64];
+char ttime[64];
+char tweight[64];
+char ttemphive[64];
+char ttempext[64];
+char tbatt[64];
+char tstatus[64];
+
+	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setTextColor(GxEPD_BLACK);
+
+	sprintf(theader,	"BeeIoT v%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
+	sprintf(ttime,		"    %s %s", bhdb.date, bhdb.time);
+	sprintf(tweight,	"   Gewicht: %s kg", String(bhdb.dlog.HiveWeight,3));
+	sprintf(ttemphive,	"Temp.Beute: %s", String(bhdb.dlog.TempHive,2));
+	sprintf(ttempext,	"TempExtern: %s", String(bhdb.dlog.TempExtern,2));
+
+	sprintf(tbatt,		"VBatt:%sV (%s%%) < %sV",
+				String((float)bhdb.dlog.BattLoad/1000,2),
+				String((uint16_t)bhdb.dlog.BattLevel),
+				String((float)bhdb.dlog.BattCharge/1000,2));
+	sprintf(tstatus,	"    Status: %s",
+			(BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]
+	);
+	display.setFullWindow();
+
+	display.firstPage();
+	do
+	{
+		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
+
+		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
+		display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
+		display.print(theader);
+
+		display.setFont(&FreeMonoBold9pt7b);
+		display.setCursor(ttime_x, ttime_y);
+		display.print(ttime);
+
+//		display.drawRect(tbox_x, tbox_y, display.width()-(2*2), display.height() - (12+9+9+4 + 9+9), GxEPD_BLACK);
+		display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
+
+		display.setCursor(tweight_x, tweight_y);
+		display.print(tweight);
+		display.setCursor(ttemphive_x, ttemphive_y);
+		display.print(ttemphive);
+		display.setCursor(ttempext_x, ttempext_y);
+		display.print(ttempext);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
+		display.setCursor(tbatt_x, tbatt_y);
+		display.print(tbatt);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
+		display.setCursor(tstatus_x, tstatus_y);
+		display.print(tstatus);
+	}
+	while (display.nextPage());
+
+} // end of ShowData29_page()
+
+
+void showdata29update(void)
+{
+char theader[64];
+char ttime[64];
+char tweight[64];
+char ttemphive[64];
+char ttempext[64];
+char tbatt[64];
+char tstatus[64];
+
+// data update fields
+uint16_t updheader_x	= (12*15) + 4;
+uint16_t updtime_x		= (3*10) + 4;
+uint16_t updweight_x	= dataupd_x;
+uint16_t updtemphive_x	= dataupd_x;
+uint16_t updtempext_x	= dataupd_x;
+uint16_t updbatt_x		= (5*10) + 4;;
+uint16_t updstatus_x	= dataupd_x;
+
+int16_t  tbx, tby;
+uint16_t tbw, tbh; 		// boundary box window
+
+	sprintf(theader,	"%i C%i ", bhdb.loopid, bhdb.chcfgid);
+	sprintf(ttime,		"%s %s", bhdb.date, bhdb.time);
+	sprintf(tweight,	"%s", String(bhdb.dlog.HiveWeight,3));
+	sprintf(ttemphive,	"%s", String(bhdb.dlog.TempHive,2));
+	sprintf(ttempext,	"%s", String(bhdb.dlog.TempExtern,2));
+	sprintf(tbatt,		"%sV (%s%%) < %sV",
+				String((float)bhdb.dlog.BattLoad/1000,2),
+				String((uint16_t)bhdb.dlog.BattLevel),
+				String((float)bhdb.dlog.BattCharge/1000,2));
+	sprintf(tstatus,	"%s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);
+
+	uint16_t incr = display.epd2.hasFastPartialUpdate ? 1 : 3;
+
+	uint16_t tbw_header, tbh_header;
+	uint16_t tbw_time, tbh_time;
+	uint16_t tbw_weight, tbh_weight;
+	uint16_t tbw_temphive, tbh_temphive;
+	uint16_t tbw_tempext, tbh_tempext;
+	uint16_t tbw_batt, tbh_batt;
+	uint16_t tbw_status, tbh_status;
+
+	// show where the update box is
+	// do this outside of the loop
+	display.setFont(&FreeMonoBold12pt7b);
+	display.getTextBounds(theader, 0, 0, &tbx, &tby, &tbw_header, &tbh_header);
+	//  display.setPartialWindow(0, 0, display.width(), display.height());
+	display.setPartialWindow(updheader_x, 0, tbw_header, tbh_header);
+	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setTextColor(GxEPD_BLACK);
+
+/*
+	display.setFont(&FreeMonoBold9pt7b);
+	display.getTextBounds(ttime, 0, 0, &tbx, &tby, &tbw_time, &tbh_time);
+	display.getTextBounds(tweight, 0, 0, &tbx, &tby, &tbw_weight, &tbh_weight);
+	display.getTextBounds(ttemphive, 0, 0, &tbx, &tby, &tbw_temphive, &tbh_temphive);
+	display.getTextBounds(ttempext, 0, 0, &tbx, &tby, &tbw_tempext, &tbh_tempext);
+	display.getTextBounds(tbatt, 0, 0, &tbx, &tby, &tbw_batt, &tbh_batt);
+	display.getTextBounds(tstatus, 0, 0, &tbx, &tby, &tbw_status, &tbh_status);
+*/
+
+	display.firstPage();
+	do
+	{
+		display.setFont(&FreeMonoBold12pt7b);
+		display.setCursor(updheader_x, theader_y);
+		display.print(theader);
+/*		display.setFont(&FreeMonoBold9pt7b);
+		display.setCursor(updtime_x, ttime_y);
+		display.print(ttime);
+		display.setCursor(updweight_x, tweight_y);
+		display.print(tweight);
+		display.setCursor(updtemphive_x, ttemphive_y);
+		display.print(ttemphive);
+		display.setCursor(updtempext_x, ttempext_y);
+		display.print(ttempext);
+		display.setCursor(updbatt_x, tbatt_y);
+		display.print(tbatt);
+		display.setCursor(updstatus_x, tstatus_y);
+		display.print(tstatus);
+*/
+	}
+	while (display.nextPage());
+}
 
 
 //***********************************************************
@@ -349,11 +500,6 @@ void showbeacon2(void){
 //**********************************************************************************
 
 void epd2_test(){
-	// No EPD panel connected or no Update request pending
-	if(isepd==0){
-		return;	// no EPD port -> no action
-	}
-
   // first update should be full refresh
   helloWorld();
   delay(1000);
@@ -484,7 +630,7 @@ void helloFullScreenPartialMode()
   }
   // do this outside of the loop
   int16_t tbx, tby; uint16_t tbw, tbh;
-  // center update text
+  // center full screen text
   display.getTextBounds(fullscreen, 0, 0, &tbx, &tby, &tbw, &tbh);
   uint16_t utx = ((display.width() - tbw) / 2) - tbx;
   uint16_t uty = ((display.height() / 4) - tbh / 2) - tby;
@@ -721,8 +867,8 @@ void drawFont(const char name[], const GFXfont* f)
 void showPartialUpdate()
 {
   // some useful background
-  helloWorld();
-  // use asymmetric values for test
+//	helloWorld();
+   // use asymmetric values for test
   uint16_t box_x = 10;
   uint16_t box_y = 15;
   uint16_t box_w = 70;
@@ -753,7 +899,7 @@ void showPartialUpdate()
     while (display.nextPage());
     delay(1000);
   }
-  //return;
+  return;
   // show updates in the update box
   for (uint16_t r = 0; r < 4; r++)
   {

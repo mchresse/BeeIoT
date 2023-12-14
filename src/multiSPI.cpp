@@ -70,7 +70,7 @@ SPIClass SPI2(HSPI); 			// create SPI2 object with default HSPI pinning
 		// GxEPD2 support
 		#if defined(ESP32)
 		// Now define the one and only Display <template> class instance of a EPD2 device
-		GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
+RTC_DATA_ATTR GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
 			display(GxEPD2_DRIVER_CLASS(/*CS=*/ EPD_CS, /*DC=*/ EPD_DC, /*RST=*/ EPD_RST, /*BUSY=*/ EPD_BUSY));
 		#endif // ESP32
 	#endif // EPD2_CONFIG
@@ -102,7 +102,7 @@ int setup_spi(int reentry) {    // My SPI Constructor
 
 // Configure Master SPI Port
 	digitalWrite(SPIPWREN, HIGH);	// enable SPI Power (for all SPI devices)
-	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+	digitalWrite(EPDGNDEN, LOW);    // enable EPD Ground low side switch
 	delay(10);						// give PwrUp some time
 
 	//Instantiate SPI port by HSPI default pins
@@ -137,8 +137,12 @@ int setup_spi(int reentry) {    // My SPI Constructor
 		#ifdef EPD2_CONFIG
 			BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
 			display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
-			display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
-
+			if(!reentry){
+				display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
+			}else{
+				digitalWrite(EPDGNDEN, LOW);   		// enable EPD Pwr-Ground by low side switch
+				display.init(0, false, 2, false);   // init in update mode -> no powerloss during deepsleep allowed
+			}
 			// display class does not provide any feedback if device is available
 			// so we have to assume its there...
 			isepd = 1; // have to assume epd works now...no check implememnted by driver
@@ -147,17 +151,17 @@ int setup_spi(int reentry) {    // My SPI Constructor
 		#endif
 	#endif
 
-// Preset Keys 1-4: active 0 => connects to GND (needs a pullup)
+// Preset Keys 1-4: active 0 => connects to GND (pullup required)
 // KEY1 => (Deep-) Sleep Wakeup trigger
-// KEY2 => MCU_Reset (on EN)
+// KEY2 => test IRQ		 e.g. usefull for MCU_Reset (on EN)
 // KEY3 => n.a.
 // KEY4 => n.a.
 
 // Assign Key-IRQ to callback function
 	SetonKey(1, onKey1);
-//	SetonKey(2, onKey2);
-//	SetonKey(3, onKey3);
-//	SetonKey(4, onKey4);
+	SetonKey(2, onKey2);
+//	SetonKey(3, onKey3);	// not supported for BIoT v4.x PCB
+//	SetonKey(4, onKey4);	// not supported for BIoT v4.x PCB
 
     return (issdcard);   // SD SPI port is initialized
 } // end of setup_spi_sd_epd()
@@ -175,62 +179,74 @@ int setup_spi(int reentry) {    // My SPI Constructor
 // -2			GPIO is not ready for ISR assignment
 //*************************************************************************
 int SetonKey(int key, void(*callback)(void)){
-#ifdef EPD_CONFIG
+int rc=0;
 
 	if(!callback)	// NULL ptr. can not be assigned
  		return(-1);
 
 	switch (key){
-	case 1: 			// EPD_KEY 1
+	case 1: 			// EPD_KEY 1:
 		if(callback){
-    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 ISR assigned");
+			// Key1 setup as wakeup trigger in prepare_sleep_mode() already
+//			pinMode(EPD_KEY1, INPUT);
+//    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 assigned as Wakeup call");
+			rc= 0;
 		}else{
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 without callback");
 	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY1));
+			rc= -2;
 		}
-		return(-2);
 		break;
 	case 2: 			// EPD_KEY 2
 		if(callback){
-//			pinMode(EPD_KEY2, INPUT);
-//  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 undefined for V3.0 board");
+			pinMode(EPD_KEY2, INPUT);
+	  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
+			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 qassigned to GPIO%i-IRQ", EPD_KEY2);
+			rc= 0;
 		}else{
-//	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY2));
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 without callback");
+	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY2));
+			rc= -2;
 		}
-		return(-2);
 		break;
 	case 3: 			// EPD_KEY 3 /w ext 10k Pullup to 3.3V!
 		if(callback){
 //			pinMode(EPD_KEY3, INPUT);
 //	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V3.0 board");
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V4.x board");
+			rc= 0;
 		}else{
 //	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY3));
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 without callback");
+			rc= -2;
 		}
-		return(-2);
 		break;
 	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
 		if(callback){
 //			pinMode(EPD_KEY4, INPUT);
-//    		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
-			BHLOG(LOGEPD) Serial.println("  SetinKey: EPD-Key4 undefined for V3.0 board");
+//	   		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key4 undefined for V4.x board");
+			rc= 0;
 		}else{
 //	    	detachInterrupt(digitalPinToInterrupt(EPD_KEY4));
+			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key4 without callback");
+			rc= -2;
 		}
 		break;
 	default:
-		return(-1);	// unsupported Key number
+		rc =-1;		// unsupported Key number
+		BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key%i undefined for V4.x board", key);
 		break;
 	}
-#endif
-	return(0);
+
+	return(rc);
 }
 
 //*************************************************************************
 // onKeyx() ISR of EPD-Keyx	-> Yellow Button
 void IRAM_ATTR onKey1(void){
-	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Yellow Key");
+	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Green Key");
 	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;	// EPD update requested
 }
@@ -244,11 +260,11 @@ void IRAM_ATTR onKey2(void){
 // onKeyx() ISR of EPD-Keyx	-> Green Button
 void IRAM_ATTR onKey3(void){
 	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Green Key");
-	EPDupdate=true;	// EPD update requested
+	EPDupdate=false;	// EPD update requested
 }
 //*************************************************************************
 // onKeyx() ISR of EPD-Keyx	-> Blue button
 void IRAM_ATTR onKey4(void){
 	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
-	EPDupdate=true;	// EPD update requested
+	EPDupdate=false;	// EPD update requested
 }
