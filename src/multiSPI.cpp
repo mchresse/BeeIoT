@@ -69,8 +69,8 @@ SPIClass SPI2(HSPI); 			// create SPI2 object with default HSPI pinning
 	#ifdef EPD2_CONFIG
 		// GxEPD2 support
 		#if defined(ESP32)
-		// Now define the one and only Display <template> class instance of a EPD2 device
-RTC_DATA_ATTR GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
+			// Now define the one and only Display <template> class instance of a EPD2 device
+			GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>
 			display(GxEPD2_DRIVER_CLASS(/*CS=*/ EPD_CS, /*DC=*/ EPD_DC, /*RST=*/ EPD_RST, /*BUSY=*/ EPD_BUSY));
 		#endif // ESP32
 	#endif // EPD2_CONFIG
@@ -137,17 +137,19 @@ int setup_spi(int reentry) {    // My SPI Constructor
 		#ifdef EPD2_CONFIG
 			BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
 			display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
+
+			digitalWrite(EPDGNDEN, LOW);   		// enable EPD Pwr-Ground by low side switch
+
 			if(!reentry){
-				display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
+				display.init(EPD_SerDiagRate, true, EPD_RESET_PULSE, false);	// USE THIS for Waveshare boards with "clever" reset circuit, 2ms reset pulse
 			}else{
-				digitalWrite(EPDGNDEN, LOW);   		// enable EPD Pwr-Ground by low side switch
-				display.init(0, false, 2, false);   // init in update mode -> no powerloss during deepsleep allowed
+				display.init(EPD_SerDiagRate, false, EPD_RESET_PULSE, false);	// init in update mode -> no powerloss during deepsleep allowed
 			}
 			// display class does not provide any feedback if device is available
 			// so we have to assume its there...
-			isepd = 1; // have to assume epd works now...no check implememnted by driver
+			isepd = 1; // ..no check implememnted by driver
 		#else
-			isepd = 0; // have to assume epd not existing
+			isepd = 0; // no EPD configured
 		#endif
 	#endif
 
@@ -202,7 +204,7 @@ int rc=0;
 		if(callback){
 			pinMode(EPD_KEY2, INPUT);
 	  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
-			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 qassigned to GPIO%i-IRQ", EPD_KEY2);
+			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 qassigned to GPIO%i-IRQ\n", EPD_KEY2);
 			rc= 0;
 		}else{
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 without callback");

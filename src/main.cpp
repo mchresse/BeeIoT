@@ -187,7 +187,7 @@ extern void hexdump(unsigned char * msg, int len);
 //*******************************************************************
 // Define Log level (search for Log values in beeiot.h)
 // lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGEPD ;
+RTC_DATA_ATTR uint32_t lflags = LOGBH;
 //RTC_DATA_ATTR uint32_t lflags = 65535;
 // works only in setup phase till LoRa-JOIN received Cfg data
 // final value will be defined in BeeIoTParseCfg() by GW config data
@@ -218,10 +218,12 @@ int rc;		// generic return code variable
   		if(rc == ESP_SLEEP_WAKEUP_TIMER){
 			// wakeup after predefined sleep time
 			// Reentry remains unchanged
+			ReEntry=1;
 		}
   		if(rc == ESP_SLEEP_WAKEUP_EXT0){
 			// wakeup after GPIO wakeup by Key 1
 			// Reentry remains unchanged
+			ReEntry=1;
 		}
 		// ReEntry > 1 <predefined startup/sleep mode set at end of Loop()>
 		// 		=1 after deep sleep:  Reset MM -> wakeup with setup()
@@ -236,10 +238,6 @@ int rc;		// generic return code variable
 	// ReEntry mode is defined at end of setup phase for next sleep phase
 
 //  	BHLOG(LOGBH) LEDpulse(1);
-
-//	prepare_sleep_mode(1, (uint32_t) 10); // intervall in seconds
-
-//	sleeplong(10);
 
 //***************************************************************
 // Print welcome text
@@ -1012,9 +1010,9 @@ if(sleepmode == 1)
 	rtc_gpio_isolate(SPIPWREN);		// isolate internal PUP/PDN
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
 
-//	digitalWrite(EPDGNDEN, HIGH);   // disable EPD Ground low side switch
-    pinMode(EPDGNDEN, INPUT);		// no RTC pin
-//	gpio_hold_en(EPDGNDEN);			// keep high level -> no EPD GND, no RTC GPIO
+	digitalWrite(EPDGNDEN, LOW);   	// Enable EPD Ground low side switch
+//    pinMode(EPDGNDEN, INPUT);		// no RTC pin
+	gpio_hold_en(EPDGNDEN);			//
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep

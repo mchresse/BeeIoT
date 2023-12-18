@@ -50,12 +50,19 @@ extern const char * beeiot_StatusString[];
 extern byte BeeIoTStatus;
 extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
 							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-extern bool	EPDupdate;			// =true: EPD update requested
-RTC_DATA_ATTR int showdatacnt = 0;	// Data update counter; =0 -> full page update; else partial update
+extern bool	EPDupdate;		// =true: EPD update requested
+
+#define Max_starts_between_refresh 5	// amount of data update befre refresh of full page
+RTC_DATA_ATTR struct {
+  uint8_t startup_count=0;
+  bool clean_start=true;
+} startup_data;
+
 
 void biot_welcome_page(void);
 void biot_welcome_full(void);
-
+void pagetest(void);
+void testx(void);
 
 //*******************************************************************
 // ePaper Setup Routine
@@ -68,11 +75,11 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
 	if(!reentry){
-		BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Display");
-
+		BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Welcome");
 		if(isepd){ // set some presets for a std. text field
 			biot_welcome_page();
-			showdatacnt = 0;
+			startup_data.clean_start = true;
+			startup_data.startup_count = Max_starts_between_refresh;
 		}
 	}
 #endif
@@ -82,7 +89,6 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 //*********************************************************
 // test function of EPD2 based 2.9" display from Waveshare
 //*********************************************************
-
 //*********************************************************
 // biot_welcome()	pagewise
 // Print BIot Welcome message (once after first POn or Reset
@@ -123,37 +129,6 @@ const char tauthor[] ="     by R.Esser";
 	while (display.nextPage());
 }
 
-//*********************************************************
-// biot_welcome()	Full Page
-// Print BIot Welcome message (once after first POn or Reset
-// based on GxEPD2 library with full screen update
-//
-// Global: display object of epaper SPI device
-//*********************************************************
-void biot_welcome_full(){
-const char theader[] ="    BeeIoT";
-const char tauthor[] ="        by R.Esser";
-
-	display.setRotation(1);    // 1 + 3: print in horizontal format
-  	display.fillScreen(GxEPD_WHITE);
-  	display.setTextColor(GxEPD_BLACK);
-
-	display.setFont(&FreeMonoBold18pt7b);
-	display.setCursor(0, 2*12);
-	display.print(theader);
-
-	display.setFont(&FreeMonoBold12pt7b);
-	display.printf ("\n        v%s.%s\n", VMAJOR, VMINOR);
-
-	display.setFont(&FreeMonoBold9pt7b);
-	display.println(tauthor);
-
-	display.setFont(&FreeMonoBold9pt7b);
-	display.printf ("\n     BoardID: %08X\n", (uint32_t)bhdb.BoardID);
-
-  	display.display();
-}
-
 
 
 //*********************************************************
@@ -174,24 +149,29 @@ void showdata(void){
 		showdata27();
 #endif
 #ifdef EPD29_CONFIG
-		if(showdatacnt <= 0){
-  			showdata29();
-			showdatacnt = 1;			// Full page data update each 6th run loop
-		}else{
-			showdata29_page();
-//			showdata29update();
-			showdatacnt--;
+		if (startup_data.startup_count >= Max_starts_between_refresh)
+		{
+			startup_data.startup_count = 0;
+			startup_data.clean_start = true;
+			showdata29_base();
 		}
+
+		showdata29_update();
+		display.powerOff();
+
+		startup_data.clean_start = false;
+		startup_data.startup_count++;
 #endif
 		// enter EPD low power mode
-		EPDupdate=false;				// EPD update request completed -> reset flag
+		EPDupdate=false;			// EPD update request completed -> reset flag
 	}
-	digitalWrite(EPDGNDEN, HIGH); 	// disable EPD Ground low side switch
+	digitalWrite(EPDGNDEN, LOW); 	// keep EPD Ground low side switch enabled
 }
 
 
 
 void showdata27(void){
+#ifdef EPD27_CONFIG
   	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.fillScreen(GxEPD_WHITE);
 
@@ -233,7 +213,8 @@ void showdata27(void){
 	}
 
 	display.display();				// WakeUp -> update Display
-} // end of ShowData()
+#endif
+} // end of ShowData27()
 
 
 //*********************************************************
@@ -281,40 +262,26 @@ void showdata29(void){
 
 
 
-//**********************************************************************
-// SHowdata29_page(): Show BIoT-Data pagewise
-//**********************************************************************
-void showdata29_page(void){
+
+
+void showdata29_base(void){
 char theader[64];
 char ttime[64];
-char tweight[64];
-char ttemphive[64];
-char ttempext[64];
-char tbatt[64];
-char tstatus[64];
+const char tweight[]	="   Gewicht: ";
+const char ttemphive[]	="Temp.Beute: ";
+const char ttempext[]	="TempExtern:";
+const char tbatt[]		="VBatt:";
+const char tstatus[]	="Status: ";
+
+	sprintf(theader,	"BeeIoT v%s.%s", VMAJOR, VMINOR);
+	sprintf(ttime,		" %s ", bhdb.date);
 
 	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.setTextColor(GxEPD_BLACK);
-
-	sprintf(theader,	"BeeIoT v%s.%s #%i C%i", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
-	sprintf(ttime,		"    %s %s", bhdb.date, bhdb.time);
-	sprintf(tweight,	"   Gewicht: %s kg", String(bhdb.dlog.HiveWeight,3));
-	sprintf(ttemphive,	"Temp.Beute: %s", String(bhdb.dlog.TempHive,2));
-	sprintf(ttempext,	"TempExtern: %s", String(bhdb.dlog.TempExtern,2));
-
-	sprintf(tbatt,		"VBatt:%sV (%s%%) < %sV",
-				String((float)bhdb.dlog.BattLoad/1000,2),
-				String((uint16_t)bhdb.dlog.BattLevel),
-				String((float)bhdb.dlog.BattCharge/1000,2));
-	sprintf(tstatus,	"    Status: %s",
-			(BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
-				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]
-	);
 	display.setFullWindow();
 
 	display.firstPage();
-	do
-	{
+	do	{
 		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
 
 		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
@@ -345,95 +312,87 @@ char tstatus[64];
 	}
 	while (display.nextPage());
 
-} // end of ShowData29_page()
+} // end of ShowData29_base()
 
 
-void showdata29update(void)
-{
-char theader[64];
-char ttime[64];
-char tweight[64];
-char ttemphive[64];
-char ttempext[64];
-char tbatt[64];
-char tstatus[64];
+void showdata29_update(void) {
+char dheader[64];
+char dtime[64];
+char dweight[64];
+char dtemphive[64];
+char dtempext[64];
+char dbatt[64];
+char dstatus[64];
 
 // data update fields
-uint16_t updheader_x	= (12*15) + 4;
-uint16_t updtime_x		= (3*10) + 4;
-uint16_t updweight_x	= dataupd_x;
-uint16_t updtemphive_x	= dataupd_x;
-uint16_t updtempext_x	= dataupd_x;
-uint16_t updbatt_x		= (5*10) + 4;;
-uint16_t updstatus_x	= dataupd_x;
+const uint16_t updheader_x	= shiftx + (11*15);
+const uint16_t updtime_x	= dataupd_x;
+const uint16_t updweight_x	= dataupd_x;
+const uint16_t updtemphive_x= dataupd_x;
+const uint16_t updtempext_x	= dataupd_x;
+const uint16_t updbatt_x	= shiftx + (8*10);
+const uint16_t updstatus_x	= shiftx + (9*10);
 
 int16_t  tbx, tby;
-uint16_t tbw, tbh; 		// boundary box window
+uint16_t tbw_box, tbh_box;
 
-	sprintf(theader,	"%i C%i ", bhdb.loopid, bhdb.chcfgid);
-	sprintf(ttime,		"%s %s", bhdb.date, bhdb.time);
-	sprintf(tweight,	"%s", String(bhdb.dlog.HiveWeight,3));
-	sprintf(ttemphive,	"%s", String(bhdb.dlog.TempHive,2));
-	sprintf(ttempext,	"%s", String(bhdb.dlog.TempExtern,2));
-	sprintf(tbatt,		"%sV (%s%%) < %sV",
+	sprintf(dheader,	"#%i C%i ", bhdb.loopid, bhdb.chcfgid);
+	sprintf(dtime,		"%s", bhdb.date, bhdb.time);
+	sprintf(dweight,	"%s kg ", String(bhdb.dlog.HiveWeight,3));
+	sprintf(dtemphive,	"%s ", String(bhdb.dlog.TempHive,2));
+	sprintf(dtempext,	"%s ", String(bhdb.dlog.TempExtern,2));
+	sprintf(dbatt,		"%sV(%s%%) < %sV ",
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),
 				String((float)bhdb.dlog.BattCharge/1000,2));
-	sprintf(tstatus,	"%s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+	sprintf(dstatus,	"%s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
 				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);
 
-	uint16_t incr = display.epd2.hasFastPartialUpdate ? 1 : 3;
-
-	uint16_t tbw_header, tbh_header;
-	uint16_t tbw_time, tbh_time;
-	uint16_t tbw_weight, tbh_weight;
-	uint16_t tbw_temphive, tbh_temphive;
-	uint16_t tbw_tempext, tbh_tempext;
-	uint16_t tbw_batt, tbh_batt;
-	uint16_t tbw_status, tbh_status;
-
-	// show where the update box is
-	// do this outside of the loop
-	display.setFont(&FreeMonoBold12pt7b);
-	display.getTextBounds(theader, 0, 0, &tbx, &tby, &tbw_header, &tbh_header);
-	//  display.setPartialWindow(0, 0, display.width(), display.height());
-	display.setPartialWindow(updheader_x, 0, tbw_header, tbh_header);
+	// show where the update box is and do this outside of the loop
 	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.setTextColor(GxEPD_BLACK);
 
-/*
-	display.setFont(&FreeMonoBold9pt7b);
-	display.getTextBounds(ttime, 0, 0, &tbx, &tby, &tbw_time, &tbh_time);
-	display.getTextBounds(tweight, 0, 0, &tbx, &tby, &tbw_weight, &tbh_weight);
-	display.getTextBounds(ttemphive, 0, 0, &tbx, &tby, &tbw_temphive, &tbh_temphive);
-	display.getTextBounds(ttempext, 0, 0, &tbx, &tby, &tbw_tempext, &tbh_tempext);
-	display.getTextBounds(tbatt, 0, 0, &tbx, &tby, &tbw_batt, &tbh_batt);
-	display.getTextBounds(tstatus, 0, 0, &tbx, &tby, &tbw_status, &tbh_status);
-*/
-
+	display.setFont(&FreeMonoBold12pt7b);
+	display.getTextBounds(dheader, updheader_x, theader_y, &tbx, &tby, &tbw_box, &tbh_box);
+	display.setPartialWindow(tbx, tby, tbw_box, tbh_box);
 	display.firstPage();
 	do
 	{
-		display.setFont(&FreeMonoBold12pt7b);
 		display.setCursor(updheader_x, theader_y);
-		display.print(theader);
-/*		display.setFont(&FreeMonoBold9pt7b);
-		display.setCursor(updtime_x, ttime_y);
-		display.print(ttime);
-		display.setCursor(updweight_x, tweight_y);
-		display.print(tweight);
-		display.setCursor(updtemphive_x, ttemphive_y);
-		display.print(ttemphive);
-		display.setCursor(updtempext_x, ttempext_y);
-		display.print(ttempext);
-		display.setCursor(updbatt_x, tbatt_y);
-		display.print(tbatt);
-		display.setCursor(updstatus_x, tstatus_y);
-		display.print(tstatus);
-*/
+		display.print(dheader);
 	}
 	while (display.nextPage());
-}
+
+	display.setFont(&FreeMonoBold9pt7b);
+	display.getTextBounds(dtime, updtime_x, ttime_y, &tbx, &tby, &tbw_box, &tbh_box);
+	display.setPartialWindow(tbx, tby, tbw_box, ttempext_y - theader_y);
+	display.firstPage();
+	do
+	{
+		display.setCursor(updtime_x, ttime_y);
+		display.print(dtime);
+		display.setCursor(updweight_x, tweight_y);
+		display.print(dweight);
+		display.setCursor(updtemphive_x, ttemphive_y);
+		display.print(dtemphive);
+		display.setCursor(updtempext_x, ttempext_y);
+		display.print(dtempext);
+	}
+	while (display.nextPage());
+
+	display.setFont(&FreeMonoBold9pt7b);
+	display.getTextBounds(dbatt, updbatt_x, tbatt_y, &tbx, &tby, &tbw_box, &tbh_box);
+	display.setPartialWindow(tbx, tby, tbw_box, tstatus_y - ttempext_y);
+	display.firstPage();
+	do
+	{
+		display.setCursor(updbatt_x, tbatt_y);
+		display.print(dbatt);
+		display.setCursor(updstatus_x, tstatus_y);
+		display.print(dstatus);
+	}
+	while (display.nextPage());
+} // end of showdata29_update()
 
 
 //***********************************************************
@@ -488,7 +447,7 @@ void showbeacon2(void){
   EPDupdate=true;				// EPD update request completed -> reset flag
 
   // enter EPD low power mode
-  digitalWrite(EPDGNDEN, HIGH); // disable EPD Ground low side switch
+  digitalWrite(EPDGNDEN, LOW); // disable EPD Ground low side switch
 } // end of ShowBeacon()
 
 
@@ -513,8 +472,11 @@ void epd2_test(){
   delay(1000);
   showFont("FreeMonoBold9pt7b", &FreeMonoBold9pt7b);
   delay(1000);
-  drawBitmaps();
-  if (display.epd2.hasPartialUpdate)
+  // drawBitmaps();
+  drawGraphics();
+  //return;
+
+if (display.epd2.hasPartialUpdate)
   {
     showPartialUpdate();
     delay(1000);
@@ -524,8 +486,7 @@ void epd2_test(){
   //showBox(16, 56, 48, 32, true);
   display.powerOff();
   deepSleepTest();
-  Serial.println("setup done");
-	return;
+  return;
 }
 
 
@@ -929,564 +890,23 @@ void showPartialUpdate()
 }
 
 
-void drawBitmaps()
+
+
+void drawGraphics()
 {
-  display.setFullWindow();
-#ifdef _GxBitmaps104x212_H_
-  drawBitmaps104x212();
-#endif
-#ifdef _GxBitmaps128x250_H_
-  drawBitmaps128x250();
-#endif
-#ifdef _GxBitmaps128x296_H_
-  drawBitmaps128x296();
-#endif
-#ifdef _GxBitmaps176x264_H_
-  drawBitmaps176x264();
-#endif
-#ifdef _GxBitmaps400x300_H_
-  drawBitmaps400x300();
-#endif
-#ifdef _GxBitmaps640x384_H_
-  drawBitmaps640x384();
-#endif
-#ifdef _WS_Bitmaps800x600_H_
-  drawBitmaps800x600();
-#endif
-  // 3-color
-#ifdef _GxBitmaps3c104x212_H_
-  drawBitmaps3c104x212();
-#endif
-#ifdef _GxBitmaps3c128x296_H_
-  drawBitmaps3c128x296();
-#endif
-#ifdef _GxBitmaps3c176x264_H_
-  drawBitmaps3c176x264();
-#endif
-#ifdef _GxBitmaps3c400x300_H_
-  drawBitmaps3c400x300();
-#endif
-  // show these after the specific bitmaps
-#ifdef _GxBitmaps200x200_H_
-  drawBitmaps200x200();
-#endif
-  // 3-color
-#ifdef _GxBitmaps3c200x200_H_
-  drawBitmaps3c200x200();
-#endif
+  display.setRotation(0);
+  display.firstPage();
+  do
+  {
+    display.drawRect(display.width() / 8, display.height() / 8, display.width() * 3 / 4, display.height() * 3 / 4, GxEPD_BLACK);
+    display.drawLine(display.width() / 8, display.height() / 8, display.width() * 7 / 8, display.height() * 7 / 8, GxEPD_BLACK);
+    display.drawLine(display.width() / 8, display.height() * 7 / 8, display.width() * 7 / 8, display.height() / 8, GxEPD_BLACK);
+    display.drawCircle(display.width() / 2, display.height() / 2, display.height() / 4, GxEPD_BLACK);
+    display.drawPixel(display.width() / 4, display.height() / 2 , GxEPD_BLACK);
+    display.drawPixel(display.width() * 3 / 4, display.height() / 2 , GxEPD_BLACK);
+  }
+  while (display.nextPage());
 }
 
-#ifdef _GxBitmaps200x200_H_
-void drawBitmaps200x200()
-{
-#if defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    logo200x200, first200x200 //, second200x200, third200x200, fourth200x200, fifth200x200, sixth200x200, senventh200x200, eighth200x200
-  };
-#elif defined(_BOARD_GENERIC_STM32F103C_H_)
-  const unsigned char* bitmaps[] =
-  {
-    logo200x200, first200x200, second200x200, third200x200, fourth200x200, fifth200x200 //, sixth200x200, senventh200x200, eighth200x200
-  };
-#else
-  const unsigned char* bitmaps[] =
-  {
-    logo200x200, first200x200, second200x200, third200x200, fourth200x200, fifth200x200, sixth200x200, senventh200x200, eighth200x200
-  };
-#endif
-  if ((display.epd2.panel == GxEPD2::GDEP015OC1) || (display.epd2.panel == GxEPD2::GDEH0154D67))
-  {
-    bool m = display.mirror(true);
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-    display.mirror(m);
-  }
-  //else
-  {
-    bool mirror_y = (display.epd2.panel != GxEPD2::GDE0213B1);
-    display.clearScreen(); // use default for white
-    int16_t x = (int16_t(display.epd2.WIDTH) - 200) / 2;
-    int16_t y = (int16_t(display.epd2.HEIGHT) - 200) / 2;
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.drawImage(bitmaps[i], x, y, 200, 200, false, mirror_y, true);
-      delay(2000);
-    }
-  }
-  bool mirror_y = (display.epd2.panel != GxEPD2::GDE0213B1);
-  for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-  {
-    int16_t x = -60;
-    int16_t y = -60;
-    for (uint16_t j = 0; j < 10; j++)
-    {
-      display.writeScreenBuffer(); // use default for white
-      display.writeImage(bitmaps[i], x, y, 200, 200, false, mirror_y, true);
-      display.refresh(true);
-      if (display.epd2.hasFastPartialUpdate)
-      {
-        // for differential update: set previous buffer equal to current buffer in controller
-        display.epd2.writeScreenBufferAgain(); // use default for white
-        display.epd2.writeImageAgain(bitmaps[i], x, y, 200, 200, false, mirror_y, true);
-      }
-      delay(2000);
-      x += 40;
-      y += 40;
-      if ((x >= int16_t(display.epd2.WIDTH)) || (y >= int16_t(display.epd2.HEIGHT))) break;
-    }
-    if (!display.epd2.hasFastPartialUpdate) break; // comment out for full show
-    break; // comment out for full show
-  }
-  display.writeScreenBuffer(); // use default for white
-  display.writeImage(bitmaps[0], int16_t(0), 0, 200, 200, false, mirror_y, true);
-  display.writeImage(bitmaps[0], int16_t(int16_t(display.epd2.WIDTH) - 200), int16_t(display.epd2.HEIGHT) - 200, 200, 200, false, mirror_y, true);
-  display.refresh(true);
-  delay(2000);
-}
-#endif
-
-#ifdef _GxBitmaps104x212_H_
-void drawBitmaps104x212()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    WS_Bitmap104x212, Bitmap104x212_1, Bitmap104x212_2, Bitmap104x212_3
-  };
-#else
-  const unsigned char* bitmaps[] =
-  {
-    WS_Bitmap104x212, Bitmap104x212_1, Bitmap104x212_2, Bitmap104x212_3
-  };
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW0213I5F)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps128x250_H_
-void drawBitmaps128x250()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap128x250_1, logo128x250, first128x250, second128x250, third128x250
-  };
-#else
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap128x250_1, logo128x250, first128x250, second128x250, third128x250
-  };
-#endif
-  if ((display.epd2.panel == GxEPD2::GDE0213B1) || (display.epd2.panel == GxEPD2::GDEH0213B72))
-  {
-    bool m = display.mirror(true);
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-    display.mirror(m);
-  }
-}
-#endif
-
-#ifdef _GxBitmaps128x296_H_
-void drawBitmaps128x296()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap128x296_1, logo128x296, first128x296, second128x296, third128x296
-  };
-#else
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap128x296_1, logo128x296 //, first128x296, second128x296, third128x296
-  };
-#endif
-  if (display.epd2.panel == GxEPD2::GDEH029A1)
-  {
-    bool m = display.mirror(true);
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-    display.mirror(m);
-  }
-}
-#endif
-
-#ifdef _GxBitmaps176x264_H_
-void drawBitmaps176x264()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap176x264_1, Bitmap176x264_2, Bitmap176x264_3, Bitmap176x264_4, Bitmap176x264_5
-  };
-#else
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap176x264_1, Bitmap176x264_2 //, Bitmap176x264_3, Bitmap176x264_4, Bitmap176x264_5
-  };
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW027W3)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps400x300_H_
-void drawBitmaps400x300()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap400x300_1, Bitmap400x300_2
-  };
-#else
-  const unsigned char* bitmaps[] = {}; // not enough code space
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW042T2)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps640x384_H_
-void drawBitmaps640x384()
-{
-#if !defined(__AVR)
-  const unsigned char* bitmaps[] =
-  {
-    Bitmap640x384_1, Bitmap640x384_2
-  };
-#else
-  const unsigned char* bitmaps[] = {}; // not enough code space
-#endif
-  if ((display.epd2.panel == GxEPD2::GDEW075T8) || (display.epd2.panel == GxEPD2::GDEW075Z09))
-  {
-    for (uint16_t i = 0; i < sizeof(bitmaps) / sizeof(char*); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmaps[i], display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _WS_Bitmaps800x600_H_
-void drawBitmaps800x600()
-{
-#if defined(ESP8266) || defined(ESP32)
-  if (display.epd2.panel == GxEPD2::ED060SCT)
-  {
-    //    Serial.print("sizeof(WS_zoo_800x600) is "); Serial.println(sizeof(WS_zoo_800x600));
-    display.drawNative(WS_zoo_800x600, 0, 0, 0, 800, 600, false, false, true);
-    delay(2000);
-    //    Serial.print("sizeof(WS_pic_1200x825) is "); Serial.println(sizeof(WS_pic_1200x825));
-    //    display.drawNative((const uint8_t*)WS_pic_1200x825, 0, 0, 0, 1200, 825, false, false, true);
-    //    delay(2000);
-    //    Serial.print("sizeof(WS_acaa_1024x731) is "); Serial.println(sizeof(WS_acaa_1024x731));
-    //    display.drawNative(WS_acaa_1024x731, 0, 0, 0, 1024, 731, false, false, true);
-    //    delay(2000);
-  }
-#endif
-}
-#endif
-
-struct bitmap_pair
-{
-  const unsigned char* black;
-  const unsigned char* red;
-};
-
-#ifdef _GxBitmaps3c200x200_H_
-void drawBitmaps3c200x200()
-{
-  bitmap_pair bitmap_pairs[] =
-  {
-    //{Bitmap3c200x200_black, Bitmap3c200x200_red},
-    {WS_Bitmap3c200x200_black, WS_Bitmap3c200x200_red}
-  };
-  if (display.epd2.panel == GxEPD2::GDEW0154Z04)
-  {
-    display.firstPage();
-    do
-    {
-      display.fillScreen(GxEPD_WHITE);
-      // Bitmap3c200x200_black has 2 bits per pixel
-      // taken from Adafruit_GFX.cpp, modified
-      int16_t byteWidth = (display.epd2.WIDTH + 7) / 8; // Bitmap scanline pad = whole byte
-      uint8_t byte = 0;
-      for (int16_t j = 0; j < display.epd2.HEIGHT; j++)
-      {
-        for (int16_t i = 0; i < display.epd2.WIDTH; i++)
-        {
-          if (i & 3) byte <<= 2;
-          else
-          {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-            byte = pgm_read_byte(&Bitmap3c200x200_black[j * byteWidth * 2 + i / 4]);
-#else
-            byte = Bitmap3c200x200_black[j * byteWidth * 2 + i / 4];
-#endif
-          }
-          if (!(byte & 0x80))
-          {
-            display.drawPixel(i, j, GxEPD_BLACK);
-          }
-        }
-      }
-      display.drawInvertedBitmap(0, 0, Bitmap3c200x200_red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-    }
-    while (display.nextPage());
-    delay(2000);
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].black, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-  if (display.epd2.hasColor)
-  {
-    display.clearScreen(); // use default for white
-    int16_t x = (int16_t(display.epd2.WIDTH) - 200) / 2;
-    int16_t y = (int16_t(display.epd2.HEIGHT) - 200) / 2;
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.drawImage(bitmap_pairs[i].black, bitmap_pairs[i].red, x, y, 200, 200, false, false, true);
-      delay(2000);
-    }
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      int16_t x = -60;
-      int16_t y = -60;
-      for (uint16_t j = 0; j < 10; j++)
-      {
-        display.writeScreenBuffer(); // use default for white
-        display.writeImage(bitmap_pairs[i].black, bitmap_pairs[i].red, x, y, 200, 200, false, false, true);
-        display.refresh();
-        delay(1000);
-        x += 40;
-        y += 40;
-        if ((x >= int16_t(display.epd2.WIDTH)) || (y >= int16_t(display.epd2.HEIGHT))) break;
-      }
-    }
-    display.writeScreenBuffer(); // use default for white
-    display.writeImage(bitmap_pairs[0].black, bitmap_pairs[0].red, 0, 0, 200, 200, false, false, true);
-    display.writeImage(bitmap_pairs[0].black, bitmap_pairs[0].red, int16_t(display.epd2.WIDTH) - 200, int16_t(display.epd2.HEIGHT) - 200, 200, 200, false, false, true);
-    display.refresh();
-    delay(2000);
-  }
-}
-#endif
-
-#ifdef _GxBitmaps3c104x212_H_
-void drawBitmaps3c104x212()
-{
-#if !defined(__AVR)
-  bitmap_pair bitmap_pairs[] =
-  {
-    {Bitmap3c104x212_1_black, Bitmap3c104x212_1_red},
-    {Bitmap3c104x212_2_black, Bitmap3c104x212_2_red},
-    {WS_Bitmap3c104x212_black, WS_Bitmap3c104x212_red}
-  };
-#else
-  bitmap_pair bitmap_pairs[] =
-  {
-    {Bitmap3c104x212_1_black, Bitmap3c104x212_1_red},
-    //{Bitmap3c104x212_2_black, Bitmap3c104x212_2_red},
-    {WS_Bitmap3c104x212_black, WS_Bitmap3c104x212_red}
-  };
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW0213Z16)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].black, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-        if (bitmap_pairs[i].red == WS_Bitmap3c104x212_red)
-        {
-          display.drawInvertedBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-        }
-        else display.drawBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps3c128x296_H_
-void drawBitmaps3c128x296()
-{
-#if !defined(__AVR)
-  bitmap_pair bitmap_pairs[] =
-  {
-    {Bitmap3c128x296_1_black, Bitmap3c128x296_1_red},
-    {Bitmap3c128x296_2_black, Bitmap3c128x296_2_red},
-    {WS_Bitmap3c128x296_black, WS_Bitmap3c128x296_red}
-  };
-#else
-  bitmap_pair bitmap_pairs[] =
-  {
-    //{Bitmap3c128x296_1_black, Bitmap3c128x296_1_red},
-    //{Bitmap3c128x296_2_black, Bitmap3c128x296_2_red},
-    {WS_Bitmap3c128x296_black, WS_Bitmap3c128x296_red}
-  };
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW029Z10)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].black, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-        if (bitmap_pairs[i].red == WS_Bitmap3c128x296_red)
-        {
-          display.drawInvertedBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-        }
-        else display.drawBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps3c176x264_H_
-void drawBitmaps3c176x264()
-{
-  bitmap_pair bitmap_pairs[] =
-  {
-    {Bitmap3c176x264_black, Bitmap3c176x264_red}
-  };
-  if (display.epd2.panel == GxEPD2::GDEW027C44)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawBitmap(0, 0, bitmap_pairs[i].black, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-        display.drawBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif
-
-#ifdef _GxBitmaps3c400x300_H_
-void drawBitmaps3c400x300()
-{
-#if !defined(__AVR)
-  bitmap_pair bitmap_pairs[] =
-  {
-    {Bitmap3c400x300_1_black, Bitmap3c400x300_1_red},
-    {Bitmap3c400x300_2_black, Bitmap3c400x300_2_red},
-    {WS_Bitmap3c400x300_black, WS_Bitmap3c400x300_red}
-  };
-#else
-  bitmap_pair bitmap_pairs[] = {}; // not enough code space
-#endif
-  if (display.epd2.panel == GxEPD2::GDEW042Z15)
-  {
-    for (uint16_t i = 0; i < sizeof(bitmap_pairs) / sizeof(bitmap_pair); i++)
-    {
-      display.firstPage();
-      do
-      {
-        display.fillScreen(GxEPD_WHITE);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].black, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_BLACK);
-        display.drawInvertedBitmap(0, 0, bitmap_pairs[i].red, display.epd2.WIDTH, display.epd2.HEIGHT, GxEPD_RED);
-      }
-      while (display.nextPage());
-      delay(2000);
-    }
-  }
-}
-#endif // _GxBitmaps3c400x300_H_
 
 #endif // EPD2_CONFIG
