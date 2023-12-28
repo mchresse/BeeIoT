@@ -202,6 +202,7 @@ void rtc_test() {
 
 	// DS3231 delivers time in struct TM format:
 	ds3231_get_time(&i2crtc, &tinfo);
+	ds3231_set_time(&i2crtc, &tinfo);
 
 	BHLOG(LOGLAN) Serial.println(&tinfo, "  RTC: Test Output:  %A, %B %d %Y %H:%M:%S");
 

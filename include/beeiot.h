@@ -82,10 +82,13 @@
 #define HX711_CONFIG		// Weight Cell Bosche HX100
 #define ONEWIRE_CONFIG		// OW Temp. Sensors (3x)
 #define SD_CONFIG			// SD Card Logging
-#define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
 #define EPD2_CONFIG			// Display: EPD2_GFX based ePaper from Waveshare v2.x
+
+#ifndef BIoTDBG
+#define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
 #define DSENSOR2			// Use Sensor data Format 2: binary stream (shorter)
 // #define DMSG				// Use Sensor data Format 1: ASCII stream (longer)
+#endif
 
 #else
 // HW Componnets for LoRa in Beacon Mode

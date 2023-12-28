@@ -98,7 +98,7 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 //*********************************************************
 void biot_welcome_page(){
 const char theader[] ="    BeeIoT";
-const char tauthor[] ="     by R.Esser";
+const char tauthor[] ="        by R.Esser";
 
 	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.setTextColor(GxEPD_BLACK);
@@ -113,12 +113,12 @@ const char tauthor[] ="     by R.Esser";
 		display.println(theader);
 
 		display.setFont(&FreeMonoBold12pt7b);
-		display.printf ("       v%s.%s\n", VMAJOR, VMINOR);
+		display.printf ("      v%s.%s.%s\n", VMAJOR, VMINOR, VBUILD);
 
 		display.setFont(&FreeMonoBold9pt7b);
 		display.println(tauthor);
 		display.setFont(&FreeMonoBold9pt7b);
-		display.printf ("    BoardID: %08X\n", (uint32_t)bhdb.BoardID);
+		display.printf ("      BoardID: %08X\n", (uint32_t)bhdb.BoardID);
 	}
 	// tell the graphics class to transfer the buffer content (page) to the controller buffer
 	// the graphics class will command the controller to refresh to the screen when the last page has been transferred
@@ -337,7 +337,7 @@ int16_t  tbx, tby;
 uint16_t tbw_box, tbh_box;
 
 	sprintf(dheader,	"#%i C%i ", bhdb.loopid, bhdb.chcfgid);
-	sprintf(dtime,		"%s", bhdb.date, bhdb.time);
+	sprintf(dtime,		"%s  ", bhdb.time);
 	sprintf(dweight,	"%s kg ", String(bhdb.dlog.HiveWeight,3));
 	sprintf(dtemphive,	"%s ", String(bhdb.dlog.TempHive,2));
 	sprintf(dtempext,	"%s ", String(bhdb.dlog.TempExtern,2));
@@ -345,13 +345,18 @@ uint16_t tbw_box, tbh_box;
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),
 				String((float)bhdb.dlog.BattCharge/1000,2));
-	sprintf(dstatus,	"%s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+#ifndef BIoTDBG
+	sprintf(dstatus, "%s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
 				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);
+#else
+	sprintf(dstatus, "DEBUGGING" );
+#endif
 
 	// show where the update box is and do this outside of the loop
 	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.setTextColor(GxEPD_BLACK);
 
+/*
 	display.setFont(&FreeMonoBold12pt7b);
 	display.getTextBounds(dheader, updheader_x, theader_y, &tbx, &tby, &tbw_box, &tbh_box);
 	display.setPartialWindow(tbx, tby, tbw_box, tbh_box);
@@ -362,13 +367,18 @@ uint16_t tbw_box, tbh_box;
 		display.print(dheader);
 	}
 	while (display.nextPage());
-
+*/
 	display.setFont(&FreeMonoBold9pt7b);
-	display.getTextBounds(dtime, updtime_x, ttime_y, &tbx, &tby, &tbw_box, &tbh_box);
-	display.setPartialWindow(tbx, tby, tbw_box, ttempext_y - theader_y);
+	display.getTextBounds(dtime, updtime_x, theader_y, &tbx, &tby, &tbw_box, &tbh_box);
+	display.setPartialWindow(tbx, tby, tbw_box, ttempext_y-5);
 	display.firstPage();
 	do
 	{
+		display.setFont(&FreeMonoBold12pt7b);
+		display.setCursor(updheader_x, theader_y);
+		display.print(dheader);
+
+		display.setFont(&FreeMonoBold9pt7b);
 		display.setCursor(updtime_x, ttime_y);
 		display.print(dtime);
 		display.setCursor(updweight_x, tweight_y);

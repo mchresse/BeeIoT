@@ -95,36 +95,50 @@
 // Global data object declarations
 //************************************
 
-#define LOOPTIME    600		// [sec] Loop wait time: in Seconds
-#define SLEEPTIME   10		// RTC sleep time in seconds
+// #define SLEEPTIME   10		// RTC sleep time in sec.
+
 #ifdef BEACON
-#define SLEEPMODE	  BEACONSLEEP  // =0 initial startup needed(after reset); =1 after deep sleep;
-								   // =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+#define LOOPTIME    10			// [sec] Loop wait time
+#define SLEEPMODE	BEACONSLEEP	// =0 initial startup needed(after reset); =1 after deep sleep;
+								// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 #else
-#define SLEEPMODE	  1 		// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
+
+#ifdef BIoTDBG
+#define LOOPTIME    2			// [sec] Loop wait time
+#define SLEEPMODE	4			// Debug tracing does not work at deepsleep
+#else
+#define LOOPTIME    600			// [sec] Loop wait time: in Seconds
+#define SLEEPMODE	1 			// =0 initial startup needed(after reset); =1 after deep sleep; =2 after light sleep;
 							    // =3 ModemSleep Mode; =4 Active Wait Loop
-#endif
+#endif // BIoTDBG
+#endif // BEACON
 
 // Define deep sleep options
 // The requested sleep time (=Looptime) by GW for each new sensor support is set in 'report_interval'.
 // Preset by LOOPTIME as default, but will finally redefined during JOIN Config request
 // IF the requested report time is beyond max. RTC-Sleep time window we need loops of sleep phases:
-// bootcounter = report interval / TIME_TO_SLEEP -> amount of sleep phases to reach tim of next reporting.
+// bootcounter = report interval / TIME_TO_SLEEP -> amount of sleep phases to reach time of next reporting.
+// For sleep time >78min. we have to enable this line:
+// int TIME_TO_SLEEP	= SLEEPTIME;   // [sec.] default RTC sleep time window used in a sleep loop
+
 // Without JOIN-CFG we get:
-// if report_interval < 78 Minutes (max RTC sleep time at once: 32bit counter in usec.: 2^32/1000000 = 4296 sec. / 60 = 71,58Min. ):
-// 		report_interval = LOOPTME
+// and if report_interval < 78 Minutes (max RTC sleep time at once: 32bit counter in usec.: 2^32/1000000 = 4296 sec. / 60 = 71,58Min. ):
+// we can set directly:		report_interval = LOOPTME
 // else:
 // We need a counter of multiple of Sleeptime windows
 // 		bootcount = report_interval / TIME_TO_SLEEP	-> amount of sleep loops by SLEEPTIME windows.
-int TIME_TO_SLEEP	= SLEEPTIME;   // [sec.] default RTC sleep time window used in a sleep loop
-// Default total sleep time (if LOOPTIME < 78Mn)
-RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // [sec.] initial interval between BIoT Reports; will be overwritten by CONFIG
-RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
+// RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
+
+// Default total sleep time (if LOOPTIME < 78Mn): =>  will be overwritten by LORA CONFIG session
+RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // [sec.] initial interval between BIoT Reports
 
 // WakeUp Source control
-bool GetData = 0;				// =1 manual trigger by ISR (blue key) to start next measurement
+bool GetData = 0;				// =1 manual trigger by ISR (key1) to start next measurement
+								// used for sleepmode=4
+
 RTC_DATA_ATTR int ReEntry = 0;	// =0 initial startup needed(after reset);   =1 after deep sleep;
 								// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+
 // RTC timer is set in usec. -> so we need a factor
 #define uS_TO_S_FACTOR  1000000LL  // Conversion factor for micro seconds to seconds
 #define uS_TO_mS_FACTOR    1000LL  // Conversion factor for micro seconds to milli seconds
@@ -153,7 +167,7 @@ extern OneWire 		ds;			// OneWire Bus object
 	// reference on a ePaper Display object created in epd2.cpp
 	extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
 #endif
-bool EPDupdate=true;			// =true: EPD update requested
+bool EPDupdate=true;			// =true: EPD update requested by default; may get redefined by wakeup-Reason
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -178,6 +192,18 @@ void reset_RTCIO(void);
 extern int sd_reset(uint8_t sdlevel);
 extern void hexdump(unsigned char * msg, int len);
 
+// Define Log level (search for Log values in beeiot.h)
+// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
+// works only in setup phase till LoRa-JOIN received Cfg data
+// final value will be defined in BeeIoTParseCfg() by GW config data
+#ifdef BIoTDBG
+	RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
+#else
+	RTC_DATA_ATTR uint32_t lflags = LOGBH;
+#endif
+
+
+
 //*******************************************************************
 /// @brief BeeIoT Setup Routine - Probe for all expected IO/Sensor devices
 /// Detect and check functionality incl. test output where applicable
@@ -185,12 +211,6 @@ extern void hexdump(unsigned char * msg, int len);
 /// @param none
 /// @return void
 //*******************************************************************
-// Define Log level (search for Log values in beeiot.h)
-// lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
-RTC_DATA_ATTR uint32_t lflags = LOGBH;
-//RTC_DATA_ATTR uint32_t lflags = 65535;
-// works only in setup phase till LoRa-JOIN received Cfg data
-// final value will be defined in BeeIoTParseCfg() by GW config data
 
 void setup() {
 int rc;		// generic return code variable
@@ -486,7 +506,11 @@ float weight =0;
 		}
 		BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
 		retry++;
+#ifndef BIoTDBG
 		mydelay2(200,0);			// sleep 200ms for OW bus recovery
+#else
+		mydelay(200);				// wait 200ms for OW bus recovery
+#endif
 		if(retry > 0)
 			cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
 			if(cnum>0)
@@ -564,6 +588,10 @@ float weight =0;
 // 10. End of Main Loop ->  Save data and enter Sleep/Delay Mode
   // Start sleep/wait loop
   BHLOG(LOGBH) printf(" -> Start preparing Sleep Mode\n");
+#ifdef BIoTDBG
+	EPDupdate=true;		// Update EPD in NoSleep Modes
+	report_interval = 1;	// set Report. Interval to 10 sec. for chilled debugging
+#endif
 	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
 
 	// In DeepSleep Mode this point is never reached
@@ -690,23 +718,23 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 /// @return void
 //*******************************************************************
 void mydelay(int32_t tval){
-  int fblink = tval / 1000;   // get # of seconds == blink frequence
+  int fblink = tval / 1000;   // get # of ms == blink frequence
   int i;
-  for (i=0; i < fblink/2; i++){
-	BHLOG(LOGRGB) setRGB(0,0,255);	// show start of delay loop
-
-	delay(20);			// blink 20ms second
-	BHLOG(LOGRGB) setRGB(0,0,0);		// show start of new loop() phase
+  for (i=0; i < fblink; i++){
+//	BHLOG(LOGRGB) setRGB(0,0,255);	// show start of delay loop
+//	delay(20);			// blink 20ms second
+//	BHLOG(LOGRGB) setRGB(0,0,0);		// show start of new loop() phase
+	BHLOG(LOGBH) LEDpulse(15);
 
     delay(750);			// wait 0.75 second
 	if(GetData){  		// Semaphor controlled by GPIO35 Key (blue button)
 		// user wants next measurement loop
 		GetData = 0;	// reset loop trigger flag
-		BHLOG(LOGRGB) setRGB(255,0,0); // show start of new loop() phase
+//		BHLOG(LOGRGB) setRGB(255,0,0); // show start of new loop() phase
 		return;			// and start next measurement loop
 	}
   } // wait loop
-  BHLOG(LOGRGB) setRGB(255,0,0); // show start of new loop() phase
+//  BHLOG(LOGRGB) setRGB(255,0,0); // show start of new loop() phase
 }
 
 //*******************************************************************
@@ -827,6 +855,9 @@ int cnum;
 //*******************************************************************
 void gpio_init(int sleepmode){
 		// coming from Deep sleep
+		gpio_hold_dis(ADC_VBATT);
+		gpio_hold_dis(ADC_VCHARGE);
+
 		gpio_hold_dis(SPIPWREN);	// required for all SPi devices
 		gpio_hold_dis(EPDGNDEN);	// release GND pin of EPD
 
@@ -926,9 +957,10 @@ void gpio_init(int sleepmode){
 	// Set OneWire line to Master port
 		pinMode(ONE_WIRE_BUS, INPUT);	// finally with ex. pullup 10k -> Start with defensive Input
 
-	// BATCHARGEPIN fully controlled by bat_control()
+	// BATCHARGE/BATT-PINs finally controlled by bat_control()
+		pinMode(ADC_VBATT, INPUT);
+		pinMode(ADC_VCHARGE, INPUT);
 }
-
 
 //*******************************************************************
 /// @brief biot_ioshutdown()
@@ -977,7 +1009,7 @@ if(sleepmode == 1)
 	digitalWrite(SD_CS, HIGH);
 	digitalWrite(LoRa_CS, HIGH);
 //	digitalWrite(EPD_CS, HIGH);
-	  pinMode(EPD_CS, INPUT);
+	pinMode(EPD_CS, INPUT);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
 //	rtc_gpio_isolate(EPD_CS);
@@ -1076,7 +1108,7 @@ if(sleepmode == 1)
 void prepare_sleep_mode(int mode, uint64_t waittime){
 esp_err_t  rc;
 
-	biot_ioshutdown(mode);          // disable all IO devices and their IO Ports.
+	biot_ioshutdown(mode);          // disable all IO devices and their IO Ports in mode 1+2 only.
 
 	switch(mode){
 		case 1:		// DeepSleepMode
@@ -1141,15 +1173,17 @@ esp_err_t  rc;
 			// NOP
 			break;
 
-		case 4:		// Active Mode
-			// NOP
+		case 4:		// Active Mode (for fast loop() testing)
+			BHLOG(LOGBH) Serial.printf("  Main: Restart Loop() after BusyWait(%is)...\n", waittime);
+			mydelay(waittime*1000);   	// time in ms - wait with blinking red LED
+			BHLOG(LOGBH) Serial.println();
 			break;
 
 		default:
 #ifndef BEACON
 	    	BHLOG(LOGBH) Serial.printf("  Loop: Enter WaitLoop (%i sec.)\n", report_interval);
 #endif
-			mydelay(waittime*1000);   // time in ms - wait with blinking red LED
+			mydelay(waittime*1000);   	// time in ms - wait with blinking red LED
 			BHLOG(LOGBH) Serial.println();
 			break;
 	} // switch
@@ -1464,6 +1498,7 @@ int cnum=0;
 void reset_RTCIO(void){
 	// Reset all OUT Pins (to default HIGH = input)
 	gpio_reset_pin(GPIO_NUM_0);
+	gpio_reset_pin(GPIO_NUM_1);
 	gpio_reset_pin(GPIO_NUM_2);
 	gpio_reset_pin(GPIO_NUM_5);
 	gpio_reset_pin(GPIO_NUM_6);

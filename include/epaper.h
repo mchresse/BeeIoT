@@ -32,7 +32,7 @@
 //#define GxEPD2_DRIVER_CLASS GxEPD2_270_GDEY027T91 // GDEY027T91 176x264, SSD1680, (FB)
 #ifdef EPD29_CONFIG
 #define GxEPD2_DRIVER_CLASS GxEPD2_290     // GDEH029A1   128x296, SSD1608 (IL3820), (E029A01-FPC-A1 SYX1553)
-#endif
+
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5  // GDEW029T5   128x296, UC8151 (IL0373), (WFT0290CZ10)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_T5D // GDEW029T5D  128x296, UC8151D, (WFT0290CZ10)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_I6FD // GDEW029I6FD  128x296, UC8151D, (WFT0290CZ10)
@@ -46,6 +46,7 @@
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290c     // GDEW029Z10  128x296, UC8151 (IL0373), (WFT0290CZ10)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_Z13c // GDEH029Z13  128x296, UC8151D, (HINK-E029A10-A3 20160809)
 //#define GxEPD2_DRIVER_CLASS GxEPD2_290_C90c // GDEM029C90  128x296, SSD1680, (FPC-7519 rev.b)
+#endif
 
 // somehow there should be an easier way to do this
 #define GxEPD2_BW_IS_GxEPD2_BW true
@@ -76,11 +77,11 @@
 #define newline12	19
 #define newline9	16
 #define shiftx		4
-#define dataupd_x	shiftx + (13 * 10)		// 134
+#define dataupd_x	shiftx + (15 * 10)		// 154
 
 #define theader_x	shiftx
 #define theader_y	newline9
-#define ttime_x		shiftx
+#define ttime_x		shiftx + (2*10)
 #define ttime_y		theader_y + newline9 +1	// 33
 #define tbox_x		shiftx
 #define tbox_y		ttime_y + 2 + 2			// 36
