@@ -134,7 +134,7 @@ const char tauthor[] ="        by R.Esser";
 //*********************************************************
 // showdata2()
 // Show Sensor log data on epaper Display
-// Input: sampleID= Index ond Sensor dataset from BHDB
+	// Input: sampleID= Index ond Sensor dataset from BHDB
 //*********************************************************
 
 void showdata(void){
@@ -146,26 +146,30 @@ void showdata(void){
 		digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
 #ifdef EPD27_CONFIG
-		showdata27();
+		showdata27();			// 2.7" frame Base + Data update in full window refresh mode
 #endif
 #ifdef EPD29_CONFIG
 		if (startup_data.startup_count >= Max_starts_between_refresh)
-		{
+		{	// full window refresh required frequently
 			startup_data.startup_count = 0;
 			startup_data.clean_start = true;
-			showdata29_base();
+			showdata29_base();			// Base update in full Window refresh mode
+		}else{
+			showdata29_updbase();		// Base update in partial upd. mode on full screen
 		}
 
-		showdata29_update();
+		showdata29_update();			// Do data update only in partial window mode
 		display.powerOff();
 
 		startup_data.clean_start = false;
-		startup_data.startup_count++;
+		startup_data.startup_count++;	// count time till fullr efresh
 #endif
 		// enter EPD low power mode
-		EPDupdate=false;			// EPD update request completed -> reset flag
+		digitalWrite(EPDGNDEN, LOW); 	// keep EPD Ground low side switch enabled
+		EPDupdate=false;				// EPD update request completed -> reset flag
+	}else{
+		digitalWrite(EPDGNDEN, HIGH); 	// No EPD: Disable EPD Ground low side switch for power saving
 	}
-	digitalWrite(EPDGNDEN, LOW); 	// keep EPD Ground low side switch enabled
 }
 
 
@@ -175,7 +179,7 @@ void showdata27(void){
   	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.fillScreen(GxEPD_WHITE);
 
-  	display.setTextColor(GxEPD_BLACK);
+ 	 	display.setTextColor(GxEPD_BLACK);
   	display.setFont(&FreeMonoBold9pt7b);
   	display.setCursor(0, 0);
   	display.println();          // adjust cursor to lower left corner of char row
@@ -261,9 +265,6 @@ void showdata29(void){
 } // end of ShowData()
 
 
-
-
-
 void showdata29_base(void){
 char theader[64];
 char ttime[64];
@@ -313,6 +314,57 @@ const char tstatus[]	="Status: ";
 	while (display.nextPage());
 
 } // end of ShowData29_base()
+
+
+void showdata29_updbase(void){
+char theader[64];
+char ttime[64];
+const char tweight[]	="   Gewicht: ";
+const char ttemphive[]	="Temp.Beute: ";
+const char ttempext[]	="TempExtern:";
+const char tbatt[]		="VBatt:";
+const char tstatus[]	="Status: ";
+
+	sprintf(theader,	"BeeIoT v%s.%s", VMAJOR, VMINOR);
+	sprintf(ttime,		" %s ", bhdb.date);
+
+	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setTextColor(GxEPD_BLACK);
+	display.setPartialWindow(0, 0, display.width(), display.height());
+
+	display.firstPage();
+	do	{
+		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
+
+		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
+		display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
+		display.print(theader);
+
+		display.setFont(&FreeMonoBold9pt7b);
+		display.setCursor(ttime_x, ttime_y);
+		display.print(ttime);
+
+//		display.drawRect(tbox_x, tbox_y, display.width()-(2*2), display.height() - (12+9+9+4 + 9+9), GxEPD_BLACK);
+		display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
+
+		display.setCursor(tweight_x, tweight_y);
+		display.print(tweight);
+		display.setCursor(ttemphive_x, ttemphive_y);
+		display.print(ttemphive);
+		display.setCursor(ttempext_x, ttempext_y);
+		display.print(ttempext);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
+		display.setCursor(tbatt_x, tbatt_y);
+		display.print(tbatt);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
+		display.setCursor(tstatus_x, tstatus_y);
+		display.print(tstatus);
+	}
+	while (display.nextPage());
+
+} // end of ShowData29_updbase()
 
 
 void showdata29_update(void) {

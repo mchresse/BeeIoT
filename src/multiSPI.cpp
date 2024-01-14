@@ -136,9 +136,9 @@ int setup_spi(int reentry) {    // My SPI Constructor
     #else
 		#ifdef EPD2_CONFIG
 			BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
-			display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
-
 			digitalWrite(EPDGNDEN, LOW);   		// enable EPD Pwr-Ground by low side switch
+
+			display.epd2.selectSPI(SPI2, SPISettings(SPISPEED, MSBFIRST, SPI_MODE0));
 
 			if(!reentry){
 				display.init(EPD_SerDiagRate, true, EPD_RESET_PULSE, false);	// USE THIS for Waveshare boards with "clever" reset circuit, 2ms reset pulse

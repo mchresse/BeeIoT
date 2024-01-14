@@ -512,6 +512,7 @@ float weight =0;
 		mydelay(200);				// wait 200ms for OW bus recovery
 #endif
 		if(retry > 0)
+
 			cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
 			if(cnum>0)
 				bhdb.dlog.comment[cnum]=0;	// add ending '0'
@@ -1042,8 +1043,8 @@ if(sleepmode == 1)
 	rtc_gpio_isolate(SPIPWREN);		// isolate internal PUP/PDN
 	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
 
-	digitalWrite(EPDGNDEN, LOW);   	// Enable EPD Ground low side switch
-//    pinMode(EPDGNDEN, INPUT);		// no RTC pin
+//	digitalWrite(EPDGNDEN, LOW);   	// Enable EPD Ground low side switch
+    pinMode(EPDGNDEN, INPUT);		// no RTC pin
 	gpio_hold_en(EPDGNDEN);			//
 
 
