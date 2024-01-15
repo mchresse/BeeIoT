@@ -30,11 +30,14 @@
 #include <epaper.h>
 
 // FreeFonts from Adafruit_GFX
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeMono12pt7b.h>
+#include <Fonts/FreeMono18pt7b.h>
+#include <Fonts/FreeMono24pt7b.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
 #include <Fonts/FreeMonoBold24pt7b.h>
-#include <Fonts/FreeSansBold24pt7b.h>
 
 
 //************************************
@@ -118,7 +121,7 @@ const char tauthor[] ="        by R.Esser";
 		display.setFont(&FreeMonoBold9pt7b);
 		display.println(tauthor);
 		display.setFont(&FreeMonoBold9pt7b);
-		display.printf ("      BoardID: %08X\n", (uint32_t)bhdb.BoardID);
+		display.printf ("     BoardID: %08X\n", (uint32_t)bhdb.BoardID);
 	}
 	// tell the graphics class to transfer the buffer content (page) to the controller buffer
 	// the graphics class will command the controller to refresh to the screen when the last page has been transferred
@@ -153,12 +156,11 @@ void showdata(void){
 		{	// full window refresh required frequently
 			startup_data.startup_count = 0;
 			startup_data.clean_start = true;
-			showdata29_base();			// Base update in full Window refresh mode
+			// Base update in full Window refresh mode
+			showdata29_DataFrame(false);	// Frame update in Full window mode
 		}else{
-			showdata29_updbase();		// Base update in partial upd. mode on full screen
+			showdata29_DataFrame(false);		// Frame update in partial upd. mode, but on full screen
 		}
-
-		showdata29_update();			// Do data update only in partial window mode
 		display.powerOff();
 
 		startup_data.clean_start = false;
@@ -264,6 +266,82 @@ void showdata29(void){
 
 } // end of ShowData()
 
+//***************************************************************
+// ShowData29_DataFrame()
+//***************************************************************
+
+
+//***************************************************************
+// ShowData29_DataFrame()
+//***************************************************************
+char theader[64];
+char ttime[64];
+char tweight[64];
+char ttemphive[64];
+char ttempext[64];
+char tbatt[64];
+char tstatus[64];
+
+void showdata29_DataFrame(bool refresh){
+
+	sprintf(theader,	"BeeIoT v%s.%s #%i C%i ", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
+	sprintf(ttime,		" %s %s", bhdb.date, bhdb.time);
+	sprintf(tweight,	"   Gewicht:  %s kg ", String(bhdb.dlog.HiveWeight,3));
+	sprintf(ttemphive,	"Temp.Beute:  %s C", String(bhdb.dlog.TempHive,2));
+	sprintf(ttempext,	"TempExtern:  %s C", String(bhdb.dlog.TempExtern,2));
+	sprintf(tbatt,		"VBatt: %sV(%s%%) < %sV ",
+				String((float)bhdb.dlog.BattLoad/1000,2),
+				String((uint16_t)bhdb.dlog.BattLevel),
+				String((float)bhdb.dlog.BattCharge/1000,2));
+#ifndef BIoTDBG
+	sprintf(tstatus, "Status:  %s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);
+#else
+	sprintf(tstatus, " Status:  DEBUGGING" );
+#endif
+
+	display.setRotation(1);    // 1 + 3: print in horizontal format
+	display.setTextColor(GxEPD_BLACK);
+	if(refresh){
+		display.setPartialWindow(0, 0, display.width(), display.height());
+	}else{
+		display.setFullWindow();
+	}
+
+	display.firstPage();
+	do	{
+		if(!refresh){
+			display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
+		}
+		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
+		display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
+		display.print(theader);
+
+		display.setFont(&FreeMonoBold9pt7b);
+		display.setCursor(ttime_x, ttime_y);
+		display.print(ttime);
+
+		display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
+
+		display.setCursor(tweight_x, tweight_y);
+		display.print(tweight);
+		display.setCursor(ttemphive_x, ttemphive_y);
+		display.print(ttemphive);
+		display.setCursor(ttempext_x, ttempext_y);
+		display.print(ttempext);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
+		display.setCursor(tbatt_x, tbatt_y);
+		display.print(tbatt);
+
+		display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
+		display.setCursor(tstatus_x, tstatus_y);
+		display.print(tstatus);
+	}
+	while (display.nextPage());
+
+} // end of ShowData29_DataFrame()
+
 
 void showdata29_base(void){
 char theader[64];
@@ -316,57 +394,6 @@ const char tstatus[]	="Status: ";
 } // end of ShowData29_base()
 
 
-void showdata29_updbase(void){
-char theader[64];
-char ttime[64];
-const char tweight[]	="   Gewicht: ";
-const char ttemphive[]	="Temp.Beute: ";
-const char ttempext[]	="TempExtern:";
-const char tbatt[]		="VBatt:";
-const char tstatus[]	="Status: ";
-
-	sprintf(theader,	"BeeIoT v%s.%s", VMAJOR, VMINOR);
-	sprintf(ttime,		" %s ", bhdb.date);
-
-	display.setRotation(1);    // 1 + 3: print in horizontal format
-	display.setTextColor(GxEPD_BLACK);
-	display.setPartialWindow(0, 0, display.width(), display.height());
-
-	display.firstPage();
-	do	{
-		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
-
-		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
-		display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
-		display.print(theader);
-
-		display.setFont(&FreeMonoBold9pt7b);
-		display.setCursor(ttime_x, ttime_y);
-		display.print(ttime);
-
-//		display.drawRect(tbox_x, tbox_y, display.width()-(2*2), display.height() - (12+9+9+4 + 9+9), GxEPD_BLACK);
-		display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
-
-		display.setCursor(tweight_x, tweight_y);
-		display.print(tweight);
-		display.setCursor(ttemphive_x, ttemphive_y);
-		display.print(ttemphive);
-		display.setCursor(ttempext_x, ttempext_y);
-		display.print(ttempext);
-
-		display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
-		display.setCursor(tbatt_x, tbatt_y);
-		display.print(tbatt);
-
-		display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
-		display.setCursor(tstatus_x, tstatus_y);
-		display.print(tstatus);
-	}
-	while (display.nextPage());
-
-} // end of ShowData29_updbase()
-
-
 void showdata29_update(void) {
 char dheader[64];
 char dtime[64];
@@ -383,7 +410,7 @@ const uint16_t updweight_x	= dataupd_x;
 const uint16_t updtemphive_x= dataupd_x;
 const uint16_t updtempext_x	= dataupd_x;
 const uint16_t updbatt_x	= shiftx + (8*10);
-const uint16_t updstatus_x	= shiftx + (9*10);
+const uint16_t updstatus_x	= shiftx + (10*10);
 
 int16_t  tbx, tby;
 uint16_t tbw_box, tbh_box;
@@ -391,8 +418,8 @@ uint16_t tbw_box, tbh_box;
 	sprintf(dheader,	"#%i C%i ", bhdb.loopid, bhdb.chcfgid);
 	sprintf(dtime,		"%s  ", bhdb.time);
 	sprintf(dweight,	"%s kg ", String(bhdb.dlog.HiveWeight,3));
-	sprintf(dtemphive,	"%s ", String(bhdb.dlog.TempHive,2));
-	sprintf(dtempext,	"%s ", String(bhdb.dlog.TempExtern,2));
+	sprintf(dtemphive,	"%s C", String(bhdb.dlog.TempHive,2));
+	sprintf(dtempext,	"%s C", String(bhdb.dlog.TempExtern,2));
 	sprintf(dbatt,		"%sV(%s%%) < %sV ",
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),

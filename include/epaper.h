@@ -97,7 +97,7 @@
 #define ttempext_y	ttemphive_y + newline9	// 84
 #define tbatt_x		tbox_x + shiftx
 #define tbatt_y		ttempext_y + newline9	// 100
-#define tbox_wx		296 - shiftx
+#define tbox_wx		296 - (2*shiftx)
 #define tbox_hy		72 						// tbatt_y - tbox_y + newline9 - 8
 #define tstatus_x	tbox_x + shiftx
 #define tstatus_y	tbox_y + tbox_hy + newline9 -1 // 123
@@ -123,8 +123,8 @@ int  setup_epd2		(int mode);		// in epd2.cpp
 void showdata		(void);
 void showdata27		(void);
 void showdata29_base(void);
-void showdata29_updbase(void);
 void showdata29_update(void);
+void showdata29_DataFrame(bool refresh);
 
 void showbeacon2 	(void);
 
