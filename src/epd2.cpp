@@ -46,14 +46,15 @@
 // extern GxEPD2_GFX& display;
 extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
 
-extern int isepd;			// =1 ePaper found
+extern int isepd;			  // =1 ePaper found
 extern dataset bhdb;		// central BeeIo DB
-extern uint16_t	lflags;		// BeeIoT log flag field
+extern uint16_t	lflags;	// BeeIoT log flag field
 extern const char * beeiot_StatusString[];
 extern byte BeeIoTStatus;
 extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep sleep;
-							// =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
-extern bool	EPDupdate;		// =true: EPD update requested
+							          // =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
+extern bool	EPDupdate;	// =true: EPD update requested
+extern uint8_t bat_status;	// Status of battery state machine
 
 #define Max_starts_between_refresh 5	// amount of data update befre refresh of full page
 RTC_DATA_ATTR struct {
@@ -289,10 +290,17 @@ void showdata29_DataFrame(bool refresh){
 	sprintf(tweight,	"   Gewicht:  %s kg ", String(bhdb.dlog.HiveWeight,3));
 	sprintf(ttemphive,	"Temp.Beute:  %s C", String(bhdb.dlog.TempHive,2));
 	sprintf(ttempext,	"TempExtern:  %s C", String(bhdb.dlog.TempExtern,2));
-	sprintf(tbatt,		"VBatt: %sV(%s%%) < %sV ",
+  if(bat_status == BAT_UNCHARGE){
+  	sprintf(tbatt,		"VBatt: %sV(%s%%) | %sV ",
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),
 				String((float)bhdb.dlog.BattCharge/1000,2));
+  }else{
+    	sprintf(tbatt,		"VBatt: %sV(%s%%) < %sV ",
+				String((float)bhdb.dlog.BattLoad/1000,2),
+				String((uint16_t)bhdb.dlog.BattLevel),
+				String((float)bhdb.dlog.BattCharge/1000,2));
+  }
 #ifndef BIoTDBG
 	sprintf(tstatus, "Status:  %s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
 				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);

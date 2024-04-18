@@ -174,7 +174,7 @@ long lastSendTime = 0;			// last send time
 char LoRaBuffer[256];			// buffer for LoRa Packages
 
 //Battery Status
-RTC_DATA_ATTR uint8_t bat_status = BAT_UNKNOWN;	// Status of battery state machine
+RTC_DATA_ATTR uint8_t bat_status;	// Status of battery state machine
 
 //************************************
 // Global function declarations
@@ -553,7 +553,7 @@ float weight =0;
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
-	//	bat_control((float) addata, false);	// Evaluate BAT Level + Error handling
+	bat_control((float) addata, false);	// Evaluate BAT Level + Error handling
 
 //  BHLOG(LOGBH) LEDpulse(1);	// Battery handling done
 
@@ -1369,12 +1369,12 @@ int cnum=0;
 
 	switch(bat_status){
 	case(BAT_UNCHARGE):		// in Discharging phase
-		if( batlevel <= BATTERY_MIN_LEVEL ){	// Emergency case: No Load Power of batter damaged ?!
+		if( batlevel <= BATTERY_MIN_LEVEL ){	// Emergency case: No Load Power or battery damaged ?!
 			bat_status = BAT_DAMAGED;
-			Enable_bat_charge();		// but lets hope power comes back
+			Enable_bat_charge();				// but lets hope power comes back
 			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
 			// Send a BAT Damage note via LoRa message for service
-	    	cnum=sprintf(bhdb.dlog.comment, "BatBAD!");
+	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
 			rc=1;
 		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ?
@@ -1389,38 +1389,45 @@ int cnum=0;
 		// else: simply remain in Un charging phase
 			Disable_bat_charge();
 			BHLOG(LOGBH) Serial.println("    BAT-UNCHARGING State");
+			rc=0;
 		}
 		break;
 	case(BAT_CHARGING):
 		if( batlevel >= BATTERY_MAX_LEVEL ){
-			if(bhdb.dlog.BattFullCnt++ > BATTMAXCNT){
+			if(bhdb.dlog.BattFullCnt++ >= BATTMAXCNT){
 				// battery charging completed -> we can stop charging
 				bat_status = BAT_UNCHARGE;
 				Disable_bat_charge();
 				BHLOG(LOGBH) Serial.printf("    BAT Full -> UNCHARGING State entered: %i\n", bhdb.dlog.BattFullCnt);
-				// Send a BAT Full note via LoRa message for service
-				cnum=sprintf(bhdb.dlog.comment, "BatFull");
-				if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
 				bhdb.dlog.BattFullCnt = 0;
+				// Send a BAT Full note via LoRa message for service
+				cnum=sprintf(bhdb.dlog.comment, "NoCharge");
 			}else{
 				// Assure resilient charge state, lets remain in charging phase a bit longer
-				BHLOG(LOGBH) Serial.println("    BAT-CHARGE State");
+				BHLOG(LOGBH) Serial.printf("    BAT-Full -> CHARGE State kept (%i)\n", bhdb.dlog.BattFullCnt);
 				Enable_bat_charge();
-				rc=0;
+				bat_status = BAT_CHARGING;
+				// Send a BAT Full note via LoRa message for service
+				cnum=sprintf(bhdb.dlog.comment, "BatFull");
 			}
+			rc=0;
+			if(cnum>0)	
+				bhdb.dlog.comment[cnum+1]=0;	// add ending '0'		
 		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
 			// Emergency case: No Load Power or batter damaged ?!
 			bat_status = BAT_DAMAGED;
 			Enable_bat_charge();			// but lets hope power comes back once
 			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
 			// Send a BAT Damage note via LoRa message for service
-	    	cnum=sprintf(bhdb.dlog.comment, "BatBAD!");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
+			if(cnum>0)	
+				bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
 			rc=1;
 		}else{
 			// else: All o.k., lets remain in charging phase
 			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State");
 			Enable_bat_charge();
+			bat_status = BAT_CHARGING;
 			rc=0;
 		}
 		break;
@@ -1433,13 +1440,14 @@ int cnum=0;
 			// Send a BAT Good note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "NoCharge");
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			rc=0;
 		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
 			// Emergency case: No Load Power or batter damaged ?!
 			bat_status = BAT_DAMAGED;
 			Enable_bat_charge();			// but lets hope power comes back once
 			BHLOG(LOGBH) Serial.printf("    BAT-DAMAGED State entered (%.2fV)\n", batlevel/1000);
 			// Send a BAT Bad Warning note via LoRa message for service
-	    	cnum=sprintf(bhdb.dlog.comment, "BatBAD!");
+	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
 			rc=1;
 		}else{
@@ -1449,8 +1457,8 @@ int cnum=0;
 			// Send a BAT Charge note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "Charging");
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			rc=0;
 		}
-		rc=0;
 		break;
 
 	case(BAT_DAMAGED): // or also BAT_LOW
@@ -1479,10 +1487,10 @@ int cnum=0;
 			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
 			BHLOG(LOGBH) Serial.printf("    BAT-LOW State entered; throttled reporting (%i Min)\n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
-			rc=1;
 			// Send a BAT Low warning note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattLow!");
 			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			rc=1;
 		}
 		break;
 
