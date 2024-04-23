@@ -172,10 +172,11 @@
 //*******************************************************************
 // Battery thresholds for LiPo 3.7V battery type
 #ifndef BATTERY_MAX_LEVEL
-#define BATTERY_MAX_LEVEL       4100.0 // mV = 100%
-#define BATTERY_NORM_LEVEL		3750.0 // mV = 50% => nominal LiPo Volt.Level
-#define BATTERY_MIN_LEVEL       3200.0 // mV = 33%
-#define BATTERY_SHUTDOWN_LEVEL  3000.0 // mV = 0% -> Limit from ESP32 Min Power level.
+#define BATTERY_MAX_LEVEL       4100.0 // mV = 100%  => charging Volt.-limit
+#define BATTERY_FULL_LEVEL      4000.0 // mV = 97,5% => start charge hysteresis
+#define BATTERY_NORM_LEVEL		3750.0 // mV = 50%   => nominal LiPo Volt.Level
+#define BATTERY_MIN_LEVEL       3200.0 // mV = 33%	 => Damaged LiPo Level
+#define BATTERY_SHUTDOWN_LEVEL  3000.0 // mV = 0%    => Limit from ESP32 Min Power level.
 // Charge till 100% reached -> Unload till 50% reached -> charge again...
 #define BATCHRGSTART    BATTERY_NORM_LEVEL // Start charging again when 50% reached
 

@@ -501,21 +501,22 @@ float weight =0;
 				(bhdb.dlog.TempHive   > -98) )
         	{
 				BHLOG(LOGOW) Serial.printf("  OWBus: %i Temp Sensor Data retrieved\n", owsensors);
-				break; // seems we have all values in place > leave retry loop
+				retry = ONE_WIRE_RETRY + 1; // seems we have all values in place > leave retry loop
 			}
-		}
-		BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
-		retry++;
+		}else{
+			BHLOG(LOGOW) Serial.printf("  OWBus: No valid Temp-data after %i retries\n", retry);
+			retry++;
 #ifndef BIoTDBG
-		mydelay2(200,0);			// sleep 200ms for OW bus recovery
+			mydelay2(200,0);			// sleep 200ms for OW bus recovery
 #else
-		mydelay(200);				// wait 200ms for OW bus recovery
+			mydelay(200);				// wait 200ms for OW bus recovery
 #endif
-		if(retry > 0)
+			if(retry > 0)
 
-			cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
-			if(cnum>0)
-				bhdb.dlog.comment[cnum]=0;	// add ending '0'
+				cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
+				if(cnum>0)
+					bhdb.dlog.comment[cnum]=0;	// add ending '0'
+		}
 	} while (retry <= ONE_WIRE_RETRY);
 
 #endif // ONEWIRE_CONFIG
@@ -528,32 +529,32 @@ float weight =0;
 
   // Read Analog Ports via internal ESP32-ADC
   // read out all Aanalog channels:
-	uint32_t addata = 0;   		// raw ADS Data buffer
+	uint32_t adcdata = 0;   		// raw ADS Data buffer
 
 	// Read Charging Power in Volt
 	#define VUSB_LEVEL	+7
-	addata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 306 / 100;			// get ADC Vin corrected by ext. Resistance devider
-  	bhdb.dlog.BattCharge = addata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
+	adcdata = (getespadc(Charge_pin) + VUSB_LEVEL)  * 306 / 100;			// get ADC Vin corrected by ext. Resistance devider
+  	bhdb.dlog.BattCharge = adcdata; 		//  measured: 5V/3,3 = 1,63V value (Dev-R: 33k / 69k)
 	BHLOG(LOGADS) Serial.print("  BMS: Get Batt.Power Level: V-Charge=");
-  	BHLOG(LOGADS) Serial.print((float)addata/1000, 2);
+  	BHLOG(LOGADS) Serial.print((float)adcdata/1000, 2);
 
   	// Get battery Powerlevel & calculate % Level
 	#define VBAT_LEVEL	-29
 	float x;              		// Volt calculation buffer
-	addata = (getespadc(Battery_pin) + VBAT_LEVEL) * 316 / 100;			// get ADC Vin corrected by ext. Resistance devider
-	x = (float)addata-BATTERY_SHUTDOWN_LEVEL;
+	adcdata = (getespadc(Battery_pin) + VBAT_LEVEL) * 316 / 100;			// get ADC Vin corrected by ext. Resistance devider
+	x = (float)adcdata-BATTERY_SHUTDOWN_LEVEL;
 	if( x > 0.0){
 	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
 	}else{
 		x=0.0;
 	}
 	bhdb.dlog.BattLevel = (int16_t) x;
-  	bhdb.dlog.BattLoad = (uint16_t) addata;
+  	bhdb.dlog.BattLoad = (uint16_t) adcdata;
   	BHLOG(LOGADS) Serial.print("V-Battery=");
-  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)addata/1000, bhdb.dlog.BattLevel);
+  	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)adcdata/1000, bhdb.dlog.BattLevel);
 
 	// Update Charge Control State machine by Battery Power Level
-	bat_control((float) addata, false);	// Evaluate BAT Level + Error handling
+	bat_control((float) adcdata, false);	// Evaluate BAT Level in operation mode
 
 //  BHLOG(LOGBH) LEDpulse(1);	// Battery handling done
 
@@ -1393,7 +1394,7 @@ int cnum=0;
 		}
 		break;
 	case(BAT_CHARGING):
-		if( batlevel >= BATTERY_MAX_LEVEL ){
+		if( batlevel >= BATTERY_FULL_LEVEL ){
 			if(bhdb.dlog.BattFullCnt++ >= BATTMAXCNT){
 				// battery charging completed -> we can stop charging
 				bat_status = BAT_UNCHARGE;
@@ -1403,7 +1404,7 @@ int cnum=0;
 				// Send a BAT Full note via LoRa message for service
 				cnum=sprintf(bhdb.dlog.comment, "NoCharge");
 			}else{
-				// Assure resilient charge state, lets remain in charging phase a bit longer
+				// Charging hysteresis state, lets remain in charging phase a bit longer
 				BHLOG(LOGBH) Serial.printf("    BAT-Full -> CHARGE State kept (%i)\n", bhdb.dlog.BattFullCnt);
 				Enable_bat_charge();
 				bat_status = BAT_CHARGING;
@@ -1433,7 +1434,7 @@ int cnum=0;
 		break;
 
 	case(BAT_UNKNOWN):
-		if( batlevel > BATTERY_NORM_LEVEL ){
+		if( batlevel >= BATTERY_FULL_LEVEL ){
 			bat_status = BAT_UNCHARGE;
 			Disable_bat_charge();
 			BHLOG(LOGBH) Serial.printf("    BAT-UNCHARGING State entered (%.2fV)\n", batlevel/1000);
