@@ -142,8 +142,11 @@ const char tauthor[] ="        by R.Esser";
 //*********************************************************
 
 void showdata(void){
-	if(bhdb.hwconfig & HC_EPD) {	// EPD access enabled by PCFG
-		// No EPD panel connected or no Update request pending
+	if(!(bhdb.hwconfig & HC_EPD)) {	// EPD access disabled by PCFG
+		digitalWrite(EPDGNDEN, HIGH); // No EPD: Disable EPD Ground low side switch for power saving
+		EPDupdate=false;				// EPD update request completed -> reset flag
+	} else {
+  	// No EPD panel connected or no Update request pending
 		if(isepd==0 || 	EPDupdate==false){
 			return;	// no EPD port -> no action
 		}
@@ -157,21 +160,20 @@ void showdata(void){
 		{	// full window refresh required frequently
 			startup_data.startup_count = 0;
 			startup_data.clean_start = true;
+    
 			// Base update in full Window refresh mode
-			showdata29_DataFrame(false);	// Frame update in Full window mode
+			showdata29_DataFrame(true);	  // Frame update in Full window mode
 		}else{
-			showdata29_DataFrame(false);		// Frame update in partial upd. mode, but on full screen
+			showdata29_DataFrame(false);	// Frame update in partial upd. mode, but on full screen
 		}
 		display.powerOff();
 
 		startup_data.clean_start = false;
-		startup_data.startup_count++;	// count time till fullr efresh
+		startup_data.startup_count++;	// count time till full refresh
 #endif
 		// enter EPD low power mode
-		digitalWrite(EPDGNDEN, LOW); 	// keep EPD Ground low side switch enabled
+		digitalWrite(EPDGNDEN, LOW);  // keep EPD Ground low side switch enabled
 		EPDupdate=false;				// EPD update request completed -> reset flag
-	}else{
-		digitalWrite(EPDGNDEN, HIGH); 	// No EPD: Disable EPD Ground low side switch for power saving
 	}
 }
 
@@ -502,7 +504,7 @@ void showbeacon2(void){
 		return;	// no EPD port -> no action
 	}
 
-  digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+  digitalWrite(EPDGNDEN, LOW);  // enable EPD Ground low side switch
 
   display.fillScreen(GxEPD_WHITE);
   display.setTextColor(GxEPD_BLACK);
@@ -543,8 +545,8 @@ void showbeacon2(void){
 
   EPDupdate=true;				// EPD update request completed -> reset flag
 
-  // enter EPD low power mode
-  digitalWrite(EPDGNDEN, LOW); // disable EPD Ground low side switch
+  // keep EPD power mode
+  digitalWrite(EPDGNDEN, LOW);  // enable EPD Ground low side switch
 } // end of ShowBeacon()
 
 

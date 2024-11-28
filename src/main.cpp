@@ -1126,8 +1126,8 @@ esp_err_t  rc;
       		// Otherwise power it down.
 	   		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
 
-			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY1, 0);	// select Key1 (blue button) as Wakup Trigger on low level
-    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d(green Key1)\n", (uint32_t)waittime, EPD_KEY1);
+			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY1, 0);	// select Key1 as Wakup Trigger on low level
+    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d (Key1)\n", (uint32_t)waittime, EPD_KEY1);
 			if(rc != ESP_OK){
 				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep wakeup setup failed: %i\n", rc);
 			}

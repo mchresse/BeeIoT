@@ -204,7 +204,7 @@ int rc=0;
 		if(callback){
 			pinMode(EPD_KEY2, INPUT);
 	  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
-			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 qassigned to GPIO%i-IRQ\n", EPD_KEY2);
+			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 assigned to GPIO%i-IRQ\n", EPD_KEY2);
 			rc= 0;
 		}else{
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key2 without callback");
@@ -246,26 +246,26 @@ int rc=0;
 }
 
 //*************************************************************************
-// onKeyx() ISR of EPD-Keyx	-> Yellow Button
+// onKeyx() ISR of EPD-Key1
 void IRAM_ATTR onKey1(void){
 	BHLOG(LOGBH) Serial.println("  onKey1: EPD-Key1 IRQ: Green Key");
-	GetData =1;		// manual trigger to start next sensor collection loop (for MyDelay())
-	EPDupdate=true;	// EPD update requested
+	GetData =1;			// manual trigger to start next sensor collection loop (for MyDelay())
+	EPDupdate=true;		// EPD update requested
 }
 //*************************************************************************
-// onKeyx() ISR of EPD-Keyx	-> Red Button
+// onKeyx() ISR of EPD-Key2
 void IRAM_ATTR onKey2(void){
 	BHLOG(LOGBH) Serial.println("  onKey2: EPD-Key2 IRQ: Red Key");
-	EPDupdate=true;	// EPD update requested
+	EPDupdate=true;		// EPD update requested
 }
 //*************************************************************************
-// onKeyx() ISR of EPD-Keyx	-> Green Button
+// onKeyx() ISR of EPD-Key3	-> Yellow Button
 void IRAM_ATTR onKey3(void){
-	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Green Key");
+	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Yellow Key");
 	EPDupdate=false;	// EPD update requested
 }
 //*************************************************************************
-// onKeyx() ISR of EPD-Keyx	-> Blue button
+// onKeyx() ISR of EPD-Key4	-> Blue button
 void IRAM_ATTR onKey4(void){
 	BHLOG(LOGBH) Serial.println("  onKey4: EPD-Key4 IRQ: Blue Key");
 	EPDupdate=false;	// EPD update requested
