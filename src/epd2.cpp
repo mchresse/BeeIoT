@@ -142,11 +142,11 @@ const char tauthor[] ="        by R.Esser";
 //*********************************************************
 
 void showdata(void){
-	if(!(bhdb.hwconfig & HC_EPD)) {	// EPD access disabled by PCFG
+	if(!(bhdb.hwconfig & HC_EPD)) {	// EPD access disabled by PCFG ?
 		digitalWrite(EPDGNDEN, HIGH); // No EPD: Disable EPD Ground low side switch for power saving
 		EPDupdate=false;				// EPD update request completed -> reset flag
 	} else {
-  	// No EPD panel connected or no Update request pending
+  	// No EPD panel connected or no Update request pending ?
 		if(isepd==0 || 	EPDupdate==false){
 			return;	// no EPD port -> no action
 		}
