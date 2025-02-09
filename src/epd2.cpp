@@ -55,6 +55,7 @@ extern int ReEntry;			// =0 initial startup needed(after reset);   =1 after deep
 							          // =2 after light sleep; =3 ModemSleep Mode; =4 Active Wait Loop
 extern bool	EPDupdate;	// =true: EPD update requested
 extern uint8_t bat_status;	// Status of battery state machine
+extern int 	   display_interval; // # of display refresh drops
 
 #define Max_starts_between_refresh 5	// amount of data update befre refresh of full page
 RTC_DATA_ATTR struct {
@@ -80,11 +81,13 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 
 	if(!reentry){
 		BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Welcome");
-		if(isepd){ // set some presets for a std. text field
+		if(isepd){ // if we have a panel -> display Welcome screen
 			biot_welcome_page();
 			startup_data.clean_start = true;
 			startup_data.startup_count = Max_starts_between_refresh;
 		}
+    display_interval = 0;       // init Display drop counter: refresh display first time
+    EPDupdate = false;          // Init forced display update = disabled
 	}
 #endif
 	return isepd;
@@ -142,15 +145,22 @@ const char tauthor[] ="        by R.Esser";
 //*********************************************************
 
 void showdata(void){
-	if(!(bhdb.hwconfig & HC_EPD)) {	// EPD access disabled by PCFG ?
+  // EPD access disabled by PCFG or No EPD panel connected ?
+	if(!(bhdb.hwconfig & HC_EPD) || isepd==0 ) {
 		digitalWrite(EPDGNDEN, HIGH); // No EPD: Disable EPD Ground low side switch for power saving
 		EPDupdate=false;				// EPD update request completed -> reset flag
-	} else {
-  	// No EPD panel connected or no Update request pending ?
-		if(isepd==0 || 	EPDupdate==false){
+		return;	// no EPD port -> no action
+	}
+
+  // no Update request pending ?
+  // BHLOG(LOGBH) printf(" -> Showdata[%s]: %i\n", EPDupdate?"true":"false", display_interval);
+	if(	(EPDupdate==false) && (display_interval>0)){
+      display_interval--;
 			return;	// no EPD port -> no action
-		}
-		digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
+	}
+
+    display_interval = DISPLAY_DROP;  // init Display drop counter
+		digitalWrite(EPDGNDEN, LOW);      // enable EPD Ground low side switch
 
 #ifdef EPD27_CONFIG
 		showdata27();			// 2.7" frame Base + Data update in full window refresh mode
@@ -173,8 +183,7 @@ void showdata(void){
 #endif
 		// enter EPD low power mode
 		digitalWrite(EPDGNDEN, LOW);  // keep EPD Ground low side switch enabled
-		EPDupdate=false;				// EPD update request completed -> reset flag
-	}
+		EPDupdate=false;				      // EPD update request completed -> reset flag
 }
 
 
@@ -543,9 +552,9 @@ void showbeacon2(void){
 
   display.display();			// Update Display
 
-  EPDupdate=true;				// EPD update request completed -> reset flag
+	EPDupdate=false;				// EPD update request completed -> reset flag
 
-  // keep EPD power mode
+  // keep EPD power mode for good contrast quality
   digitalWrite(EPDGNDEN, LOW);  // enable EPD Ground low side switch
 } // end of ShowBeacon()
 

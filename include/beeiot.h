@@ -145,6 +145,8 @@
 #define EPD_RST   GPIO_NUM_15		// arbitrary selection of RST
 #define EPD_BUSY  GPIO_NUM_21     	// arbitrary selection of BUSY
 
+#define DISPLAY_DROP 5				// =0 no drop cycles -> refresh Display each report loop
+
 #define EPD_KEY1  GPIO_NUM_4     	// via 40-pin RPi slot at ePaper Pin29 (P5) > n.a.
 #define EPD_KEY2  GPIO_NUM_3		// via 40-pin RPi slot at ePaper Pin31 (P6) > n.a.
 #define EPD_KEY3  GPIO_NUM_NC     	// via 40-pin RPi slot at ePaper Pin33 (P13)
