@@ -53,6 +53,7 @@
 //**********************************
 extern dataset	bhdb;		// central node status DB -> main.cpp
 extern uint16_t	lflags;     // BeeIoT log flag field
+extern int display_interval;    // Display update drop counter:
 
 // instantiate default SPI device: HSPI
 // SPI Pin defintion see beeiot.h
@@ -186,12 +187,13 @@ int rc=0;
 	if(!callback)	// NULL ptr. can not be assigned
  		return(-1);
 
+// PinMode of Key-GPIO assigned in gpio_init()
+
 	switch (key){
 	case 1: 			// EPD_KEY 1:
 		if(callback){
 			// Key1 setup as wakeup trigger in prepare_sleep_mode() already
-//			pinMode(EPD_KEY1, INPUT);
-//    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
+    	  	attachInterrupt(digitalPinToInterrupt(EPD_KEY1), callback, RISING);
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key1 assigned as Wakeup call");
 			rc= 0;
 		}else{
@@ -202,7 +204,6 @@ int rc=0;
 		break;
 	case 2: 			// EPD_KEY 2
 		if(callback){
-			pinMode(EPD_KEY2, INPUT);
 	  		attachInterrupt(digitalPinToInterrupt(EPD_KEY2), callback, RISING);
 			BHLOG(LOGEPD) Serial.printf("  SetonKey: EPD-Key2 assigned to GPIO%i-IRQ\n", EPD_KEY2);
 			rc= 0;
@@ -214,7 +215,6 @@ int rc=0;
 		break;
 	case 3: 			// EPD_KEY 3 /w ext 10k Pullup to 3.3V!
 		if(callback){
-//			pinMode(EPD_KEY3, INPUT);
 //	    	attachInterrupt(digitalPinToInterrupt(EPD_KEY3), callback, RISING);
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key3 undefined for V4.x board");
 			rc= 0;
@@ -226,7 +226,6 @@ int rc=0;
 		break;
 	case 4: 			// EPD_KEY 4 /w ext 10k Pullup to 3.3V!
 		if(callback){
-//			pinMode(EPD_KEY4, INPUT);
 //	   		attachInterrupt(digitalPinToInterrupt(EPD_KEY4), callback, RISING);
 			BHLOG(LOGEPD) Serial.println("  SetonKey: EPD-Key4 undefined for V4.x board");
 			rc= 0;
@@ -252,18 +251,21 @@ void IRAM_ATTR onKey1(void){
 	GetData =1;			// manual trigger to start next sensor collection loop (for MyDelay())
 	EPDupdate=true;		// EPD update requested
 }
+
 //*************************************************************************
 // onKeyx() ISR of EPD-Key2
 void IRAM_ATTR onKey2(void){
 	BHLOG(LOGBH) Serial.println("  onKey2: EPD-Key2 IRQ: Red Key");
 	EPDupdate=true;		// EPD update requested
 }
+
 //*************************************************************************
 // onKeyx() ISR of EPD-Key3	-> Yellow Button
 void IRAM_ATTR onKey3(void){
 	BHLOG(LOGBH) Serial.println("  onKey3: EPD-Key3 IRQ: Yellow Key");
 	EPDupdate=false;	// EPD update requested
 }
+
 //*************************************************************************
 // onKeyx() ISR of EPD-Key4	-> Blue button
 void IRAM_ATTR onKey4(void){

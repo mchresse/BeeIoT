@@ -129,8 +129,11 @@
 // 		bootcount = report_interval / TIME_TO_SLEEP	-> amount of sleep loops by SLEEPTIME windows.
 // RTC_DATA_ATTR int bootCount = 0;    // Deep Sleep Boot Counter
 
-// Default total sleep time (if LOOPTIME < 78Mn): =>  will be overwritten by LORA CONFIG session
-RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME; // [sec.] initial interval between BIoT Reports
+// Initial total sleep time (if LOOPTIME < 78Mn): =>  will be overwritten by LORA CONFIG session
+RTC_DATA_ATTR uint32_t  report_interval = LOOPTIME;		// [sec.] initial interval between BIoT Reports
+
+// Initial # of dropped EPD display refresh cycles by factor of [10sec].
+RTC_DATA_ATTR int 	   display_interval = DISPLAY_DROP;	// [0..n] dropped EPD Display refresh counter 
 
 // WakeUp Source control
 bool GetData = 0;				// =1 manual trigger by ISR (key1) to start next measurement
@@ -167,7 +170,7 @@ extern OneWire 		ds;			// OneWire Bus object
 	// reference on a ePaper Display object created in epd2.cpp
 	extern GxEPD2_DISPLAY_CLASS<GxEPD2_DRIVER_CLASS, MAX_HEIGHT(GxEPD2_DRIVER_CLASS)>  display;
 #endif
-bool EPDupdate=true;			// =true: EPD update requested by default; may get redefined by wakeup-Reason
+bool EPDupdate;					// =true: EPD update requested by default; may get redefined by wakeup-Reason
 
 // LoRa protocol frequence parameter
 long lastSendTime = 0;			// last send time
@@ -267,7 +270,7 @@ int rc;		// generic return code variable
 			BHLOG(LOGBH) Serial.println();
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("> BeeIoT - BeeHive Weight Scale %s\n", VERSION_SHORT);
-			BHLOG(LOGBH) Serial.println(">   by R.Esser (c) 2020-2023");
+			BHLOG(LOGBH) Serial.println(">   by R.Esser (c) 2020-2025");
 			BHLOG(LOGBH) Serial.println(">***********************************<");
 			BHLOG(LOGBH) Serial.printf ("LogLevel: %i\n", lflags);
 		}
@@ -519,6 +522,9 @@ float weight =0;
 		}
 	} while (retry <= ONE_WIRE_RETRY);
 
+	bhdb.dlog.TempHive = bhdb.dlog.TempExtern;
+	bhdb.dlog.TempExtern = bhdb.dlog.TempIntern;
+
 #endif // ONEWIRE_CONFIG
 
 //  BHLOG(LOGBH) LEDpulse(1);
@@ -570,8 +576,9 @@ float weight =0;
 // 2440ms
 #ifdef EPD2_CONFIG
 #ifdef BEACON
+	EPDupdate=true;			// Force EPD Update always in Beacon Mode
 	showbeacon2();
-	BHLOG(LOGLORAW) Serial.println("  LORA: Send Beacon Message");
+	BHLOG(LOGLORAW) Serial.println("  LORA: Sent Beacon Message");
 #else
 	showdata();
 #endif
@@ -591,10 +598,10 @@ float weight =0;
   // Start sleep/wait loop
   BHLOG(LOGBH) printf(" -> Start preparing Sleep Mode\n");
 #ifdef BIoTDBG
-	EPDupdate=true;		// Update EPD in NoSleep Modes
+	EPDupdate=true;			// Force EPD Update always in Debug Mode
 	report_interval = 1;	// set Report. Interval to 10 sec. for chilled debugging
 #endif
-	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // intervall in seconds
+	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // interval in seconds
 
 	// In DeepSleep Mode this point is never reached
 
@@ -1207,44 +1214,38 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 	switch(wakeup_reason)  {
 		case ESP_SLEEP_WAKEUP_EXT0:
 				BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_IO");
-				EPDupdate=true;		// Update EPD by Key reboot request
+				EPDupdate=true;		// Update EPD by Ext0 reboot request
 				break;
 		case ESP_SLEEP_WAKEUP_EXT1:
 		       	BHLOG(LOGBH)Serial.println("Wakeup caused by external signal using RTC_CNTL");
-				EPDupdate=true;		// Update EPD by Key reboot request
+				EPDupdate=true;		// Update EPD by Ext1 reboot request
 				break;
 		case ESP_SLEEP_WAKEUP_TIMER:
-		      	BHLOG(LOGBH)Serial.println("Wakeup caused by timer");
-				EPDupdate=true;		// Update EPD by Key reboot request
-//				EPDupdate=false;	// No Update of EPD requeste after timer reboot
+		      	BHLOG(LOGBH)Serial.println("Wakeup caused by sleep timer");
 				break;
 		case ESP_SLEEP_WAKEUP_TOUCHPAD:
 		   		BHLOG(LOGBH)Serial.println("Wakeup caused by touchpad");
-				EPDupdate=true;		// Update EPD by Key reboot request
+				EPDupdate=true;		// Update EPD by Touchpad reboot request
 				break;
 		case ESP_SLEEP_WAKEUP_ULP:
 		        BHLOG(LOGBH)Serial.println("Wakeup caused by ULP program");
-				EPDupdate=false;	// No Update of EPD requeste after timer reboot
 				break;
 		case ESP_SLEEP_WAKEUP_GPIO:
 		       	BHLOG(LOGBH)Serial.println("Wakeup caused by GPIO");
-				EPDupdate=true;		// Update EPD by Key reboot request
+				//	Update of EPD at Key reboot request controlled in ISR of each Key
 				break;
 		case ESP_SLEEP_WAKEUP_UART:
 		       	BHLOG(LOGBH)Serial.println("Wakeup caused by UART (light sleep only)");
-				EPDupdate=false;	// No Update of EPD requeste after timer reboot
-				break;
+ 				break;
 		case ESP_SLEEP_WAKEUP_ALL:
 		        BHLOG(LOGBH)Serial.println("Not a wakeup cause: used to disable all wakeup sources with esp_sleep_disable_wakeup_source");
-				EPDupdate=false;	// No Update of EPD requeste after timer reboot
 				break;
 		case ESP_SLEEP_WAKEUP_UNDEFINED:
 				BHLOG(LOGBH)Serial.println("Reset or unknown WakeUp cause");
-				EPDupdate=true;		// Update EPD by Key reboot request
+				EPDupdate=true;		// Update EPD at reset always
 				break;
 		default :
 				BHLOG(LOGBH)Serial.printf("Sleep>Wakeup root cause: %d unknown\n",wakeup_reason);
-				EPDupdate=true;		// Update EPD
 				wakeup_reason = ESP_SLEEP_WAKEUP_UNDEFINED;
 	}
 	return(wakeup_reason);

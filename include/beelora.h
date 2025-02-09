@@ -32,7 +32,7 @@ typedef const char*		   str_t;
 typedef              u1_t* xref2u1_t;
 typedef        const u1_t* xref2cu1_t;
 
-typedef				  u4_t devaddr_t;		// Device address
+typedef				 u4_t devaddr_t;		// Device address
 
 enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
 
