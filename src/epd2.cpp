@@ -153,7 +153,7 @@ void showdata(void){
 	}
 
   // no Update request pending ?
-  // BHLOG(LOGBH) printf(" -> Showdata[%s]: %i\n", EPDupdate?"true":"false", display_interval);
+  BHLOG(LOGBH) printf(" -> Showdata[%s]: %i\n", EPDupdate?"true":"false", display_interval);
 	if(	(EPDupdate==false) && (display_interval>0)){
       display_interval--;
 			return;	// no EPD port -> no action
@@ -313,11 +313,14 @@ void showdata29_DataFrame(bool refresh){
 				String((float)bhdb.dlog.BattCharge/1000,2));
   }
 #ifndef BIoTDBG
-	sprintf(tstatus, "Status:  %s", (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
-				beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus]	);
+	sprintf(tstatus, "Status:  %s  ID:%02X",
+        (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+				      beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus],
+        bhdb.nodeid);
 #else
-	sprintf(tstatus, " Status:  DEBUGGING" );
-#endif
+	sprintf(tstatus, " Status:  DEBUGGING  ID:%02X",
+        bhdb.nodeid);
+  #endif
 
 	display.setRotation(1);    // 1 + 3: print in horizontal format
 	display.setTextColor(GxEPD_BLACK);

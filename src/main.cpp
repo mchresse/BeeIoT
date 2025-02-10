@@ -522,8 +522,9 @@ float weight =0;
 		}
 	} while (retry <= ONE_WIRE_RETRY);
 
-	bhdb.dlog.TempHive = bhdb.dlog.TempExtern;
-	bhdb.dlog.TempExtern = bhdb.dlog.TempIntern;
+// Activate exchange of Temp-Ports for Temperature Monitor box only. (not for BIoT devs)
+//	bhdb.dlog.TempHive = bhdb.dlog.TempExtern;
+//	bhdb.dlog.TempExtern = bhdb.dlog.TempIntern;
 
 #endif // ONEWIRE_CONFIG
 
@@ -806,6 +807,7 @@ int cnum;
 		bhdb.date[0]      = 0;
 		bhdb.time[0]      = 0;
 		bhdb.chcfgid	  = 0;
+		bhdb.nodeid		  = 0;
 		bhdb.woffset	  = (int) scale_OFFSET;
 
 		// Enable HW components flags	<- may get overwritten by pcfg.hwconfig at each JOIN
@@ -1233,6 +1235,7 @@ esp_sleep_wakeup_cause_t print_wakeup_reason(){
 		case ESP_SLEEP_WAKEUP_GPIO:
 		       	BHLOG(LOGBH)Serial.println("Wakeup caused by GPIO");
 				//	Update of EPD at Key reboot request controlled in ISR of each Key
+				EPDupdate=true;		// EPD update requested
 				break;
 		case ESP_SLEEP_WAKEUP_UART:
 		       	BHLOG(LOGBH)Serial.println("Wakeup caused by UART (light sleep only)");

@@ -261,6 +261,7 @@ typedef struct {
     char	date[LENDATE];  	// stamp of the day: 2019\10\28
     char	time[LENTIME]; 		// Timestamp: 08:10:15
 	char	chcfgid;			// channel cfg ID of initialzed ChannelTab[]-config set -> struct LoRaCfg
+	char	nodeid;				// assigned Lora NodeID by LoRa GW
 	int		woffset;			// offset for real weight adjustment
 	uint8_t	hwconfig;			// HW component enable flag field <- from pcfg
 	// Board Identification data

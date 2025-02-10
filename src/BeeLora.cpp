@@ -1076,37 +1076,38 @@ int rc;
 int BeeIoTParseCfg(beeiot_cfg_t * pcfg){
 int rc;
 
-    if(MyMsg.pkg->hd.pkgid != pcfg->hd.pkgid){    // do we talk about the same Node-TX message we are waiting for ?
-      return(-1);
-    }
-    // parse CFG struct here and configure modem
-    LoRaCfg.nodeid    = pcfg->cfg.nodeid;
-    LoRaCfg.gwid      = pcfg->cfg.gwid;
-    LoRaCfg.msgCount  = pcfg->cfg.nonce;
+  if(MyMsg.pkg->hd.pkgid != pcfg->hd.pkgid){    // do we talk about the same Node-TX message we are waiting for ?
+    return(-1);
+  }
+  // parse CFG struct here and configure modem
+  LoRaCfg.nodeid    = pcfg->cfg.nodeid;
+  bhdb.nodeid       = pcfg->cfg.nodeid;
+  LoRaCfg.gwid      = pcfg->cfg.gwid;
+  LoRaCfg.msgCount  = pcfg->cfg.nonce;
 
 // update next Modem Config settings (gets activated at next LoRa Pckg Send via configLoraModem() call)
 #ifdef BEACON
-    SetChannelCfg(BEACONCHNCFG);          		// initialize LoraCfg field by new cfg
-    report_interval = BEACONFRQ;                // sec. frequency of beacon reports via LoRa
+  SetChannelCfg(BEACONCHNCFG);            		// initialize LoraCfg field by new cfg
+  report_interval = BEACONFRQ;                // sec. frequency of beacon reports via LoRa
 #else
-    SetChannelCfg(pcfg->cfg.channelidx);        // initialize LoraCfg field by new cfg
-    report_interval = pcfg->cfg.freqsensor*60;  // min -> sec. frequency of sensor reports via LoRa
+  SetChannelCfg(pcfg->cfg.channelidx);        // initialize LoraCfg field by new cfg
+  report_interval = pcfg->cfg.freqsensor*60;  // min -> sec. frequency of sensor reports via LoRa
 #endif
 	bhdb.chcfgid = pcfg->cfg.channelidx;		// save channelidx for epd print
-	bhdb.woffset = pcfg->cfg.woffset;			// offset for weight scale adjustement
+	bhdb.woffset = pcfg->cfg.woffset;			  // offset for weight scale adjustement
 	bhdb.hwconfig= pcfg->cfg.hwconfig;			// save HW component enable eflag field
 
 //    lflags = (uint16_t) pcfg->cfg.verbose;	// get verbose value for BHLOG macro; needs to be 2 byte
 
-    // yearoff => setRTCtime() expects base to 1900
-    setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
+  // yearoff => setRTCtime() expects base to 1900
+  setRTCtime(pcfg->cfg.yearoff+100, pcfg->cfg.month-1, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
 
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i, HWConf:0x%02X\n",
+  BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: BIoT-Interval: %isec., Verbose:%i, ChIndex:%i, NDID:0x%02X, GwID:0x%02X, MsgCnt:%i, HWConf:0x%02X\n",
       report_interval, lflags, LoRaCfg.chcfgid, LoRaCfg.nodeid, LoRaCfg.gwid, LoRaCfg.msgCount, bhdb.hwconfig);
-    BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
+  BHLOG(LOGLORAW) Serial.printf("  BeeIoTParseCfg: Received GW-Time: %i-%02i-%02i %02i:%02i:%02i\n",
       2000+pcfg->cfg.yearoff, pcfg->cfg.month, pcfg->cfg.day, pcfg->cfg.hour, pcfg->cfg.min, pcfg->cfg.sec);
+  rc=CMD_CONFIG;
 
-    rc=CMD_CONFIG;
   return(rc);
 }
 //******************************************************************************
