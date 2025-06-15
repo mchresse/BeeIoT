@@ -63,10 +63,21 @@ enum {
 
 // BeeLoRa.cpp functions
 int  setup_LoRa		(int mode);
-int  LoRaLog		(const uint8_t * outgoing, uint16_t outlen, int sync);
+int  BeeIoTJoin     (byte joinstatus);
+int  LoRaLog		(const uint8_t *outgoing, uint16_t outlen, int noack);
+int  LoRaLog_new    (const uint8_t *outgoing, uint16_t outlen, int noack);
 int  BeeIoTBeacon   (int bcnmode);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);
 void Printbit       (unsigned char * pbin, int bitlen,  const char * s = "0b", int format=1, int dir=0);
+
+// After Refactoring LoraLog
+// --- Sub-functions for LoRaLog workflow ---
+static int      LoRaLog_CheckModemAndJoin(const uint8_t *outgoing, uint16_t outlen);
+static uint16_t LoRaLog_PrepareTxPackage(const uint8_t *outgoing, uint16_t outlen);
+static void     LoRaLog_StoreSessionData();
+static void     LoRaLog_CleanupSessionData();
+static int      LoRaLog_HandleNoAck(uint16_t length);
+static int      LoRaLog_ProcessAck(int cmd);
 
 #endif /* BEELORA_H */
