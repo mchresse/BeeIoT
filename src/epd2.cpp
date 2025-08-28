@@ -535,11 +535,11 @@ void showbeacon2(void){
 //  display.setTextColor(GxEPD_RED);
   display.printf("%s %s", bhdb.date, bhdb.time);
 
-  display.setFont(&FreeMonoBold12pt7b);
+  display.setFont(&FreeMonoBold9pt7b);
   display.println();
-
   display.printf(" Beacon Mode:  \n");
 
+  display.setFont(&FreeMonoBold12pt7b);
   display.printf("    RSSI: %i\n", bhdb.rssi);
   display.printf("    SNR : %i\n", bhdb.snr);
 

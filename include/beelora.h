@@ -65,7 +65,6 @@ enum {
 int  setup_LoRa		(int mode);
 int  BeeIoTJoin     (byte joinstatus);
 int  LoRaLog		(const uint8_t *outgoing, uint16_t outlen, int noack);
-int  LoRaLog_new    (const uint8_t *outgoing, uint16_t outlen, int noack);
 int  BeeIoTBeacon   (int bcnmode);
 void hexdump		(unsigned char * msg, int len);
 void Printhex       (unsigned char * pbin, int bytelen, const char * s = "0x", int format=1, int dir=0);

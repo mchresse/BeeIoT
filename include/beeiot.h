@@ -75,6 +75,7 @@
 // Beacon Mode -> Send Beacon Message each 10 sec. + Transfer Quality Metric
 // #define BEACON		// Work in Beacon Mode only -> Send LoRa Beacon only.
 //*******************************************************************
+// #define BEACON
 
 // Specify workOn Modules of setup() and main loop()
 #ifndef BEACON
@@ -90,7 +91,7 @@
 // #define DMSG				// Use Sensor data Format 1: ASCII stream (longer)
 #endif
 
-#else
+#else // BEACON Mode
 // HW Componnets for LoRa in Beacon Mode
 #define SD_CONFIG			// SD Card Logging
 #define LORA_CONFIG			// LoRa Data transmission in BIoT Protocol
@@ -309,7 +310,7 @@ esp_err_t mydelay2	(int32_t waitms, int32_t initdelay);	// light sleep delay met
 
 // in max123x.cpp
 uint16_t adc_read	(int channel);
-int  max_multiread	(uint8_t channelend, uint16_t* adcdat);
-void max_reset		(void);	// set MAX123x to default reset
+int      max_multiread(uint8_t channelend, uint16_t* adcdat);
+void     max_reset	(void);	// set MAX123x to default reset
 
 #endif // end of BeeIoT.h
