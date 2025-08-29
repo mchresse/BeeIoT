@@ -805,6 +805,7 @@ int cnum;
 
   	if(!reentry){ // do init only once after Power-On
 		bhdb.loopid       = 0;
+		bhdb.looptime	  = LOOPTIME;	// init default value till CONFIG pkg has been received
 		bhdb.formattedDate[0] = 0;
 		bhdb.date[0]      = 0;
 		bhdb.time[0]      = 0;
@@ -1472,7 +1473,7 @@ int cnum=0;
 		// do nothing: but wait till power comes back...
 
 		if( batlevel <= BATTERY_SHUTDOWN_LEVEL ){	// Emergency case: No Load Power of batter damaged !!!
-			report_interval = 3*10*60;	// set sleep time [sec] to very long: 1Hr -> save the LiPo battery
+			report_interval = 3*LOOPTIME;	// set sleep time [sec] to very long: 1/2Hr -> save the LiPo battery
 			BHLOG(LOGBH) Serial.printf("    BAT-DAMAGED State; throttled reporting (%i Min)/n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
 			// Send a BAT Damage note via LoRa message for service
@@ -1481,7 +1482,7 @@ int cnum=0;
 			rc=1;
 
 		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
-			report_interval = 10*60;	// set Report. Interval to default [sec.]-> update at next JOIN
+			report_interval = bhdb.looptime;	// reset Report. Interval back to CONFIG state [sec.]
 			BHLOG(LOGBH) Serial.printf("    Battery recovered -> Continue with CHARGING State (reporting %i Min.)\n", report_interval/60);
 			bat_status = BAT_CHARGING;	// bring battery back to normal mode
 			Enable_bat_charge();		// but lets hope power comes back
@@ -1491,7 +1492,7 @@ int cnum=0;
 			rc=0;
 
 		}else{ 							// we are still in <= BATTERY_MIN_LEVEL
-			report_interval = 3*10*60;	// set sleep time [sec] to 1/2 hour -> save power
+			report_interval = 3*LOOPTIME;	// set sleep time [sec] to 1/2 hour -> save power
 			BHLOG(LOGBH) Serial.printf("    BAT-LOW State entered; throttled reporting (%i Min)\n", report_interval/60);
 			Enable_bat_charge();		// but lets hope power comes back
 			// Send a BAT Low warning note via LoRa message for service

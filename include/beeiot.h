@@ -254,7 +254,8 @@ typedef struct {				// data elements of one log line entry
 #define LENTIME		9			// HH:MM:SS + \0
 #define LENIPADDR	16			// xxx:yyy:zzz:aaa + \0
 typedef struct {
-	unsigned int	loopid;		// sensor loop counter 0..65535
+	uint16_t loopid;			// sensor loop counter 0..65535
+	uint16_t looptime;			// initial time [sec] between two sensor readings
 	// save timestamp of last datarow entry:
 	struct tm	stime;			// structure time supp. by time.h
 	time_t		rtime;			// raw time
