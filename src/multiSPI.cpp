@@ -103,7 +103,6 @@ int setup_spi(int reentry) {    // My SPI Constructor
 
 // Configure Master SPI Port
 	digitalWrite(SPIPWREN, HIGH);	// enable SPI Power (for all SPI devices)
-	digitalWrite(EPDGNDEN, LOW);    // enable EPD Ground low side switch
 	delay(10);						// give PwrUp some time
 
 	//Instantiate SPI port by HSPI default pins
@@ -133,7 +132,7 @@ int setup_spi(int reentry) {    // My SPI Constructor
 		display.init(0);   // enable diagnostic output on Serial if serial_diag_bitrate is set >0
 		// display class does not provide any feedback if device is available
 		// so we have to assume its there...
-		isepd = 1; // have to assume epd works now...no check implememnted by driver
+		isepd = 1; // have to assume epd works now...no check implemented by driver
     #else
 		#ifdef EPD2_CONFIG
 			BHLOG(LOGSPI) Serial.println("  MSPI: SPI-Init: ePaper EPD2 part1 ...");
@@ -148,7 +147,7 @@ int setup_spi(int reentry) {    // My SPI Constructor
 			}
 			// display class does not provide any feedback if device is available
 			// so we have to assume its there...
-			isepd = 1; // ..no check implememnted by driver
+			isepd = 1; // ..no check implemented by driver
 		#else
 			isepd = 0; // no EPD configured
 		#endif

@@ -77,16 +77,16 @@ int getTimeStamp() {
 		BHLOG(LOGLAN) Serial.println("  RTC: BHDB updated by RTC time");
 	}else{
 		sprintf(bhdb.formattedDate, "YYYY\\MM\\DDTHH:MM:SSZ");
-		sprintf(bhdb.date,      "YYYY\\MM\\DD");
-		sprintf(bhdb.time,      "HH:MM:SS");
-		bhdb.rtime = 0;			// set default: 00:00 hours, Jan 1, 1970 UTC
+		sprintf(bhdb.date, "YYYY\\MM\\DD");
+		sprintf(bhdb.time, "HH:MM:SS");
+		bhdb.rtime = 0;          // set default: 00:00 hours, Jan 1, 1970 UTC
 		bhdb.stime.tm_hour = 0;
 		bhdb.stime.tm_min = 0;
 		bhdb.stime.tm_sec = 0;
-		bhdb.stime.tm_mon = 0;		// 0..11 -> 1.January.1970
-		bhdb.stime.tm_mday = 1;		// 1..31
-		bhdb.stime.tm_year = 70;	// years since 1900
-		return(-2);               // we give up - no time source available
+		bhdb.stime.tm_mon = 0;	 // 0..11 -> 1.January.1970
+		bhdb.stime.tm_mday = 1;	 // 1..31
+		bhdb.stime.tm_year = 70; // years since 1900
+		return(-2);              // we give up - no time source available
 	}
   return(0);
 } // end of getTimeStamp()
@@ -100,6 +100,6 @@ void printLocalTime() {
     BHLOG(LOGLAN) Serial.println("  RTC: Failed to obtain time");
     return;
   }
-  asctime(&tinfo);
 //  Serial.println(&tinfo, "%A, %B %d %Y %H:%M:%S");
+  printf ( "The current date/time is: %s", asctime(&tinfo));
 }

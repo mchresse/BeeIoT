@@ -7,7 +7,7 @@
 // from Project https://github.com/mchresse/BeeIoT
 //
 // Description:
-// Contains main setup() and loop() routines for esspressif32 platforms.
+// Contains main setup() and loop() routines for espressif32 platforms.
 //
 //----------------------------------------------------------
 // Copyright (c) 2019-present, Randolph Esser
@@ -1058,7 +1058,7 @@ if(sleepmode == 1)
 
 //	digitalWrite(EPDGNDEN, LOW);   	// Enable EPD Ground low side switch
     pinMode(EPDGNDEN, INPUT);		// no RTC pin
-	gpio_hold_en(EPDGNDEN);			//
+	gpio_hold_en(EPDGNDEN);			// Keep SPI Power Off at sleep
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep

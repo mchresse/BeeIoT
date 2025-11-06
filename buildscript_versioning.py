@@ -2,10 +2,10 @@ FILENAME_BUILDNO = 'versioning'
 FILENAME_VERSION_H = 'include/version.h'
 vmajor = '4'
 vminor = '1'
+build_no = 0
 
 import datetime
 
-build_no = 0
 try:
     with open(FILENAME_BUILDNO) as f:
         build_no = int(f.readline()) + 1

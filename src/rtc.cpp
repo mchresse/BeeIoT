@@ -136,7 +136,7 @@ void setRTCtime(uint8_t yearoff, uint8_t month, uint8_t day, uint8_t hour = 0, u
 
 
 //*******************************************************************
-// getRTCtime(): read out current timeostamp and store it to global BHDB
+// getRTCtime(): read out current timestamp and store it to global BHDB
 //*******************************************************************
 int getRTCtime(void){
 	float rtctemp;
@@ -175,7 +175,7 @@ int getRTCtime(void){
 	BHLOG(LOGLAN) Serial.print(bhdb.date);
 
 	// Extract time: HH:MM:SS
-	sprintf(bhdb.time,"%02i:%02i:%02i ", tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
+	sprintf(bhdb.time,"%02i:%02i:%02i", tinfo->tm_hour, tinfo->tm_min, tinfo->tm_sec);
 	BHLOG(LOGLAN) Serial.print(" - ");
 	BHLOG(LOGLAN) Serial.print(bhdb.time);
 

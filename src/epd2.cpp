@@ -31,11 +31,15 @@
 
 // FreeFonts from Adafruit_GFX
 #include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeMono12pt7b.h>
+#include <Fonts/FreeSans12pt7b.h>
 #include <Fonts/FreeMono18pt7b.h>
 #include <Fonts/FreeMono24pt7b.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
 #include <Fonts/FreeMonoBold24pt7b.h>
 
@@ -79,15 +83,16 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 	// enter EPD active mode:
 	digitalWrite(EPDGNDEN, LOW);   // enable EPD Ground low side switch
 
-	if(!reentry){
-		BHLOG(LOGEPD) Serial.println("    EPD2: Start ePaper Welcome");
-		if(isepd){ // if we have a panel -> display Welcome screen
-			biot_welcome_page();
-			startup_data.clean_start = true;
-			startup_data.startup_count = Max_starts_between_refresh;
-		}
-    display_interval = 0;       // init Display drop counter: refresh display first time
-    EPDupdate = false;          // Init forced display update = disabled
+	if(!reentry & isepd){  // only at first init and if EPD panel connected
+    // display BIoT Welcome screen
+		BHLOG(LOGEPD) Serial.println("    EPD2: Display ePaper Welcome");
+		biot_welcome_page();
+
+    // remember we have refreshed the display fully
+    startup_data.clean_start = true;  // display cleaned recently
+		startup_data.startup_count = Max_starts_between_refresh;  // Init refresh delay counter
+		display_interval = 0;             // init Display drop counter: refresh display first time
+    EPDupdate = false;                // Init forced display update = disabled
 	}
 #endif
 	return isepd;
@@ -278,10 +283,6 @@ void showdata29(void){
 
 } // end of ShowData()
 
-//***************************************************************
-// ShowData29_DataFrame()
-//***************************************************************
-
 
 //***************************************************************
 // ShowData29_DataFrame()
@@ -296,71 +297,67 @@ char tstatus[64];
 
 void showdata29_DataFrame(bool refresh){
 
-	sprintf(theader,	"BeeIoT v%s.%s #%i C%i ", VMAJOR, VMINOR, bhdb.loopid, bhdb.chcfgid);
-	sprintf(ttime,		" %s %s", bhdb.date, bhdb.time);
+	sprintf(theader,	"BeeIoT v%s.%s   #%i ", VMAJOR, VMINOR, bhdb.loopid);
+	sprintf(ttime,		" %s %s C%i ", bhdb.date, bhdb.time, bhdb.chcfgid);
 	sprintf(tweight,	"   Gewicht:  %s kg ", String(bhdb.dlog.HiveWeight,3));
-	sprintf(ttemphive,	"Temp.Beute:  %s C", String(bhdb.dlog.TempHive,2));
-	sprintf(ttempext,	"TempExtern:  %s C", String(bhdb.dlog.TempExtern,2));
+	sprintf(ttemphive,	"Temp.Beute:  %s C ", String(bhdb.dlog.TempHive,2));
+	sprintf(ttempext,	"TempExtern:  %s C ", String(bhdb.dlog.TempExtern,2));
   if(bat_status == BAT_UNCHARGE){
-  	sprintf(tbatt,		"VBatt: %sV(%s%%) | %sV ",
+  	sprintf(tbatt,		"VBatt: %sV(%s%%) <%sV ",
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),
 				String((float)bhdb.dlog.BattCharge/1000,2));
   }else{
-    	sprintf(tbatt,		"VBatt: %sV(%s%%) < %sV ",
+    sprintf(tbatt,		"VBatt: %sV(%s%%) <%sV ",
 				String((float)bhdb.dlog.BattLoad/1000,2),
 				String((uint16_t)bhdb.dlog.BattLevel),
 				String((float)bhdb.dlog.BattCharge/1000,2));
   }
 #ifndef BIoTDBG
 	sprintf(tstatus, "Status:  %s  ID:%02X",
-        (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
-				      beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus],
-        bhdb.nodeid);
+      (BeeIoTStatus == BIOT_SLEEP) && (ReEntry == 1) ?
+	      beeiot_StatusString[BIOT_DEEPSLEEP] : beeiot_StatusString[BeeIoTStatus], bhdb.nodeid);
 #else
-	sprintf(tstatus, " Status:  DEBUGGING  ID:%02X",
-        bhdb.nodeid);
-  #endif
+	sprintf(tstatus, " Status:  DEBUGGING  ID:%02X", bhdb.nodeid);
+#endif
 
-	display.setRotation(1);    // 1 + 3: print in horizontal format
-	display.setTextColor(GxEPD_BLACK);
-	if(refresh){
-		display.setPartialWindow(0, 0, display.width(), display.height());
-	}else{
-		display.setFullWindow();
-	}
-
-	display.firstPage();
-	do	{
-		if(!refresh){
-			display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
-		}
-		display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
-		display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
-		display.print(theader);
-
-		display.setFont(&FreeMonoBold9pt7b);
-		display.setCursor(ttime_x, ttime_y);
-		display.print(ttime);
-
-		display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
-
-		display.setCursor(tweight_x, tweight_y);
-		display.print(tweight);
-		display.setCursor(ttemphive_x, ttemphive_y);
-		display.print(ttemphive);
-		display.setCursor(ttempext_x, ttempext_y);
-		display.print(ttempext);
-
-		display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
-		display.setCursor(tbatt_x, tbatt_y);
-		display.print(tbatt);
-
-		display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
-		display.setCursor(tstatus_x, tstatus_y);
-		display.print(tstatus);
-	}
-	while (display.nextPage());
+display.setRotation(1);    // 1 + 3: print in horizontal format
+display.setTextColor(GxEPD_BLACK);
+if(refresh){
+	display.setPartialWindow(0, 0, display.width(), display.height());
+}else{
+	display.setFullWindow();
+}
+display.firstPage();
+do{
+  	if(!refresh){
+  		display.fillScreen(GxEPD_WHITE); 	// set the background to white (fill the buffer with value for white)
+  	}
+    // Header
+  	display.setFont(&FreeMonoBold12pt7b);   	// -> 22chars/line (13 dots/char)
+  	display.setCursor(theader_x, theader_y);	// Start at bottom left corner of first text line
+  	display.print(theader);
+    // Time Stamp
+    display.setFont(&FreeMono9pt7b);      // -> 26chars/line (11 dots/char)
+  	display.setCursor(ttime_x, ttime_y);
+  	display.print(ttime);
+    // Data Frame
+    display.setFont(&FreeMonoBold9pt7b);	// -> 26chars/line (11 dots/char)
+  	display.drawRect(tbox_x, tbox_y, tbox_wx, tbox_hy, GxEPD_BLACK);
+    // Data block
+    display.setCursor(tweight_x, tweight_y);
+  	display.print(tweight);
+    display.setCursor(ttemphive_x, ttemphive_y);
+  	display.print(ttemphive);
+  	display.setCursor(ttempext_x, ttempext_y);
+  	display.print(ttempext);
+  	display.setCursor(tbatt_x, tbatt_y);
+  	display.print(tbatt);
+    // Status line
+    display.setFont(&FreeMonoBold9pt7b);	// -> 26 chars/line
+  	display.setCursor(tstatus_x, tstatus_y);
+  	display.print(tstatus);
+	}	while (display.nextPage());
 
 } // end of ShowData29_DataFrame()
 
