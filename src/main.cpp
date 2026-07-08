@@ -1099,11 +1099,59 @@ if(sleepmode == 1)
 	// Keep BAT Charge control pin as it is
 	gpio_hold_en(BATCHARGEPIN);
 
-    BHLOG(LOGSPI) Serial.println("  MAIN: shutdown to sleep mode 2 done !");
+    BHLOG(LOGSPI) Serial.println("  MAIN: Deep sleep GPIO prep done !");
 
 } else if(sleepmode == 2)
 	{
+		BHLOG(LOGSPI) Serial.println("  MAIN: prepare GPIOs for light sleep");
 
+		// Keep wake-up key stable (Key1 is used as low-level wake source)
+		pinMode(EPD_KEY1, INPUT);   // external pull-up exists on board
+		pinMode(EPD_KEY2, INPUT);
+
+		// Keep SPI devices deselected to avoid bus activity during sleep
+		pinMode(EPD_CS, OUTPUT);
+		pinMode(SD_CS, OUTPUT);
+		pinMode(LoRa_CS, OUTPUT);
+		digitalWrite(EPD_CS, HIGH);
+		digitalWrite(SD_CS, HIGH);
+		digitalWrite(LoRa_CS, HIGH);
+
+		// Keep shared SPI rail ON in light sleep to avoid full peripheral re-init on wake
+		pinMode(SPIPWREN, OUTPUT);
+		digitalWrite(SPIPWREN, HIGH);
+		pinMode(EPDGNDEN, OUTPUT);
+		digitalWrite(EPDGNDEN, LOW);
+
+		// Put buses in idle-safe states (no deep-sleep isolation/hold)
+		pinMode(SPI_SCK, OUTPUT);
+		digitalWrite(SPI_SCK, HIGH);
+		pinMode(SPI_MOSI, OUTPUT);
+		digitalWrite(SPI_MOSI, HIGH);
+		pinMode(SPI_MISO, INPUT);
+
+		pinMode(I2C_SCL, INPUT);     // open-drain idle with ext pull-up
+		pinMode(I2C_SDA, INPUT);
+		pinMode(ONE_WIRE_BUS, INPUT);
+		pinMode(RTC_INT, INPUT);
+
+		// Quiet down optional GPIOs
+		pinMode(LoRa_DIO0, INPUT);
+		pinMode(EPD_BUSY, INPUT);
+		pinMode(EPD_DC, INPUT);
+		pinMode(EPD_RST, INPUT);
+
+		// LEDs off for power saving
+		pinMode(LEDRGB, OUTPUT);
+		digitalWrite(LEDRGB, LOW);
+		pinMode(LEDRED, OUTPUT);
+		digitalWrite(LEDRED, LOW);
+
+		// Battery ADC lines high impedance
+		pinMode(ADC_VBATT, INPUT);
+		pinMode(ADC_VCHARGE, INPUT);
+
+		BHLOG(LOGSPI) Serial.println("  MAIN: light sleep GPIO prep done");
 	} // end of sleepmode 2
 
 } // biot_ioshutdown()
@@ -1121,8 +1169,10 @@ if(sleepmode == 1)
 //***********************************************************************
 void prepare_sleep_mode(int mode, uint64_t waittime){
 esp_err_t  rc;
+// Calculate the bitmask by ORing the bit-shifted pin values
+uint64_t key_mask = (1ULL << EPD_KEY1);    // select Key1 as Sleep Wakup Trigger
 
-	biot_ioshutdown(mode);          // disable all IO devices and their IO Ports in mode 1+2 only.
+    biot_ioshutdown(mode);          // disable all IO devices and their IO Ports in mode 1+2 only.
 
 	switch(mode){
 		case 1:		// DeepSleepMode
@@ -1137,11 +1187,12 @@ esp_err_t  rc;
     		// Keep power domain enabled in deep sleep, if it is needed by one of the wakeup options.
       		// Otherwise power it down.
 	   		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-
-			rc = esp_sleep_enable_ext0_wakeup(EPD_KEY1, 0);	// select Key1 as Wakup Trigger on low level
-    		BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d (Key1)\n", (uint32_t)waittime, EPD_KEY1);
+            
+            BHLOG(LOGBH) Serial.printf("  Main: Deep Sleep - Trigger: Timer(%i sec.) + GPIO%d (Key1)\n", (uint32_t)waittime, EPD_KEY1);
+			rc = esp_sleep_enable_ext1_wakeup(key_mask, ESP_EXT1_WAKEUP_ALL_LOW);   // select Key1 + Key2 as Wakup Trigger on low level
+    		
 			if(rc != ESP_OK){
-				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep wakeup setup failed: %i\n", rc);
+				BHLOG(LOGBH) Serial.printf("  Main: DeepSleep Key-wakeup failed: %i\n", rc);
 			}
 
     		gpio_deep_sleep_hold_en();  // freeze all settings from above during deep sleep time
@@ -1150,6 +1201,7 @@ esp_err_t  rc;
 			// Now that we have setup a wake cause and if needed setup the peripherals state in deep sleep,
 			// we can now start going to deep sleep. In the case that no wake up sources were provided but
 			// deep sleep was started, it will sleep forever unless hardware reset occurs.
+            delay(100);	// let time to settle all IO settings and avoid multiple trigger of push button: 100ms
 
 //			esp_deep_sleep((uint64_t) waittime * uS_TO_S_FACTOR);	// start sleep with RTC time trigger: no return from here
 			esp_sleep_enable_timer_wakeup((uint64_t) waittime * uS_TO_S_FACTOR);
