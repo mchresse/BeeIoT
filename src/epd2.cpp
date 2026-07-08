@@ -61,7 +61,7 @@ extern bool	EPDupdate;	// =true: EPD update requested
 extern uint8_t bat_status;	// Status of battery state machine
 extern int 	   display_interval; // # of display refresh drops
 
-#define Max_starts_between_refresh 5	// amount of data update befre refresh of full page
+#define Max_starts_between_refresh 5	// amount of data update before display refresh
 RTC_DATA_ATTR struct {
   uint8_t startup_count=0;
   bool clean_start=true;
@@ -69,9 +69,6 @@ RTC_DATA_ATTR struct {
 
 
 void biot_welcome_page(void);
-void biot_welcome_full(void);
-void pagetest(void);
-void testx(void);
 
 //*******************************************************************
 // ePaper Setup Routine
@@ -90,8 +87,8 @@ int setup_epd2(int reentry) {   // My EPD Constructor
 
     // remember we have refreshed the display fully
     startup_data.clean_start = true;  // display cleaned recently
-		startup_data.startup_count = Max_starts_between_refresh;  // Init refresh delay counter
-		display_interval = 0;             // init Display drop counter: refresh display first time
+	startup_data.startup_count = Max_starts_between_refresh;  // Init refresh delay counter
+	display_interval = 0;             // init Display drop counter: refresh display first time
     EPDupdate = false;                // Init forced display update = disabled
 	}
 #endif

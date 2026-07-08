@@ -1101,7 +1101,7 @@ if(sleepmode == 1)
 
     BHLOG(LOGSPI) Serial.println("  MAIN: Deep sleep GPIO prep done !");
 
-} else if(sleepmode == 2)
+} else if(sleepmode == 2)   // Prepare for Light Sleep Mode
 	{
 		BHLOG(LOGSPI) Serial.println("  MAIN: prepare GPIOs for light sleep");
 
@@ -1110,18 +1110,16 @@ if(sleepmode == 1)
 		pinMode(EPD_KEY2, INPUT);
 
 		// Keep SPI devices deselected to avoid bus activity during sleep
-		pinMode(EPD_CS, OUTPUT);
+//		pinMode(EPD_CS, OUTPUT);
 		pinMode(SD_CS, OUTPUT);
 		pinMode(LoRa_CS, OUTPUT);
-		digitalWrite(EPD_CS, HIGH);
+//		digitalWrite(EPD_CS, HIGH);
 		digitalWrite(SD_CS, HIGH);
 		digitalWrite(LoRa_CS, HIGH);
 
 		// Keep shared SPI rail ON in light sleep to avoid full peripheral re-init on wake
 		pinMode(SPIPWREN, OUTPUT);
 		digitalWrite(SPIPWREN, HIGH);
-		pinMode(EPDGNDEN, OUTPUT);
-		digitalWrite(EPDGNDEN, LOW);
 
 		// Put buses in idle-safe states (no deep-sleep isolation/hold)
 		pinMode(SPI_SCK, OUTPUT);
@@ -1139,7 +1137,8 @@ if(sleepmode == 1)
 		pinMode(LoRa_DIO0, INPUT);
 		pinMode(EPD_BUSY, INPUT);
 		pinMode(EPD_DC, INPUT);
-		pinMode(EPD_RST, INPUT);
+		pinMode(EPD_RST, OUTPUT);
+		digitalWrite(EPD_RST, HIGH);
 
 		// LEDs off for power saving
 		pinMode(LEDRGB, OUTPUT);
