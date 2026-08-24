@@ -104,7 +104,7 @@
 #else
 
 #ifdef BIoTDBG
-#define LOOPTIME    2			// [sec] Loop wait time
+#define LOOPTIME    5			// [sec] Loop wait time
 #define SLEEPMODE	4			// Debug tracing does not work at deepsleep
 #else
 #define LOOPTIME    600			// [sec] Loop wait time: in Seconds
@@ -219,7 +219,7 @@ void setup() {
 int rc;		// generic return code variable
 
   // put your setup code here, to run once:
-  	BHLOG(LOGBH) Serial.begin(115200);   // enable Ser. Monitor Baud rate
+  	BHLOG(LOGBH) Serial.begin(DEBUG_BAUDRATE);   // enable Ser. Monitor Baud rate
 
   // init pinmode and level of all used GPIO lines
 	gpio_init(ReEntry);
@@ -228,7 +228,7 @@ int rc;		// generic return code variable
 	BHLOG(LOGBH) LEDpulse(15);	// for tests get high pulses
 
 	BHLOG(LOGBH)  setup_RGB();	// define RGB-LED control pin
-	BHLOG(LOGRGB) setRGB(255,0,0); // start with RGB LED Off
+	BHLOG(LOGRGB) setRGB(255,0,0); // start with RGB LED: RED
 	// RGBtest();
 
 //***************************************************************
@@ -518,7 +518,7 @@ float weight =0;
 #endif
 			if(retry > 0)
 
-				cnum = sprintf(bhdb.dlog.comment, "OW-%ix", retry);
+				cnum = sprintf(bhdb.dlog.comment, "OW-%i", retry);
 				if(cnum>0)
 					bhdb.dlog.comment[cnum]=0;	// add ending '0'
 		}
@@ -549,15 +549,15 @@ float weight =0;
 
   	// Get battery Powerlevel & calculate % Level
 	#define VBAT_LEVEL	-29
-	float x;              		// Volt calculation buffer
+	float vlevel;              		// Volt calculation buffer
 	adcdata = (getespadc(Battery_pin) + VBAT_LEVEL) * 316 / 100;			// get ADC Vin corrected by ext. Resistance devider
-	x = (float)adcdata-BATTERY_SHUTDOWN_LEVEL;
-	if( x > 0.0){
-	  	x = (x / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
+	vlevel = (float)adcdata-BATTERY_SHUTDOWN_LEVEL;
+	if( vlevel > 0.0){
+	  	vlevel = (vlevel / (float)(BATTERY_MAX_LEVEL-BATTERY_SHUTDOWN_LEVEL) ) * 100;			//  measured: Vbatt/3 = 1,20V value (Dev-R: 33k / 69k)
 	}else{
-		x=0.0;
+		vlevel=0.0;
 	}
-	bhdb.dlog.BattLevel = (int16_t) x;
+	bhdb.dlog.BattLevel = (int16_t) vlevel;
   	bhdb.dlog.BattLoad = (uint16_t) adcdata;
   	BHLOG(LOGADS) Serial.print("V-Battery=");
   	BHLOG(LOGADS) Serial.printf("%.2fV (%i%%)\n", (float)adcdata/1000, bhdb.dlog.BattLevel);
@@ -602,7 +602,6 @@ float weight =0;
   BHLOG(LOGBH) printf(" -> Start preparing Sleep Mode\n");
 #ifdef BIoTDBG
 	EPDupdate=true;			// Force EPD Update always in Debug Mode
-	report_interval = 1;	// set Report. Interval to 10 sec. for chilled debugging
 #endif
 	prepare_sleep_mode(ReEntry, (uint32_t) report_interval); // interval in seconds
 
@@ -640,18 +639,19 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 	dsensor.battload	= bhdb.dlog.BattLoad;
 	dsensor.battlevel	= bhdb.dlog.BattLevel;
 
-	dsensor.tlen 		= strlen(bhdb.dlog.comment);
-	if(dsensor.tlen > BIoT_NOTICELEN){
-		dsensor.tlen = BIoT_NOTICELEN;	// assure max. text length value (normally already done by snprintf)
+	dsensor.tlen 		= strlen(bhdb.dlog.comment)+1;	// +1 for ending '0'
+	if(dsensor.tlen > BIoT_NOTICELEN){  // limit copied test to target buffer size
+		dsensor.tlen = BIoT_NOTICELEN;
 	}
 	dsensor.tlen = snprintf((char*) dsensor.notice, dsensor.tlen , "%s", (char*) bhdb.dlog.comment);
 	if(dsensor.tlen < 0){
-		dsensor.tlen = 0;	// if snprintf failed -> define no text field
+		dsensor.tlen = 0;	    // if snprintf failed -> define 'no text'
+        dsensor.notice[0]=0;	// set empty string field
 	}
 
 	// CRC calcuation basically not needed: data assurance is already done by LoRa chip by CRC
 	dsensor.crc8	=0x00;	//ToDo -> provide evaluation of DSENSOR Data by CRC8 calculation
-	size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen; // calc. datamap length
+	size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen+1; // calc. datamap length + ending /0
 
 	// Write the sensor readings onto the SD card
 /*
@@ -993,26 +993,29 @@ void biot_ioshutdown(int sleepmode){
 
 if(sleepmode == 1)
 {
-	// Shutdown all SPI devices
+	// Shutdown all SPI devices:
 #ifdef SD_CONFIG
     if(issdcard){
-      SD.end();   // unmount SD card
-	  issdcard = 0;
+        // 1. unmount SD card
+        SD.end();
+	    issdcard = 0;
     }
 #endif
 
 #ifdef EPD2_CONFIG
 	if(isepd){
-		display.powerOff();
-//    	display.hibernate();
+        // 2. unmount E-Paper Display
+//		display.powerOff();
+    	display.hibernate();
 		isepd = 0;
 	}
 #endif
 
 #ifdef LORA_CONFIG
     if(islora){
-      LoRa.end();     // set LORA Radio to sleep mode and disable SPI
-      islora = 0;
+        // 1. unmount LORA chip
+        LoRa.end();
+        islora = 0;
     }
 #endif
 
@@ -1022,14 +1025,13 @@ if(sleepmode == 1)
 	// keep stable state in Deep sleep for all SPI-CS lines
 	digitalWrite(SD_CS, HIGH);
 	digitalWrite(LoRa_CS, HIGH);
-//	digitalWrite(EPD_CS, HIGH);
-	pinMode(EPD_CS, INPUT);
+	digitalWrite(EPD_CS, HIGH);
 	rtc_gpio_isolate(SD_CS);
 	rtc_gpio_isolate(LoRa_CS);
-//	rtc_gpio_isolate(EPD_CS);
+	rtc_gpio_isolate(EPD_CS);
 	gpio_hold_en(SD_CS);
 	gpio_hold_en(LoRa_CS);
-//	gpio_hold_en(EPD_CS);
+	gpio_hold_en(EPD_CS);
 
 	// SPI Bus shutdown: EPD + LORA + SD
     pinMode(SPI_MISO, INPUT);
@@ -1051,14 +1053,14 @@ if(sleepmode == 1)
 	gpio_hold_en(EPD_BUSY);
 	gpio_hold_en(EPD_RST);
 
-	// Switch off SPI power switch of SPI device back to LOW
+	// Switch off / Disable SPI power LDO
     digitalWrite(SPIPWREN, LOW);	// Low if P-channel MOSFET
 	rtc_gpio_isolate(SPIPWREN);		// isolate internal PUP/PDN
-	gpio_hold_en(SPIPWREN);			// could be also INput -> ext. 100k pulldown
+	gpio_hold_en(SPIPWREN);			// could be also INput -> we have a ext. 100k pulldown
 
-//	digitalWrite(EPDGNDEN, LOW);   	// Enable EPD Ground low side switch
-    pinMode(EPDGNDEN, INPUT);		// no RTC pin
-	gpio_hold_en(EPDGNDEN);			// Keep SPI Power Off at sleep
+	digitalWrite(EPDGNDEN, HIGH);   // Disable EPD Ground low side switch for power saving
+    pinMode(EPDGNDEN, INPUT);		// no RTC pin -> set to high impedance Input
+	gpio_hold_en(EPDGNDEN);			// Hold EPD Gnd Off state at sleep time
 
 
 	// HX requires OUTPUT here to define data/clock line during sleep
@@ -1110,10 +1112,10 @@ if(sleepmode == 1)
 		pinMode(EPD_KEY2, INPUT);
 
 		// Keep SPI devices deselected to avoid bus activity during sleep
-//		pinMode(EPD_CS, OUTPUT);
+		pinMode(EPD_CS, OUTPUT);
 		pinMode(SD_CS, OUTPUT);
 		pinMode(LoRa_CS, OUTPUT);
-//		digitalWrite(EPD_CS, HIGH);
+		digitalWrite(EPD_CS, HIGH);
 		digitalWrite(SD_CS, HIGH);
 		digitalWrite(LoRa_CS, HIGH);
 
@@ -1434,7 +1436,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.println("    BAT-DAMAGED State entered");
 			// Send a BAT Damage note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=1;
 		}else if( batlevel <= BATCHRGSTART ){ // lower threshold reached for restart charging phase ?
 			bat_status = BAT_CHARGING;
@@ -1442,7 +1444,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.println("    BAT-CHARGE State entered");
 			// Send a BAT Charge note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "Charging");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=0;
 		}else{
 		// else: simply remain in Un charging phase
@@ -1471,7 +1473,7 @@ int cnum=0;
 			}
 			rc=0;
 			if(cnum>0)	
-				bhdb.dlog.comment[cnum+1]=0;	// add ending '0'		
+				bhdb.dlog.comment[cnum]=0;	// add ending '0'		
 		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
 			// Emergency case: No Load Power or batter damaged ?!
 			bat_status = BAT_DAMAGED;
@@ -1480,7 +1482,7 @@ int cnum=0;
 			// Send a BAT Damage note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
 			if(cnum>0)	
-				bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+				bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=1;
 		}else{
 			// else: All o.k., lets remain in charging phase
@@ -1498,7 +1500,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.printf("    BAT-UNCHARGING State entered (%.2fV)\n", batlevel/1000);
 			// Send a BAT Good note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "NoCharge");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=0;
 		}else if( batlevel < BATTERY_SHUTDOWN_LEVEL ){
 			// Emergency case: No Load Power or batter damaged ?!
@@ -1507,7 +1509,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.printf("    BAT-DAMAGED State entered (%.2fV)\n", batlevel/1000);
 			// Send a BAT Bad Warning note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=1;
 		}else{
 			bat_status = BAT_CHARGING;
@@ -1515,7 +1517,7 @@ int cnum=0;
 			BHLOG(LOGBH) Serial.printf("    BAT-CHARGE State entered (%.2fV)\n", batlevel/1000);
 			// Send a BAT Charge note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "Charging");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=0;
 		}
 		break;
@@ -1529,7 +1531,7 @@ int cnum=0;
 			Enable_bat_charge();		// but lets hope power comes back
 			// Send a BAT Damage note via LoRa message for service
    			cnum=sprintf(bhdb.dlog.comment, "BattBAD!");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=1;
 
 		}else if( batlevel > BATTERY_MIN_LEVEL ){	// seems Battery is charging again
@@ -1539,7 +1541,7 @@ int cnum=0;
 			Enable_bat_charge();		// but lets hope power comes back
 			// Send a BAT Charge note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "Charging");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=0;
 
 		}else{ 							// we are still in <= BATTERY_MIN_LEVEL
@@ -1548,7 +1550,7 @@ int cnum=0;
 			Enable_bat_charge();		// but lets hope power comes back
 			// Send a BAT Low warning note via LoRa message for service
 	    	cnum=sprintf(bhdb.dlog.comment, "BattLow!");
-			if(cnum>0)	bhdb.dlog.comment[cnum+1]=0;	// add ending '0'
+			if(cnum>0)	bhdb.dlog.comment[cnum]=0;	// add ending '0'
 			rc=1;
 		}
 		break;

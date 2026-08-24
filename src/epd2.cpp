@@ -162,7 +162,7 @@ void showdata(void){
 	}
 
     display_interval = DISPLAY_DROP;  // init Display drop counter
-		digitalWrite(EPDGNDEN, LOW);      // enable EPD Ground low side switch
+	digitalWrite(EPDGNDEN, LOW);      // enable EPD Ground low side switch
 
 #ifdef EPD27_CONFIG
 		showdata27();			// 2.7" frame Base + Data update in full window refresh mode
@@ -320,6 +320,7 @@ void showdata29_DataFrame(bool refresh){
 
 display.setRotation(1);    // 1 + 3: print in horizontal format
 display.setTextColor(GxEPD_BLACK);
+
 if(refresh){
 	display.setPartialWindow(0, 0, display.width(), display.height());
 }else{
