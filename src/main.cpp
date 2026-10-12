@@ -202,7 +202,7 @@ extern void hexdump(unsigned char * msg, int len);
 #ifdef BIoTDBG
 	RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
 #else
-	RTC_DATA_ATTR uint32_t lflags = LOGBH;
+	RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGLORAW;
 #endif
 
 
@@ -639,19 +639,19 @@ biot_dsensor_t	dsensor;	// sensor data stream pkg in binary format
 	dsensor.battload	= bhdb.dlog.BattLoad;
 	dsensor.battlevel	= bhdb.dlog.BattLevel;
 
-	dsensor.tlen 		= strlen(bhdb.dlog.comment)+1;	// +1 for ending '0'
-	if(dsensor.tlen > BIoT_NOTICELEN){  // limit copied test to target buffer size
-		dsensor.tlen = BIoT_NOTICELEN;
-	}
-	dsensor.tlen = snprintf((char*) dsensor.notice, dsensor.tlen , "%s", (char*) bhdb.dlog.comment);
-	if(dsensor.tlen < 0){
-		dsensor.tlen = 0;	    // if snprintf failed -> define 'no text'
-        dsensor.notice[0]=0;	// set empty string field
-	}
+    size_t copy_len = strlen(bhdb.dlog.comment);
+
+    if (copy_len >= BIoT_NOTICELEN) {
+        copy_len = BIoT_NOTICELEN - 1;
+    }
+
+    memcpy(dsensor.notice, bhdb.dlog.comment, copy_len);
+    dsensor.notice[copy_len] = '\0';
+    dsensor.tlen = copy_len + 1;  // includes the terminating NUL
 
 	// CRC calcuation basically not needed: data assurance is already done by LoRa chip by CRC
 	dsensor.crc8	=0x00;	//ToDo -> provide evaluation of DSENSOR Data by CRC8 calculation
-	size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen+1; // calc. datamap length + ending /0
+	size_t dslen = BIoT_DSENSORLEN - BIoT_NOTICELEN + dsensor.tlen; // calc. datamap length
 
 	// Write the sensor readings onto the SD card
 /*
