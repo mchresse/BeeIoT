@@ -202,7 +202,7 @@ extern void hexdump(unsigned char * msg, int len);
 #ifdef BIoTDBG
 	RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGOW + LOGHX + LOGLAN + LOGEPD + LOGSD + LOGADS + LOGSPI + LOGLORAR + LOGLORAW + LOGRGB;
 #else
-	RTC_DATA_ATTR uint32_t lflags = LOGBH + LOGLORAW;
+	RTC_DATA_ATTR uint32_t lflags = LOGBH;
 #endif
 
 
