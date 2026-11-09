@@ -6,11 +6,11 @@
   #define VMINOR "1"
 #endif
 #ifndef BUILD_NUMBER
-  #define VBUILD "485"
+  #define VBUILD "492"
 #endif
 #ifndef VERSION
-  #define VERSION "v4.1.485 - 2026-10-22 13:06:13.566583"
+  #define VERSION "v4.1.492 - 2026-11-09 17:55:45.748681"
 #endif
 #ifndef VERSION_SHORT
-  #define VERSION_SHORT "v4.1.485"
+  #define VERSION_SHORT "v4.1.492"
 #endif

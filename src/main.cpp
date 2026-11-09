@@ -350,9 +350,9 @@ int rc;		// generic return code variable
 
 //***************************************************************
 // +2ms
-  BHLOG(LOGBH) Serial.println("  Setup: LoRa SPI device & Base layer");
+  BHLOG(LOGBH) Serial.print("  Setup: LoRa SPI device & Base layer: 0x");
   if (!setup_LoRa(ReEntry)){
-    BHLOG(LOGBH) Serial.println("         LoRa Base layer setup failed");
+    BHLOG(LOGBH) Serial.println("\n         LoRa Base layer setup failed");
     // enter exit code here, if needed
   }
 //  BHLOG(LOGBH) LEDpulse(1);
