@@ -1516,7 +1516,7 @@ byte * ptr;
       MyMsg.ack = msg->hd.cmd;       	// ACK info hopefully still polled by waiting TX service
     }else{                        	// noone is waiting for this ACK -> ignore it, but leave a note
       BHLOG(LOGLORAW) Serial.print("    ACK, no matching msg.index: ");
-      BHLOG(LOGLORAW) Serial.println(msg->hd.pkgid, HEX);
+      BHLOG(LOGLORAW) Serial.println(msg->hd.pkgid);
     } // skip RX Queue handling for ACK pkgs.
 
   }else{  // for any other CMD of RX package -> lets do it on userland side
@@ -1526,7 +1526,7 @@ byte * ptr;
         MyMsg.ack = msg->hd.cmd;       // report new cmd -> parsed by waiting TX service
       }else{                           // noone is waiting for an ACK -> but we could process it anyway
         BHLOG(LOGLORAW) Serial.print("    RETRY/REJOIN/ACKBCN, no matching msg.index: ");
-        BHLOG(LOGLORAW) Serial.println(msg->hd.pkgid, HEX);
+        BHLOG(LOGLORAW) Serial.println(msg->hd.pkgid);
 		MyMsg.ack = 0;				   // ignore: no valid Ack command; just another command package we are not waiting for
       } // nothing done for RETRY here, but parse routine will do the rest---
     }
