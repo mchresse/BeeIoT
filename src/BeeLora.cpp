@@ -1253,19 +1253,20 @@ int rc;
 		// cmdp1: Reset Level: 1: All (Lora + SD), 2: Lora only
 		// cmdp2: SDLevel 1: Reset-File, 2: Reset LogPathFile
 		// cmdp3: not used
-		if(rx1pkg->p.cmdp1 == 1){ // reset all areas
-			ResetNode(rx1pkg->p.cmdp1, rx1pkg->p.cmdp2, rx1pkg->p.cmdp3);		// do everything on sensor node side here...
-		}
 
-		// Reset LoRa:  Reset Statistic, Setup RX Queue management, enter JOIN Mode
+    	// Reset LoRa always:  Reset Statistic, Setup RX Queue management, enter JOIN Mode
 		BeeIotRXFlag= 0;              // reset Semaphor for received message(s) -> polled by Sendmessage()
 		RXPkgSrvIdx = 0;              // preset RX Queue Read Pointer
 		RXPkgIsrIdx = 0;              // preset RX Queue Write Pointer
 		LoRaCfg.joinCount = 0;
 		LoRaCfg.joinRetryCount = 0;
 		LoRaCfg.msgCount = 0;
-
 		BeeIoTStatus = CMD_JOIN;	  // start new GW join again.
+
+        if(rx1pkg->p.cmdp1 == 1){     // Finally reset SD card as well and restart ESP32
+			ResetNode(rx1pkg->p.cmdp1, rx1pkg->p.cmdp2, rx1pkg->p.cmdp3);		// do everything on sensor node side here...
+            // This point should never be reached if a full reset is requested, as ResetNode() will restart the ESP32
+		}
 
 		rc = CMD_REJOIN;
 		break;
